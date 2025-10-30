@@ -1,13 +1,36 @@
+// Carregar variáveis de ambiente PRIMEIRO
+const path = require('path');
+const dotenv = require('dotenv');
+
+// Tentar carregar do diretório atual primeiro
+const envPath = path.resolve(__dirname, '..', '.env');
+console.log('📁 Procurando .env em:', envPath);
+
+const result = dotenv.config({ path: envPath });
+
+if (result.error) {
+  console.error('❌ Erro ao carregar .env:', result.error.message);
+  process.exit(1);
+}
+
+// Verificar se MONGODB_URI foi carregada
+if (!process.env.MONGODB_URI) {
+  console.error('❌ ERRO: MONGODB_URI não foi carregada!');
+  console.error('Verifique se o arquivo .env existe em:', path.join(__dirname, '../.env'));
+  process.exit(1);
+}
+
 const express = require('express');
-const connectDB = require('./config/database');
-connectDB();
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
-require('dotenv').config();
+const connectDB = require('./config/database');
 
 const app = express();
+
+// Conectar ao banco de dados
+connectDB();
 
 // Middlewares
 app.use(helmet());
@@ -49,5 +72,5 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`📱 Ambiente: ${process.env.NODE_ENV}`);
+  console.log(`📱 Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });
