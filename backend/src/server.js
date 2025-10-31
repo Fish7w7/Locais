@@ -48,29 +48,72 @@ app.get('/', (req, res) => {
   res.json({ 
     message: 'API Serviços Locais',
     version: '1.0.0',
-    status: 'online'
+    status: 'online',
+    endpoints: {
+      requests: '/api/requests',
+      users: '/api/users (em desenvolvimento)',
+      auth: '/api/auth (em desenvolvimento)',
+      jobs: '/api/jobs (em desenvolvimento)'
+    }
   });
 });
 
-// TODO: Importar e usar rotas aqui
+// ============================================
+// IMPORTAR E USAR ROTAS
+// ============================================
+
+// Rotas de Service Requests
+app.use('/api/requests', require('./routes/requests'));
+
+// TODO: Adicionar outras rotas conforme implementadas
 // app.use('/api/users', require('./routes/users'));
 // app.use('/api/auth', require('./routes/auth'));
-// app.use('/api/providers', require('./routes/providers'));
 // app.use('/api/jobs', require('./routes/jobs'));
-// app.use('/api/requests', require('./routes/requests'));
+// app.use('/api/applications', require('./routes/applications'));
+// app.use('/api/proposals', require('./routes/proposals'));
 
-// Error handler
+// ============================================
+// ERROR HANDLERS
+// ============================================
+
+// 404 - Rota não encontrada
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    message: 'Rota não encontrada'
+  });
+});
+
+// Error handler global
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('❌ Erro:', err.stack);
+  
   res.status(err.status || 500).json({
     success: false,
-    message: err.message || 'Erro interno do servidor'
+    message: err.message || 'Erro interno do servidor',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 });
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
+  console.log('');
+  console.log('🚀 ================================');
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log(`📱 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  console.log('🚀 ================================');
+  console.log('');
+  console.log('📡 Endpoints disponíveis:');
+  console.log(`   GET    /api/requests          - Listar solicitações`);
+  console.log(`   POST   /api/requests          - Criar solicitação`);
+  console.log(`   GET    /api/requests/:id      - Ver detalhes`);
+  console.log(`   PUT    /api/requests/:id/accept    - Aceitar`);
+  console.log(`   PUT    /api/requests/:id/reject    - Rejeitar`);
+  console.log(`   PUT    /api/requests/:id/start     - Iniciar`);
+  console.log(`   PUT    /api/requests/:id/complete  - Concluir`);
+  console.log(`   PUT    /api/requests/:id/cancel    - Cancelar`);
+  console.log(`   PUT    /api/requests/:id/review-provider - Avaliar prestador`);
+  console.log(`   PUT    /api/requests/:id/review-client   - Avaliar cliente`);
+  console.log('');
 });
