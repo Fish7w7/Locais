@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import UserSelection from './screens/UserSelection';
 import ClientHome from './screens/ClientHome';
 import ProviderHome from './screens/ProviderHome';
@@ -6,15 +6,15 @@ import CompanyHome from './screens/CompanyHome';
 import JobsList from './screens/JobsList';
 import ProfileScreen from './screens/ProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import RequestsDemo from './components/RequestsDemo';
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('userSelection');
   const [userType, setUserType] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(true); // Inicia em dark mode
+  const [darkMode, setDarkMode] = useState(true);
 
   useEffect(() => {
-    // Aplica ou remove a classe dark no documento
     if (darkMode) {
       document.documentElement.classList.add('dark');
     } else {
@@ -40,6 +40,7 @@ const App = () => {
       {currentScreen === 'settings' && <SettingsScreen {...screenProps} />}
       {currentScreen === 'providerHome' && <ProviderHome {...screenProps} />}
       {currentScreen === 'companyHome' && <CompanyHome {...screenProps} />}
+      {currentScreen === 'requests' && <RequestsDemo userType={userType} setCurrentScreen={setCurrentScreen} />}
       {currentScreen === 'jobsList' && <JobsList {...screenProps} />}
       {currentScreen === 'profile' && <ProfileScreen {...screenProps} />}
     </div>
