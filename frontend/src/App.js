@@ -6,7 +6,7 @@ import CompanyHome from './screens/CompanyHome';
 import JobsList from './screens/JobsList';
 import ProfileScreen from './screens/ProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
-import RequestsDemo from './components/RequestsDemo';
+import RequestsScreen from './screens/RequestsScreen';
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('userSelection');
@@ -37,12 +37,12 @@ const App = () => {
     <div className="max-w-md mx-auto bg-white dark:bg-gray-900 transition-colors" style={{ minHeight: '100vh' }}>
       {currentScreen === 'userSelection' && <UserSelection {...screenProps} />}
       {currentScreen === 'clientHome' && <ClientHome {...screenProps} />}
-      {currentScreen === 'settings' && <SettingsScreen {...screenProps} />}
       {currentScreen === 'providerHome' && <ProviderHome {...screenProps} />}
       {currentScreen === 'companyHome' && <CompanyHome {...screenProps} />}
-      {currentScreen === 'requests' && <RequestsDemo userType={userType} setCurrentScreen={setCurrentScreen} />}
       {currentScreen === 'jobsList' && <JobsList {...screenProps} />}
       {currentScreen === 'profile' && <ProfileScreen {...screenProps} />}
+      {currentScreen === 'settings' && <SettingsScreen {...screenProps} />}
+      {currentScreen === 'requests' && <RequestsScreen {...screenProps} />}
     </div>
   );
 };

@@ -23,11 +23,14 @@ const BottomNav = ({ active, userType, setCurrentScreen }) => {
           <span className="text-xs mt-1">Início</span>
         </button>
         
-        <button className={`flex flex-col items-center p-2 transition-colors ${
-          active === 'search' 
-            ? 'text-blue-500 dark:text-blue-400' 
-            : 'text-gray-600 dark:text-gray-400'
-        }`}>
+        <button 
+          onClick={() => setCurrentScreen('search')}
+          className={`flex flex-col items-center p-2 transition-colors ${
+            active === 'search' 
+              ? 'text-blue-500 dark:text-blue-400' 
+              : 'text-gray-600 dark:text-gray-400'
+          }`}
+        >
           <Search size={24} />
           <span className="text-xs mt-1">Buscar</span>
         </button>

@@ -50,7 +50,7 @@ app.get('/', (req, res) => {
 
 // ROTAS
 app.use('/api/requests', require('./routes/requests'));
-app.use('/api/users', require('./routes/users'));
+//app.use('/api/users', require('./routes/users')); esta linha esta causando um bug
 
 // 404
 app.use((req, res, next) => {
