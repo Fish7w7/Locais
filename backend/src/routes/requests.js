@@ -1,5 +1,3 @@
-// SERVICE REQUEST ROUTES
-
 const express = require('express');
 const router = express.Router();
 const {
@@ -15,61 +13,111 @@ const {
   reviewClient
 } = require('../controllers/serviceRequestController');
 
-// Middleware de autenticação (será implementado depois)
-// const { protect } = require('../middleware/auth');
+const {
+  validateCreateRequest,
+  validateAcceptRequest,
+  validateRejectRequest,
+  validateCancelRequest,
+  validateReview,
+  validateGetRequests,
+  validateRequestId
+} = require('../middleware/validation');
 
-// Middleware temporário (REMOVER quando auth estiver pronto)
+// ========================================
+// MIDDLEWARE DE AUTENTICAÇÃO TEMPORÁRIO
+// ========================================
 const tempAuth = (req, res, next) => {
-  // Simulando usuário logado
+  // Pega o userId do header (simulando autenticação)
+  const userId = req.headers['x-user-id'];
+  const userType = req.headers['x-user-type'] || 'client';
+  
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      message: '❌ Envie o header x-user-id com um ID válido de usuário'
+    });
+  }
+
   req.user = {
-    id: '507f1f77bcf86cd799439011', // ID fictício
-    userType: 'client'
+    id: userId,
+    userType: userType
   };
+  
   next();
 };
 
-
-// ROTAS PÚBLICAS (nenhuma por enquanto)
-
-
-
-// ROTAS PRIVADAS (requerem autenticação)
-
+// ========================================
+// ROTAS
+// ========================================
 
 // Criar nova solicitação
-router.post('/', tempAuth, createRequest);
+router.post('/', 
+  tempAuth,
+  validateCreateRequest,
+  createRequest
+);
 
-// Buscar minhas solicitações (recebidas ou enviadas)
-router.get('/', tempAuth, getMyRequests);
+// Buscar minhas solicitações
+router.get('/', 
+  tempAuth,
+  validateGetRequests,
+  getMyRequests
+);
 
 // Buscar solicitação específica
-router.get('/:id', tempAuth, getRequestById);
+router.get('/:id', 
+  tempAuth,
+  validateRequestId,
+  getRequestById
+);
 
-// AÇÕES DO PRESTADOR
+// Aceitar solicitação (PRESTADOR)
+router.put('/:id/accept', 
+  tempAuth,
+  validateAcceptRequest,
+  acceptRequest
+);
 
-// Aceitar solicitação
-router.put('/:id/accept', tempAuth, acceptRequest);
+// Rejeitar solicitação (PRESTADOR)
+router.put('/:id/reject', 
+  tempAuth,
+  validateRejectRequest,
+  rejectRequest
+);
 
-// Rejeitar solicitação
-router.put('/:id/reject', tempAuth, rejectRequest);
+// Iniciar trabalho (PRESTADOR)
+router.put('/:id/start', 
+  tempAuth,
+  validateRequestId,
+  startWork
+);
 
-// Iniciar trabalho
-router.put('/:id/start', tempAuth, startWork);
+// Concluir trabalho (PRESTADOR)
+router.put('/:id/complete', 
+  tempAuth,
+  validateRequestId,
+  completeWork
+);
 
-// Concluir trabalho
-router.put('/:id/complete', tempAuth, completeWork);
+// Cancelar solicitação
+router.put('/:id/cancel', 
+  tempAuth,
+  validateCancelRequest,
+  cancelRequest
+);
 
-// AÇÕES COMPARTILHADAS
+// Avaliar prestador
+router.put('/:id/review-provider', 
+  tempAuth,
+  validateReview,
+  reviewProvider
+);
 
-// Cancelar solicitação (requester ou provider)
-router.put('/:id/cancel', tempAuth, cancelRequest);
-
-// AVALIAÇÕES
-
-// Cliente/Empresa avalia prestador
-router.put('/:id/review-provider', tempAuth, reviewProvider);
-
-// Prestador avalia cliente
-router.put('/:id/review-client', tempAuth, reviewClient);
+// Avaliar cliente
+router.put('/:id/review-client', 
+  tempAuth,
+  validateReview,
+  reviewClient
+);
 
 module.exports = router;

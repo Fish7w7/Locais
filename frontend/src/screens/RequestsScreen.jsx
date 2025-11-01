@@ -13,8 +13,14 @@ import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import axios from 'axios';
 
-// Configuração da API
 const API_URL = 'http://localhost:5000/api';
+
+// ⚠️ IDs TEMPORÁRIOS - ATUALIZE APÓS EXECUTAR testRequest.js
+const TEMP_USER_IDS = {
+  client: '69054f6a29da97e6e3904761',    // Ana
+  provider: '69054f6a29da97e6e3904760',  // João
+  company: '69054f6a29da97e6e3904766'    // TechShop
+};
 
 const RequestsScreen = (props) => {
   const [requests, setRequests] = useState([]);
@@ -23,27 +29,55 @@ const RequestsScreen = (props) => {
   const [filter, setFilter] = useState('all');
   const [selectedRequest, setSelectedRequest] = useState(null);
 
-  // Carregar solicitações (useCallback para evitar warning)
+  // Pegar o user ID baseado no tipo
+  const getCurrentUserId = () => {
+    return TEMP_USER_IDS[props.userType] || TEMP_USER_IDS.client;
+  };
+
+  // Configurar headers do axios
+  useEffect(() => {
+    const userId = getCurrentUserId();
+    axios.defaults.headers.common['x-user-id'] = userId;
+    axios.defaults.headers.common['x-user-type'] = props.userType || 'client';
+    
+    console.log('🔑 Autenticação configurada:', {
+      userId,
+      userType: props.userType
+    });
+  }, [props.userType]);
+
   const fetchRequests = useCallback(async () => {
     try {
       setLoading(true);
-      const params = filter !== 'all' ? { status: filter } : {};
-      const response = await axios.get(`${API_URL}/requests`, { params });
-      setRequests(response.data.data);
       setError(null);
+      
+      const userId = getCurrentUserId();
+      const params = filter !== 'all' ? { status: filter } : {};
+      
+      console.log('📡 Buscando requests...', { userId, userType: props.userType, params });
+      
+      const response = await axios.get(`${API_URL}/requests`, { 
+        params,
+        headers: {
+          'x-user-id': userId,
+          'x-user-type': props.userType || 'client'
+        }
+      });
+      
+      console.log('✅ Resposta:', response.data);
+      setRequests(response.data.data || []);
     } catch (err) {
-      setError('Erro ao carregar solicitações. Verifique se o backend está rodando.');
-      console.error('Erro ao buscar requests:', err);
+      console.error('❌ Erro ao buscar requests:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'Erro ao carregar solicitações');
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, props.userType]);
 
   useEffect(() => {
     fetchRequests();
   }, [fetchRequests]);
 
-  // Aceitar solicitação
   const handleAccept = async (requestId, negotiatedPrice = null) => {
     try {
       const body = negotiatedPrice ? { negotiatedPrice } : {};
@@ -51,46 +85,38 @@ const RequestsScreen = (props) => {
       fetchRequests();
       setSelectedRequest(null);
     } catch (err) {
-      alert('Erro ao aceitar solicitação');
-      console.error(err);
+      alert('Erro: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  // Rejeitar solicitação
   const handleReject = async (requestId, reason = '') => {
     try {
       await axios.put(`${API_URL}/requests/${requestId}/reject`, { reason });
       fetchRequests();
       setSelectedRequest(null);
     } catch (err) {
-      alert('Erro ao rejeitar solicitação');
-      console.error(err);
+      alert('Erro: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  // Iniciar trabalho
   const handleStart = async (requestId) => {
     try {
       await axios.put(`${API_URL}/requests/${requestId}/start`);
       fetchRequests();
     } catch (err) {
-      alert('Erro ao iniciar trabalho');
-      console.error(err);
+      alert('Erro: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  // Concluir trabalho
   const handleComplete = async (requestId) => {
     try {
       await axios.put(`${API_URL}/requests/${requestId}/complete`);
       fetchRequests();
     } catch (err) {
-      alert('Erro ao concluir trabalho');
-      console.error(err);
+      alert('Erro: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  // Cancelar solicitação
   const handleCancel = async (requestId) => {
     const reason = prompt('Motivo do cancelamento (mínimo 10 caracteres):');
     if (!reason || reason.length < 10) {
@@ -102,12 +128,10 @@ const RequestsScreen = (props) => {
       fetchRequests();
       setSelectedRequest(null);
     } catch (err) {
-      alert('Erro ao cancelar solicitação');
-      console.error(err);
+      alert('Erro: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  // Status Config
   const statusConfig = {
     pending: { 
       color: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
@@ -141,7 +165,6 @@ const RequestsScreen = (props) => {
     }
   };
 
-  // Filtros
   const filters = [
     { id: 'all', label: 'Todas' },
     { id: 'pending', label: 'Pendentes' },
@@ -196,7 +219,7 @@ const RequestsScreen = (props) => {
               className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
                 filter === f.id
                   ? 'bg-blue-500 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >
               {f.label}
@@ -206,30 +229,39 @@ const RequestsScreen = (props) => {
 
         {/* Erro */}
         {error && (
-          <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg mb-4">
-            {error}
+          <div className="bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg mb-4">
+            <p className="font-bold">❌ Erro</p>
+            <p>{error}</p>
             <button 
               onClick={fetchRequests}
-              className="block mt-2 text-sm underline"
+              className="mt-2 text-sm underline"
             >
               Tentar novamente
             </button>
           </div>
         )}
 
-        {/* Lista de Solicitações */}
+        {/* Lista */}
         {requests.length === 0 ? (
           <div className="text-center py-12">
-            <Clock size={64} className="mx-auto text-gray-400 dark:text-gray-600 mb-4" />
+            <Clock size={64} className="mx-auto text-gray-400 mb-4" />
             <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
               Nenhuma solicitação
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
               {filter === 'all' 
                 ? 'Você ainda não tem solicitações' 
                 : `Nenhuma solicitação ${filters.find(f => f.id === filter)?.label.toLowerCase()}`
               }
             </p>
+            {props.userType === 'client' && (
+              <button
+                onClick={() => props.setCurrentScreen('createRequest')}
+                className="bg-blue-500 text-white px-6 py-3 rounded-xl font-bold"
+              >
+                ➕ Criar Solicitação
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
@@ -239,28 +271,19 @@ const RequestsScreen = (props) => {
               const isProvider = props.userType === 'provider';
               const otherUser = isProvider ? request.requester : request.provider;
 
-              // Se otherUser for null, pular este request
-              if (!otherUser) {
-                console.warn('Request sem usuário associado:', request._id);
-                return null;
-              }
+              if (!otherUser) return null;
 
               return (
                 <div 
                   key={request._id}
                   onClick={() => setSelectedRequest(request)}
-                  className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-transparent dark:border-gray-700 hover:shadow-md transition-all cursor-pointer"
+                  className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer"
                 >
-                  {/* Header */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-start space-x-3 flex-1">
-                      <div className="text-3xl">
-                        {otherUser?.avatar || '👤'}
-                      </div>
+                      <div className="text-3xl">{otherUser?.avatar || '👤'}</div>
                       <div className="flex-1">
-                        <h3 className="font-bold text-gray-800 dark:text-white">
-                          {request.title}
-                        </h3>
+                        <h3 className="font-bold text-gray-800 dark:text-white">{request.title}</h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           {isProvider ? 'De: ' : 'Para: '}{otherUser?.name || 'Usuário'}
                         </p>
@@ -272,7 +295,6 @@ const RequestsScreen = (props) => {
                     </span>
                   </div>
 
-                  {/* Info */}
                   <div className="space-y-2">
                     <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                       <MapPin size={16} className="mr-2" />
@@ -290,21 +312,20 @@ const RequestsScreen = (props) => {
                     )}
                   </div>
 
-                  {/* Actions */}
                   {isProvider && request.status === 'pending' && (
                     <div className="flex space-x-2 mt-4" onClick={(e) => e.stopPropagation()}>
                       <button 
                         onClick={() => handleAccept(request._id)}
-                        className="flex-1 bg-green-500 dark:bg-green-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-green-600 dark:hover:bg-green-700 transition-colors"
+                        className="flex-1 bg-green-500 text-white py-2 rounded-lg text-sm font-semibold"
                       >
                         Aceitar
                       </button>
                       <button 
                         onClick={() => {
-                          const reason = prompt('Motivo da rejeição (opcional):');
-                          handleReject(request._id, reason || '');
+                          const reason = prompt('Motivo da rejeição:');
+                          if (reason) handleReject(request._id, reason);
                         }}
-                        className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                        className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm font-semibold"
                       >
                         Recusar
                       </button>
@@ -326,33 +347,19 @@ const RequestsScreen = (props) => {
   );
 };
 
-// Componente de Detalhes
-const RequestDetails = ({ 
-  request, 
-  onBack, 
-  onAccept, 
-  onReject, 
-  onStart, 
-  onComplete, 
-  onCancel,
-  userType,
-  ...props 
-}) => {
+// Componente de detalhes (continua igual...)
+const RequestDetails = ({ request, onBack, onAccept, onReject, onStart, onComplete, onCancel, userType, ...props }) => {
   const isProvider = userType === 'provider';
   const otherUser = isProvider ? request.requester : request.provider;
 
-  // Se não tiver otherUser, mostrar erro
   if (!otherUser) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-        <button 
-          onClick={onBack}
-          className="mb-4 text-blue-600 dark:text-blue-400 flex items-center space-x-1 font-semibold"
-        >
+        <button onClick={onBack} className="mb-4 text-blue-600 flex items-center space-x-1">
           <ChevronLeft size={20} />
           <span>Voltar</span>
         </button>
-        <div className="bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 p-4 rounded-xl">
+        <div className="bg-red-100 text-red-700 p-4 rounded-xl">
           Erro: Dados do usuário não encontrados
         </div>
       </div>
@@ -360,76 +367,41 @@ const RequestDetails = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-      <Header 
-        title="Detalhes da Solicitação" 
-        menuOpen={props.menuOpen}
-        setMenuOpen={props.setMenuOpen}
-        setCurrentScreen={props.setCurrentScreen}
-        darkMode={props.darkMode}
-        setDarkMode={props.setDarkMode}
-      />
-
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Header title="Detalhes" {...props} />
       <div className="p-4 pb-20">
-        <button 
-          onClick={onBack}
-          className="mb-4 text-blue-600 dark:text-blue-400 flex items-center space-x-1 font-semibold"
-        >
+        <button onClick={onBack} className="mb-4 text-blue-600 flex items-center space-x-1">
           <ChevronLeft size={20} />
           <span>Voltar</span>
         </button>
 
-        {/* Cabeçalho */}
-        <div className="bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 rounded-2xl p-6 text-white mb-4 shadow-lg">
-          <div className="flex items-center space-x-4 mb-4">
+        <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-6 text-white mb-4">
+          <div className="flex items-center space-x-4">
             <div className="text-5xl">{otherUser?.avatar || '👤'}</div>
             <div>
               <h2 className="text-2xl font-bold">{request.title}</h2>
-              <p className="opacity-90">{otherUser?.name || 'Usuário'}</p>
+              <p>{otherUser?.name || 'Usuário'}</p>
               <p className="text-sm opacity-75">{request.category}</p>
             </div>
           </div>
         </div>
 
-        {/* Descrição */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 shadow-sm border border-transparent dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4">
           <h3 className="font-bold text-gray-800 dark:text-white mb-2">Descrição</h3>
           <p className="text-gray-600 dark:text-gray-400">{request.description}</p>
         </div>
 
-        {/* Localização */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 shadow-sm border border-transparent dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4">
           <h3 className="font-bold text-gray-800 dark:text-white mb-2">Localização</h3>
           <p className="text-gray-600 dark:text-gray-400">{request.location.address}</p>
           <p className="text-gray-600 dark:text-gray-400">{request.location.city}, {request.location.state}</p>
         </div>
 
-        {/* Info */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-transparent dark:border-gray-700">
-            <Calendar size={20} className="text-blue-500 mb-2" />
-            <p className="text-sm text-gray-600 dark:text-gray-400">Data</p>
-            <p className="font-bold text-gray-800 dark:text-white">
-              {new Date(request.requestedDate).toLocaleDateString('pt-BR')}
-            </p>
-          </div>
-          {(request.price || request.negotiatedPrice) && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-transparent dark:border-gray-700">
-              <DollarSign size={20} className="text-green-500 mb-2" />
-              <p className="text-sm text-gray-600 dark:text-gray-400">Valor</p>
-              <p className="font-bold text-gray-800 dark:text-white">
-                R$ {request.negotiatedPrice || request.price}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Ações */}
         {isProvider && request.status === 'pending' && (
           <div className="space-y-2">
             <button 
               onClick={() => onAccept(request._id)}
-              className="w-full bg-green-500 text-white py-3 rounded-xl font-bold hover:bg-green-600 transition-colors"
+              className="w-full bg-green-500 text-white py-3 rounded-xl font-bold"
             >
               Aceitar Solicitação
             </button>
@@ -438,7 +410,7 @@ const RequestDetails = ({
                 const reason = prompt('Motivo da rejeição:');
                 if (reason) onReject(request._id, reason);
               }}
-              className="w-full bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 transition-colors"
+              className="w-full bg-red-500 text-white py-3 rounded-xl font-bold"
             >
               Rejeitar
             </button>
@@ -448,7 +420,7 @@ const RequestDetails = ({
         {isProvider && request.status === 'accepted' && (
           <button 
             onClick={() => onStart(request._id)}
-            className="w-full bg-blue-500 text-white py-3 rounded-xl font-bold hover:bg-blue-600 transition-colors"
+            className="w-full bg-blue-500 text-white py-3 rounded-xl font-bold"
           >
             Iniciar Trabalho
           </button>
@@ -457,7 +429,7 @@ const RequestDetails = ({
         {isProvider && request.status === 'in_progress' && (
           <button 
             onClick={() => onComplete(request._id)}
-            className="w-full bg-green-500 text-white py-3 rounded-xl font-bold hover:bg-green-600 transition-colors"
+            className="w-full bg-green-500 text-white py-3 rounded-xl font-bold"
           >
             Concluir Trabalho
           </button>
@@ -466,7 +438,7 @@ const RequestDetails = ({
         {(request.status === 'pending' || request.status === 'accepted' || request.status === 'in_progress') && (
           <button 
             onClick={() => onCancel(request._id)}
-            className="w-full bg-gray-500 text-white py-3 rounded-xl font-bold hover:bg-gray-600 transition-colors mt-2"
+            className="w-full bg-gray-500 text-white py-3 rounded-xl font-bold mt-2"
           >
             Cancelar Solicitação
           </button>

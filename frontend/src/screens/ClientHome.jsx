@@ -27,6 +27,13 @@ const ClientHome = (props) => {
           />
         </div>
 
+        <button 
+            onClick={() => props.setCurrentScreen('createRequest')}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all mb-6"
+        >
+              ➕ Nova Solicitação de Serviço
+        </button>
+
         {/* Categorias */}
         <div className="mb-6">
           <h2 className="text-lg font-bold mb-3 text-gray-800 dark:text-white">Categorias</h2>

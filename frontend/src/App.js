@@ -7,6 +7,7 @@ import JobsList from './screens/JobsList';
 import ProfileScreen from './screens/ProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import RequestsScreen from './screens/RequestsScreen';
+import CreateRequestScreen from './screens/CreateRequestScreen';
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('userSelection');
@@ -43,6 +44,8 @@ const App = () => {
       {currentScreen === 'profile' && <ProfileScreen {...screenProps} />}
       {currentScreen === 'settings' && <SettingsScreen {...screenProps} />}
       {currentScreen === 'requests' && <RequestsScreen {...screenProps} />}
+      {currentScreen === 'createRequest' && <CreateRequestScreen {...screenProps} />}
+
     </div>
   );
 };
