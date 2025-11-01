@@ -23,9 +23,8 @@ const {
   validateRequestId
 } = require('../middleware/validation');
 
-// ========================================
 // MIDDLEWARE DE AUTENTICAÇÃO TEMPORÁRIO
-// ========================================
+
 const tempAuth = (req, res, next) => {
   // Pega o userId do header (simulando autenticação)
   const userId = req.headers['x-user-id'];
@@ -46,9 +45,9 @@ const tempAuth = (req, res, next) => {
   next();
 };
 
-// ========================================
+
 // ROTAS
-// ========================================
+
 
 // Criar nova solicitação
 router.post('/', 

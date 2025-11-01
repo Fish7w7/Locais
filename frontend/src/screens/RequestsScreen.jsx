@@ -15,7 +15,7 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api';
 
-// ⚠️ IDs TEMPORÁRIOS - ATUALIZE APÓS EXECUTAR testRequest.js
+// IDs TEMPORÁRIOS - ATUALIZE APÓS EXECUTAR testRequest.js
 const TEMP_USER_IDS = {
   client: '69054f6a29da97e6e3904761',    // Ana
   provider: '69054f6a29da97e6e3904760',  // João
