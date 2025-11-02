@@ -37,7 +37,7 @@ const Jobs = () => {
       } else if (activeTab === 'my-applications') {
         const res = await jobAPI.getMyApplications();
         setMyApplications(res.data.applications);
-      } else if (activeTab === 'my-proposals' && user.type === 'provider') {
+      } else if (activeTab === 'my-proposals' && (user.type === 'provider' || user.type === 'admin')) {
         const res = await jobAPI.getMyProposals();
         setMyProposals(res.data.proposals);
       } else if (activeTab === 'my-jobs' && user.type === 'company') {
@@ -106,7 +106,7 @@ const Jobs = () => {
           </p>
         </div>
         
-        {user.type === 'company' && (
+        {(user.type === 'company' || user.type === 'admin') && (
           <Button icon={Plus} size="sm">
             Nova Vaga
           </Button>
@@ -139,7 +139,7 @@ const Jobs = () => {
           </button>
         )}
         
-        {user.type === 'provider' && (
+        {(user.type === 'provider' || user.type === 'admin') && (
           <button
             onClick={() => setActiveTab('my-proposals')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${
@@ -152,7 +152,7 @@ const Jobs = () => {
           </button>
         )}
         
-        {user.type === 'company' && (
+        {(user.type === 'company' || user.type === 'admin') && (
           <button
             onClick={() => setActiveTab('my-jobs')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${
@@ -329,7 +329,7 @@ const Jobs = () => {
       )}
 
       {/* Propostas Recebidas (Prestador) */}
-      {activeTab === 'my-proposals' && user.type === 'provider' && (
+      {activeTab === 'my-proposals' && (user.type === 'provider' || user.type === 'admin') && (
         <div className="space-y-3">
           {loading ? (
             <div className="text-center py-12">
@@ -401,7 +401,7 @@ const Jobs = () => {
       )}
 
       {/* Minhas Vagas (Empresa) */}
-      {activeTab === 'my-jobs' && user.type === 'company' && (
+      {activeTab === 'my-jobs' && (user.type === 'company' || user.type === 'admin') && (
         <div className="space-y-3">
           {loading ? (
             <div className="text-center py-12">

@@ -1,13 +1,19 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 
+// Layouts
 import Layout from './components/Layout';
+
+// Pages
 import Home from './pages/Home';
 import Services from './pages/Services';
 import Jobs from './pages/Jobs';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
+import SetupAdmin from './pages/Setup.Admin';
+import Login from './pages/Login';
 
+// Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   
@@ -29,12 +35,13 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={
-          <div className="min-h-screen flex items-center justify-center">
-            <h1 className="text-2xl">Tela de Login (em desenvolvimento)</h1>
-          </div>
-        } />
+        {/* Rota de Setup Admin - apenas desenvolvimento */}
+        <Route path="/setup-admin" element={<SetupAdmin />} />
         
+        {/* Rota de Login */}
+        <Route path="/login" element={<Login />} />
+        
+        {/* Rotas Protegidas */}
         <Route path="/" element={
           <ProtectedRoute>
             <Layout />
@@ -46,6 +53,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
         </Route>
         
+        {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

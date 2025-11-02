@@ -60,6 +60,7 @@ export const register = async (req, res) => {
         email: user.email,
         phone: user.phone,
         type: user.type,
+        role: user.role,
         avatar: user.avatar
       }
     });
@@ -119,6 +120,7 @@ export const login = async (req, res) => {
         email: user.email,
         phone: user.phone,
         type: user.type,
+        role: user.role,
         avatar: user.avatar,
         isAvailableAsProvider: user.isAvailableAsProvider
       }

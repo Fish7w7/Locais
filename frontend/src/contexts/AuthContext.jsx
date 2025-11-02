@@ -12,17 +12,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  // TEMPORÁRIO: Usuário fake para testes
-  const [user, setUser] = useState({
-    id: '123',
-    name: 'João Silva',
-    email: 'joao@teste.com',
-    phone: '(21) 99999-9999',
-    type: 'client', // mude para 'provider' ou 'company' para testar
-    avatar: null,
-    clientRating: 4.5,
-    clientReviewCount: 10
-  });
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('token'));
 

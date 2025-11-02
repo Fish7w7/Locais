@@ -27,15 +27,21 @@ const UserSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['client', 'provider', 'company'],
+    enum: ['client', 'provider', 'company', 'admin'],
     required: true,
     default: 'client'
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
   },
   avatar: {
     type: String,
     default: null
   },
   
+  // Avaliações como prestador
   providerRating: {
     type: Number,
     default: 0,
@@ -47,6 +53,7 @@ const UserSchema = new mongoose.Schema({
     default: 0
   },
   
+  // Avaliações como cliente
   clientRating: {
     type: Number,
     default: 0,
@@ -58,6 +65,7 @@ const UserSchema = new mongoose.Schema({
     default: 0
   },
   
+  // Campos específicos para PRESTADOR
   category: {
     type: String,
     default: null
@@ -78,6 +86,7 @@ const UserSchema = new mongoose.Schema({
     default: null
   },
   
+  // Campos específicos para EMPRESA
   cnpj: {
     type: String,
     default: null,
@@ -89,6 +98,7 @@ const UserSchema = new mongoose.Schema({
     default: null
   },
   
+  // Localização
   city: {
     type: String,
     default: null
@@ -106,6 +116,7 @@ const UserSchema = new mongoose.Schema({
   timestamps: true 
 });
 
+// Hash password antes de salvar
 UserSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
@@ -114,10 +125,12 @@ UserSchema.pre('save', async function(next) {
   next();
 });
 
+// Método para comparar senha
 UserSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
+// Método para converter cliente em prestador
 UserSchema.methods.upgradeToProvider = function(providerData) {
   if (this.type === 'company') {
     throw new Error('Empresas não podem ser prestadores');

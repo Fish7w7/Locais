@@ -52,6 +52,24 @@ const Home = () => {
         </div>
       </div>
 
+      {user?.type === 'admin' && (
+  <>
+    <button className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-lg p-4 flex items-center gap-3 transition-colors">
+      <Briefcase className="w-5 h-5" />
+      <span className="font-medium">Gerenciar Vagas</span>
+    </button>
+    <button className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors">
+      <Search className="w-5 h-5" />
+      <span className="font-medium">Gerenciar Serviços</span>
+    </button>
+    <button className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors">
+      <TrendingUp className="w-5 h-5" />
+      <span className="font-medium">Painel Admin</span>
+    </button>
+  </>
+)}
+
+
       {/* Actions based on user type */}
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">

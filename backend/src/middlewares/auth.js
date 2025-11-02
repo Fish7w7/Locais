@@ -35,8 +35,15 @@ export const protect = async (req, res, next) => {
   }
 };
 
+// Middleware para verificar tipo de usuário
+// ADMIN TEM ACESSO A TUDO!
 export const authorize = (...types) => {
   return (req, res, next) => {
+    // Admin bypassa todas as verificações de tipo
+    if (req.user.type === 'admin' || req.user.role === 'admin') {
+      return next();
+    }
+    
     if (!types.includes(req.user.type)) {
       return res.status(403).json({
         success: false,
@@ -45,4 +52,15 @@ export const authorize = (...types) => {
     }
     next();
   };
+};
+
+// Middleware específico para admin
+export const adminOnly = (req, res, next) => {
+  if (req.user.role !== 'admin' && req.user.type !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Apenas administradores podem acessar esta rota'
+    });
+  }
+  next();
 };

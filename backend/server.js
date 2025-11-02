@@ -9,6 +9,7 @@ import authRoutes from './src/routes/auth.js';
 import userRoutes from './src/routes/user.js';
 import serviceRoutes from './src/routes/service.js';
 import jobRoutes from './src/routes/job.js';
+import adminRoutes from './src/routes/admin.js';
 
 dotenv.config();
 
@@ -38,10 +39,47 @@ app.get('/', (req, res) => {
   });
 });
 
- app.use('/api/auth', authRoutes);
- app.use('/api/users', userRoutes);
- app.use('/api/services', serviceRoutes);
- app.use('/api/jobs', jobRoutes);
+// ⚠️ ROTA TEMPORÁRIA - REMOVER DEPOIS
+app.delete('/api/dev/clear-users', async (req, res) => {
+  try {
+    const User = (await import('./src/models/User.js')).default;
+    const result = await User.deleteMany({});
+    res.json({ 
+      success: true, 
+      message: `${result.deletedCount} usuários deletados`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+});
+
+
+app.get('/api/dev/clear-users', async (req, res) => {
+  try {
+    const User = (await import('./src/models/User.js')).default;
+    const result = await User.deleteMany({});
+    res.json({ 
+      success: true, 
+      message: `${result.deletedCount} usuários deletados`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+});
+
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/services', serviceRoutes);
+app.use('/api/jobs', jobRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Error Handler
 app.use((err, req, res, next) => {
@@ -53,7 +91,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 Handler
+// 404 Handler (DEVE SER O ÚLTIMO)
 app.use((req, res) => {
   res.status(404).json({ 
     success: false,

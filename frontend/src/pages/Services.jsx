@@ -43,7 +43,7 @@ const Services = () => {
       } else if (activeTab === 'my-requests') {
         const res = await serviceAPI.getMyRequests();
         setMyRequests(res.data.requests);
-      } else if (activeTab === 'received' && user.type === 'provider') {
+      } else if (activeTab === 'received' && (user.type === 'provider' || user.type === 'admin')) {
         const res = await serviceAPI.getReceivedServices();
         setReceivedServices(res.data.services);
       }
@@ -119,7 +119,7 @@ const Services = () => {
         >
           Minhas Solicitações
         </button>
-        {user.type === 'provider' && (
+        {(user.type === 'provider' || user.type === 'admin') && (
           <button
             onClick={() => setActiveTab('received')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${
@@ -282,7 +282,7 @@ const Services = () => {
       )}
 
       {/* Serviços Recebidos (Prestador) */}
-      {activeTab === 'received' && user.type === 'provider' && (
+      {activeTab === 'received' && (user.type === 'provider' || user.type === 'admin') && (
         <div className="space-y-3">
           {loading ? (
             <div className="text-center py-12">
