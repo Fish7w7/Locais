@@ -38,10 +38,10 @@ app.get('/', (req, res) => {
   });
 });
 
-// app.use('/api/auth', authRoutes);
-// app.use('/api/users', userRoutes);
-// app.use('/api/services', serviceRoutes);
-// app.use('/api/jobs', jobRoutes);
+ app.use('/api/auth', authRoutes);
+ app.use('/api/users', userRoutes);
+ app.use('/api/services', serviceRoutes);
+ app.use('/api/jobs', jobRoutes);
 
 // Error Handler
 app.use((err, req, res, next) => {
