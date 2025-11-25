@@ -10,7 +10,7 @@ import { protect, adminOnly } from '../middlewares/auth.js';
 
 const router = express.Router();
 
-// Rota pública para criar admin (apenas desenvolvimento)
+// Rota pública para criar admin (apenas desenvolvimento, deve ser removida depois)
 router.post('/create-admin', createAdmin);
 
 // Rotas protegidas (apenas admin)

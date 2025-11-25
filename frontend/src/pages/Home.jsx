@@ -1,16 +1,52 @@
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Briefcase, Search, TrendingUp } from 'lucide-react';
+import { Briefcase, Search, TrendingUp, Users, FileText, Target } from 'lucide-react';
 
 const Home = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const getUserTypeLabel = (type) => {
     const labels = {
       client: 'Cliente',
       provider: 'Prestador',
-      company: 'Empresa'
+      company: 'Empresa',
+      admin: 'Administrador'
     };
     return labels[type] || type;
+  };
+
+  // Funções de navegação
+  const handleBuscarPrestadores = () => {
+    navigate('/services');
+  };
+
+  const handleVerVagas = () => {
+    navigate('/jobs');
+  };
+
+  const handleMeusServicos = () => {
+    navigate('/services', { state: { tab: 'received' } });
+  };
+
+  const handlePropostasRecebidas = () => {
+    navigate('/jobs', { state: { tab: 'my-proposals' } });
+  };
+
+  const handleCriarVaga = () => {
+    navigate('/jobs', { state: { openCreateModal: true } });
+  };
+
+  const handleGerenciarVagas = () => {
+    navigate('/jobs', { state: { tab: 'my-jobs' } });
+  };
+
+  const handleGerenciarServicos = () => {
+    navigate('/services', { state: { tab: 'my-requests' } });
+  };
+
+  const handlePainelAdmin = () => {
+    navigate('/admin');
   };
 
   return (
@@ -52,66 +88,123 @@ const Home = () => {
         </div>
       </div>
 
-      {user?.type === 'admin' && (
-  <>
-    <button className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-lg p-4 flex items-center gap-3 transition-colors">
-      <Briefcase className="w-5 h-5" />
-      <span className="font-medium">Gerenciar Vagas</span>
-    </button>
-    <button className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors">
-      <Search className="w-5 h-5" />
-      <span className="font-medium">Gerenciar Serviços</span>
-    </button>
-    <button className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors">
-      <TrendingUp className="w-5 h-5" />
-      <span className="font-medium">Painel Admin</span>
-    </button>
-  </>
-)}
-
-
-
       {/* Actions based on user type */}
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Ações Rápidas
         </h3>
 
+        {/* ADMIN - Acesso total */}
+        {user?.type === 'admin' && (
+          <>
+            <button 
+              onClick={handleGerenciarVagas}
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-lg p-4 flex items-center gap-3 transition-colors"
+            >
+              <Briefcase className="w-5 h-5" />
+              <span className="font-medium">Gerenciar Vagas</span>
+            </button>
+            <button 
+              onClick={handleGerenciarServicos}
+              className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors"
+            >
+              <Search className="w-5 h-5" />
+              <span className="font-medium">Gerenciar Serviços</span>
+            </button>
+            <button 
+              onClick={handlePainelAdmin}
+              className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors"
+            >
+              <TrendingUp className="w-5 h-5" />
+              <span className="font-medium">Painel Admin</span>
+            </button>
+          </>
+        )}
+
+        {/* CLIENTE */}
         {user?.type === 'client' && (
           <>
-            <button className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-lg p-4 flex items-center gap-3 transition-colors">
+            <button 
+              onClick={handleBuscarPrestadores}
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-lg p-4 flex items-center gap-3 transition-colors"
+            >
               <Search className="w-5 h-5" />
-              <span className="font-medium">Buscar Prestadores</span>
+              <div className="flex-1 text-left">
+                <span className="font-medium block">Buscar Prestadores</span>
+                <span className="text-xs text-primary-100">Encontre profissionais qualificados</span>
+              </div>
             </button>
-            <button className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors">
+            <button 
+              onClick={handleVerVagas}
+              className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors"
+            >
               <Briefcase className="w-5 h-5" />
-              <span className="font-medium">Ver Vagas Disponíveis</span>
+              <div className="flex-1 text-left">
+                <span className="font-medium block">Ver Vagas Disponíveis</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Oportunidades de trabalho</span>
+              </div>
             </button>
           </>
         )}
 
+        {/* PRESTADOR */}
         {user?.type === 'provider' && (
           <>
-            <button className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-lg p-4 flex items-center gap-3 transition-colors">
+            <button 
+              onClick={handleMeusServicos}
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-lg p-4 flex items-center gap-3 transition-colors"
+            >
               <Briefcase className="w-5 h-5" />
-              <span className="font-medium">Meus Serviços</span>
+              <div className="flex-1 text-left">
+                <span className="font-medium block">Meus Serviços</span>
+                <span className="text-xs text-primary-100">Gerencie suas solicitações</span>
+              </div>
             </button>
-            <button className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors">
-              <Search className="w-5 h-5" />
-              <span className="font-medium">Propostas Recebidas</span>
+            <button 
+              onClick={handlePropostasRecebidas}
+              className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors"
+            >
+              <FileText className="w-5 h-5" />
+              <div className="flex-1 text-left">
+                <span className="font-medium block">Propostas Recebidas</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Oportunidades de vagas</span>
+              </div>
             </button>
           </>
         )}
 
+        {/* EMPRESA */}
         {user?.type === 'company' && (
           <>
-            <button className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-lg p-4 flex items-center gap-3 transition-colors">
+            <button 
+              onClick={handleCriarVaga}
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-lg p-4 flex items-center gap-3 transition-colors"
+            >
               <Briefcase className="w-5 h-5" />
-              <span className="font-medium">Criar Nova Vaga</span>
+              <div className="flex-1 text-left">
+                <span className="font-medium block">Criar Nova Vaga</span>
+                <span className="text-xs text-primary-100">Publique oportunidades de trabalho</span>
+              </div>
             </button>
-            <button className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors">
+            <button 
+              onClick={handleBuscarPrestadores}
+              className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors"
+            >
               <Search className="w-5 h-5" />
-              <span className="font-medium">Buscar Prestadores</span>
+              <div className="flex-1 text-left">
+                <span className="font-medium block">Buscar Prestadores</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Encontre profissionais</span>
+              </div>
+            </button>
+            <button 
+              onClick={handleGerenciarVagas}
+              className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors"
+            >
+              <Users className="w-5 h-5" />
+              <div className="flex-1 text-left">
+                <span className="font-medium block">Minhas Vagas</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Gerencie candidaturas</span>
+              </div>
             </button>
           </>
         )}
@@ -128,7 +221,6 @@ const Home = () => {
       </div>
     </div>
   );
-
 };
 
 export default Home;

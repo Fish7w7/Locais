@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, MapPin, Star, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { userAPI, serviceAPI } from '../api/services';
@@ -9,13 +10,18 @@ import CreateServiceModal from '../components/CreateServiceModal';
 
 const Services = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [providers, setProviders] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
   const [receivedServices, setReceivedServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [activeTab, setActiveTab] = useState('providers');
+  
+  // Inicializa activeTab com base no state da navegação
+  const [activeTab, setActiveTab] = useState(() => {
+    return location.state?.tab || 'providers';
+  });
   
   // Modal state
   const [showServiceModal, setShowServiceModal] = useState(false);
@@ -33,6 +39,13 @@ const Services = () => {
     'Mecânico',
     'Outro'
   ];
+
+  // Atualiza activeTab quando recebe novo state de navegação
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     loadData();

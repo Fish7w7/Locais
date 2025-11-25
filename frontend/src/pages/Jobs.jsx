@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Briefcase, MapPin, DollarSign, Clock, Users, Plus, Calendar, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { jobAPI } from '../api/services';
@@ -6,20 +7,32 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import CreateJobModal from '../components/CreateJobModal';
+import ViewCandidatesModal from '../components/ViewCandidatesModal';
+import EditJobModal from '../components/EditJobModal';
 
 const Jobs = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [jobs, setJobs] = useState([]);
   const [myApplications, setMyApplications] = useState([]);
   const [myProposals, setMyProposals] = useState([]);
   const [myCompanyJobs, setMyCompanyJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('available');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('');
   
+  // Inicializa activeTab com base no state da navegação
+  const [activeTab, setActiveTab] = useState(() => {
+    return location.state?.tab || 'available';
+  });
+  
   // Modal state
-  const [showCreateJobModal, setShowCreateJobModal] = useState(false);
+  const [showCreateJobModal, setShowCreateJobModal] = useState(() => {
+    return location.state?.openCreateModal || false;
+  });
+  const [showCandidatesModal, setShowCandidatesModal] = useState(false);
+  const [showEditJobModal, setShowEditJobModal] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
 
   const jobTypes = {
     temporary: 'Temporária',
@@ -27,9 +40,19 @@ const Jobs = () => {
     permanent: 'Efetiva'
   };
 
+  // Atualiza activeTab quando recebe novo state de navegação
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab);
+    }
+    if (location.state?.openCreateModal) {
+      setShowCreateJobModal(true);
+    }
+  }, [location.state]);
+
   useEffect(() => {
     loadData();
-  }, [activeTab]);
+  }, [activeTab, selectedType]);
 
   const loadData = async () => {
     try {
@@ -37,16 +60,18 @@ const Jobs = () => {
       
       if (activeTab === 'available') {
         const res = await jobAPI.getJobs({ type: selectedType });
-        setJobs(res.data.jobs);
+        setJobs(res.data.jobs || []);
       } else if (activeTab === 'my-applications') {
         const res = await jobAPI.getMyApplications();
-        setMyApplications(res.data.applications);
-      } else if (activeTab === 'my-proposals' && (user.type === 'provider' || user.type === 'admin')) {
+        setMyApplications(res.data.applications || []);
+      } else if (activeTab === 'my-proposals' && (user?.type === 'provider' || user?.type === 'admin')) {
         const res = await jobAPI.getMyProposals();
-        setMyProposals(res.data.proposals);
-      } else if (activeTab === 'my-jobs' && (user.type === 'company' || user.type === 'admin')) {
+        setMyProposals(res.data.proposals || []);
+      } else if (activeTab === 'my-jobs' && (user?.type === 'company' || user?.type === 'admin')) {
         const res = await jobAPI.getJobs();
-        const companyJobs = res.data.jobs.filter(job => job.companyId._id === user.id);
+        const companyJobs = (res.data.jobs || []).filter(job => 
+          job.companyId?._id === user.id
+        );
         setMyCompanyJobs(companyJobs);
       }
     } catch (error) {
@@ -117,9 +142,31 @@ const Jobs = () => {
   };
 
   const filteredJobs = jobs.filter(job =>
-    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.category.toLowerCase().includes(searchTerm.toLowerCase())
+    job?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job?.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Helper para obter nome da empresa com segurança
+  const getCompanyName = (job) => {
+    return job?.companyId?.name || 'Empresa não identificada';
+  };
+
+  // Helper para obter avatar da empresa com segurança
+  const getCompanyAvatar = (job) => {
+    const companyName = getCompanyName(job);
+    return job?.companyId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}&background=random`;
+  };
+
+  // Funções para abrir modals
+  const handleViewCandidates = (job) => {
+    setSelectedJob(job);
+    setShowCandidatesModal(true);
+  };
+
+  const handleEditJob = (job) => {
+    setSelectedJob(job);
+    setShowEditJobModal(true);
+  };
 
   return (
     <div className="space-y-4">
@@ -130,14 +177,14 @@ const Jobs = () => {
             Vagas
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {user.type === 'company' && 'Gerencie suas vagas e candidatos'}
-            {user.type === 'provider' && 'Veja propostas de empresas'}
-            {user.type === 'client' && 'Encontre oportunidades de trabalho'}
-            {user.type === 'admin' && 'Gerencie todas as vagas'}
+            {user?.type === 'company' && 'Gerencie suas vagas e candidatos'}
+            {user?.type === 'provider' && 'Veja propostas de empresas'}
+            {user?.type === 'client' && 'Encontre oportunidades de trabalho'}
+            {user?.type === 'admin' && 'Gerencie todas as vagas'}
           </p>
         </div>
         
-        {(user.type === 'company' || user.type === 'admin') && (
+        {(user?.type === 'company' || user?.type === 'admin') && (
           <Button 
             icon={Plus} 
             size="sm"
@@ -161,7 +208,7 @@ const Jobs = () => {
           Vagas Disponíveis
         </button>
         
-        {(user.type === 'client' || user.type === 'admin') && (
+        {(user?.type === 'client' || user?.type === 'admin') && (
           <button
             onClick={() => setActiveTab('my-applications')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${
@@ -174,7 +221,7 @@ const Jobs = () => {
           </button>
         )}
         
-        {(user.type === 'provider' || user.type === 'admin') && (
+        {(user?.type === 'provider' || user?.type === 'admin') && (
           <button
             onClick={() => setActiveTab('my-proposals')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${
@@ -187,7 +234,7 @@ const Jobs = () => {
           </button>
         )}
         
-        {(user.type === 'company' || user.type === 'admin') && (
+        {(user?.type === 'company' || user?.type === 'admin') && (
           <button
             onClick={() => setActiveTab('my-jobs')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${
@@ -257,8 +304,8 @@ const Jobs = () => {
                 <Card key={job._id} hoverable>
                   <div className="flex items-start gap-3 mb-3">
                     <img
-                      src={job.companyId.avatar || `https://ui-avatars.com/api/?name=${job.companyId.name}&background=random`}
-                      alt={job.companyId.name}
+                      src={getCompanyAvatar(job)}
+                      alt={getCompanyName(job)}
                       className="w-12 h-12 rounded-lg object-cover"
                     />
                     <div className="flex-1 min-w-0">
@@ -266,7 +313,7 @@ const Jobs = () => {
                         {job.title}
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {job.companyId.name}
+                        {getCompanyName(job)}
                       </p>
                     </div>
                     <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200">
@@ -291,11 +338,11 @@ const Jobs = () => {
                     )}
                     <div className="flex items-center gap-1">
                       <Users className="w-4 h-4" />
-                      {job.applicationsCount} candidatos
+                      {job.applicationsCount || 0} candidatos
                     </div>
                   </div>
 
-                  {(user.type === 'client' || user.type === 'admin') && (
+                  {(user?.type === 'client' || user?.type === 'admin') && (
                     <Button 
                       variant="primary" 
                       fullWidth 
@@ -331,10 +378,10 @@ const Jobs = () => {
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900 dark:text-white">
-                      {application.jobId.title}
+                      {application.jobId?.title || 'Vaga não encontrada'}
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {application.jobId.companyId.name}
+                      {application.jobId?.companyId?.name || 'Empresa não identificada'}
                     </p>
                   </div>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
@@ -364,7 +411,7 @@ const Jobs = () => {
       )}
 
       {/* Propostas Recebidas (Prestador) */}
-      {activeTab === 'my-proposals' && (user.type === 'provider' || user.type === 'admin') && (
+      {activeTab === 'my-proposals' && (user?.type === 'provider' || user?.type === 'admin') && (
         <div className="space-y-3">
           {loading ? (
             <div className="text-center py-12">
@@ -382,10 +429,10 @@ const Jobs = () => {
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900 dark:text-white">
-                      {proposal.jobId.title}
+                      {proposal.jobId?.title || 'Vaga não encontrada'}
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {proposal.companyId.name}
+                      {proposal.companyId?.name || 'Empresa não identificada'}
                     </p>
                   </div>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(proposal.status)}`}>
@@ -448,7 +495,7 @@ const Jobs = () => {
       )}
 
       {/* Minhas Vagas (Empresa) */}
-      {activeTab === 'my-jobs' && (user.type === 'company' || user.type === 'admin') && (
+      {activeTab === 'my-jobs' && (user?.type === 'company' || user?.type === 'admin') && (
         <div className="space-y-3">
           {loading ? (
             <div className="text-center py-12">
@@ -492,7 +539,7 @@ const Jobs = () => {
                 <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400 mb-3">
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
-                    {job.applicationsCount} candidaturas
+                    {job.applicationsCount || 0} candidaturas
                   </div>
                   <div className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
@@ -501,10 +548,19 @@ const Jobs = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="secondary" fullWidth size="sm">
-                    Ver Candidatos ({job.applicationsCount})
+                  <Button 
+                    variant="secondary" 
+                    fullWidth 
+                    size="sm"
+                    onClick={() => handleViewCandidates(job)}
+                  >
+                    Ver Candidatos ({job.applicationsCount || 0})
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleEditJob(job)}
+                  >
                     Editar
                   </Button>
                 </div>
@@ -518,6 +574,27 @@ const Jobs = () => {
       <CreateJobModal
         isOpen={showCreateJobModal}
         onClose={() => setShowCreateJobModal(false)}
+        onSuccess={loadData}
+      />
+
+      {/* Modal Ver Candidatos */}
+      <ViewCandidatesModal
+        isOpen={showCandidatesModal}
+        onClose={() => {
+          setShowCandidatesModal(false);
+          setSelectedJob(null);
+        }}
+        job={selectedJob}
+      />
+
+      {/* Modal Editar Vaga */}
+      <EditJobModal
+        isOpen={showEditJobModal}
+        onClose={() => {
+          setShowEditJobModal(false);
+          setSelectedJob(null);
+        }}
+        job={selectedJob}
         onSuccess={loadData}
       />
     </div>

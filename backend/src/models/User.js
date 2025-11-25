@@ -86,12 +86,8 @@ const UserSchema = new mongoose.Schema({
     default: null
   },
   
-  // Campos específicos para EMPRESA
   cnpj: {
     type: String,
-    default: null,
-    unique: true,
-    sparse: true
   },
   companyDescription: {
     type: String,
@@ -115,6 +111,22 @@ const UserSchema = new mongoose.Schema({
 }, { 
   timestamps: true 
 });
+
+// Índice SPARSE para CNPJ
+// Com sparse: true, apenas documentos onde cnpj EXISTE serão indexados
+// Se cnpj for undefined (não enviado), o documento é ignorado pelo índice
+UserSchema.index({ cnpj: 1 }, { unique: true, sparse: true });
+
+// Estou deixando isso aqui para vc caso aconteca algum bug na hora de criar uma novo usuario
+// Usar Partial Filter Expression (mais robusto)
+// Descomente se o sparse não funcionar:
+// UserSchema.index(
+//   { cnpj: 1 }, 
+//   { 
+//     unique: true, 
+//     partialFilterExpression: { cnpj: { $type: 'string' } } 
+//   }
+// );
 
 // Hash password antes de salvar
 UserSchema.pre('save', async function(next) {
@@ -145,4 +157,5 @@ UserSchema.methods.upgradeToProvider = function(providerData) {
   return this.save();
 };
 
-export default mongoose.model('User', UserSchema);
+// Evitar recompilação do modelo
+export default mongoose.models.User || mongoose.model('User', UserSchema);

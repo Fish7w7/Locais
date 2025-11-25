@@ -36,20 +36,25 @@ export const protect = async (req, res, next) => {
 };
 
 // Middleware para verificar tipo de usuário
-// ADMIN TEM ACESSO A TUDO!
+// ⚠️ ADMIN TEM ACESSO A TUDO!
 export const authorize = (...types) => {
   return (req, res, next) => {
-    // Admin bypassa todas as verificações de tipo
+    // Admin bypassa TODAS as verificações de tipo
     if (req.user.type === 'admin' || req.user.role === 'admin') {
+      console.log('✅ Admin bypass - Acesso concedido'); // Debug
       return next();
     }
     
+    // Se não for admin, verifica o tipo normalmente
     if (!types.includes(req.user.type)) {
+      console.log(`❌ Acesso negado: usuário ${req.user.type} tentou acessar rota [${types.join(', ')}]`); // Debug
       return res.status(403).json({
         success: false,
         message: `Tipo de usuário ${req.user.type} não tem permissão para acessar esta rota`
       });
     }
+    
+    console.log(`✅ Acesso concedido: ${req.user.type}`); // Debug
     next();
   };
 };

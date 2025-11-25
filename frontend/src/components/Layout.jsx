@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Briefcase, Search, User, Moon, Sun } from 'lucide-react';
+import { Home, Briefcase, Search, User, Moon, Sun, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -9,12 +9,19 @@ const Layout = () => {
   const { user } = useAuth();
   const { darkMode, toggleTheme } = useTheme();
 
+  const isAdmin = user?.type === 'admin' || user?.role === 'admin';
+
   const navItems = [
     { path: '/', icon: Home, label: 'Início' },
     { path: '/services', icon: Search, label: 'Serviços' },
     { path: '/jobs', icon: Briefcase, label: 'Vagas' },
     { path: '/profile', icon: User, label: 'Perfil' },
   ];
+
+  // Adiciona aba Admin se for admin
+  if (isAdmin) {
+    navItems.push({ path: '/admin', icon: Shield, label: 'Admin' });
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
@@ -25,17 +32,31 @@ const Layout = () => {
             Serviços Locais
           </h1>
           
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-            aria-label="Alternar tema"
-          >
-            {darkMode ? (
-              <Sun className="w-5 h-5 text-yellow-500" />
-            ) : (
-              <Moon className="w-5 h-5 text-gray-600" />
+          <div className="flex items-center gap-2">
+            {/* Admin Badge */}
+            {isAdmin && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="flex items-center gap-1 px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 text-xs font-medium hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors"
+              >
+                <Shield className="w-3 h-3" />
+                <span className="hidden sm:inline">Admin</span>
+              </button>
             )}
-          </button>
+            
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+              aria-label="Alternar tema"
+            >
+              {darkMode ? (
+                <Sun className="w-5 h-5 text-yellow-500" />
+              ) : (
+                <Moon className="w-5 h-5 text-gray-600" />
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -73,6 +94,5 @@ const Layout = () => {
     </div>
   );
 };
-
 
 export default Layout;

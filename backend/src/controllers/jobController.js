@@ -1,4 +1,3 @@
-
 import JobVacancy from '../models/JobVacancy.js';
 import Application from '../models/Application.js';
 import JobProposal from '../models/JobProposal.js';
@@ -120,7 +119,7 @@ export const getJobById = async (req, res) => {
 
 // @desc    Atualizar vaga
 // @route   PUT /api/jobs/:id
-// @access  Private (apenas empresa dona da vaga)
+// @access  Private (apenas empresa dona da vaga OU admin)
 export const updateJob = async (req, res) => {
   try {
     const job = await JobVacancy.findById(req.params.id);
@@ -132,7 +131,10 @@ export const updateJob = async (req, res) => {
       });
     }
 
-    if (job.companyId.toString() !== req.user.id) {
+    const isAdmin = req.user.type === 'admin' || req.user.role === 'admin';
+    const isOwner = job.companyId.toString() === req.user.id;
+
+    if (!isAdmin && !isOwner) {
       return res.status(403).json({
         success: false,
         message: 'Sem permissão para editar esta vaga'
@@ -161,7 +163,7 @@ export const updateJob = async (req, res) => {
 
 // @desc    Deletar vaga
 // @route   DELETE /api/jobs/:id
-// @access  Private (apenas empresa dona da vaga)
+// @access  Private (apenas empresa dona da vaga OU admin)
 export const deleteJob = async (req, res) => {
   try {
     const job = await JobVacancy.findById(req.params.id);
@@ -173,7 +175,10 @@ export const deleteJob = async (req, res) => {
       });
     }
 
-    if (job.companyId.toString() !== req.user.id) {
+    const isAdmin = req.user.type === 'admin' || req.user.role === 'admin';
+    const isOwner = job.companyId.toString() === req.user.id;
+
+    if (!isAdmin && !isOwner) {
       return res.status(403).json({
         success: false,
         message: 'Sem permissão para deletar esta vaga'
@@ -220,7 +225,6 @@ export const applyToJob = async (req, res) => {
       });
     }
 
-    // Verificar se já se candidatou
     const existingApplication = await Application.findOne({
       jobId,
       applicantId: req.user.id
@@ -240,7 +244,6 @@ export const applyToJob = async (req, res) => {
       resume
     });
 
-    // Incrementar contador de candidaturas
     job.applicationsCount += 1;
     await job.save();
 
@@ -291,7 +294,7 @@ export const getMyApplications = async (req, res) => {
 
 // @desc    Obter candidaturas de uma vaga
 // @route   GET /api/jobs/:id/applications
-// @access  Private (apenas empresa dona da vaga)
+// @access  Private (apenas empresa dona da vaga OU admin)
 export const getJobApplications = async (req, res) => {
   try {
     const job = await JobVacancy.findById(req.params.id);
@@ -303,16 +306,32 @@ export const getJobApplications = async (req, res) => {
       });
     }
 
-    if (job.companyId.toString() !== req.user.id) {
+    const isAdmin = req.user.type === 'admin' || req.user.role === 'admin';
+    const isOwner = job.companyId.toString() === req.user.id;
+
+    console.log('🔍 Verificando permissão:');
+    console.log('   User ID:', req.user.id);
+    console.log('   User Type:', req.user.type);
+    console.log('   User Role:', req.user.role);
+    console.log('   Job Company ID:', job.companyId.toString());
+    console.log('   Is Admin?', isAdmin);
+    console.log('   Is Owner?', isOwner);
+
+    if (!isAdmin && !isOwner) {
+      console.log('❌ Acesso negado - Nem admin nem dono');
       return res.status(403).json({
         success: false,
         message: 'Sem permissão para ver candidaturas desta vaga'
       });
     }
 
+    console.log('✅ Acesso permitido - Buscando candidatos');
+
     const applications = await Application.find({ jobId: req.params.id })
-      .populate('applicantId', 'name email phone avatar clientRating clientReviewCount')
+      .populate('applicantId', 'name email phone avatar city state clientRating clientReviewCount')
       .sort('-createdAt');
+
+    console.log(`📊 Encontradas ${applications.length} candidaturas`);
 
     res.json({
       success: true,
@@ -320,7 +339,7 @@ export const getJobApplications = async (req, res) => {
       applications
     });
   } catch (error) {
-    console.error('Erro ao buscar candidaturas:', error);
+    console.error('❌ Erro ao buscar candidaturas:', error);
     res.status(500).json({
       success: false,
       message: 'Erro ao buscar candidaturas',
@@ -331,7 +350,7 @@ export const getJobApplications = async (req, res) => {
 
 // @desc    Atualizar status de candidatura
 // @route   PUT /api/jobs/applications/:id
-// @access  Private (apenas empresa)
+// @access  Private (apenas empresa OU admin)
 export const updateApplicationStatus = async (req, res) => {
   try {
     const { status, companyResponse } = req.body;
@@ -345,7 +364,10 @@ export const updateApplicationStatus = async (req, res) => {
       });
     }
 
-    if (application.jobId.companyId.toString() !== req.user.id) {
+    const isAdmin = req.user.type === 'admin' || req.user.role === 'admin';
+    const isOwner = application.jobId.companyId.toString() === req.user.id;
+
+    if (!isAdmin && !isOwner) {
       return res.status(403).json({
         success: false,
         message: 'Sem permissão para atualizar esta candidatura'
@@ -393,7 +415,10 @@ export const proposeToProvider = async (req, res) => {
       });
     }
 
-    if (job.companyId.toString() !== req.user.id) {
+    const isAdmin = req.user.type === 'admin' || req.user.role === 'admin';
+    const isOwner = job.companyId.toString() === req.user.id;
+
+    if (!isAdmin && !isOwner) {
       return res.status(403).json({
         success: false,
         message: 'Sem permissão para enviar proposta por esta vaga'

@@ -1,6 +1,5 @@
 import api from './axios';
 
-
 // AUTH
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
