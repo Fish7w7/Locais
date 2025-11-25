@@ -281,6 +281,7 @@ const Services = () => {
         </div>
       )}
 
+
       {/* Serviços Recebidos (Prestador) */}
       {activeTab === 'received' && (user.type === 'provider' || user.type === 'admin') && (
         <div className="space-y-3">

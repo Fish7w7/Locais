@@ -1,3 +1,4 @@
+
 import JobVacancy from '../models/JobVacancy.js';
 import Application from '../models/Application.js';
 import JobProposal from '../models/JobProposal.js';

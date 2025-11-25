@@ -1,3 +1,4 @@
+
 import mongoose from 'mongoose';
 
 const ApplicationSchema = new mongoose.Schema({

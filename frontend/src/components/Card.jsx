@@ -10,4 +10,5 @@ const Card = ({ children, className = '', padding = true, hoverable = false }) =
   );
 };
 
+
 export default Card;

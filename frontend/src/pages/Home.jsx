@@ -70,6 +70,7 @@ const Home = () => {
 )}
 
 
+
       {/* Actions based on user type */}
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -127,6 +128,7 @@ const Home = () => {
       </div>
     </div>
   );
+
 };
 
 export default Home;

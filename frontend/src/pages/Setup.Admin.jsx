@@ -18,6 +18,7 @@ const SetupAdmin = () => {
     setSuccess(false);
   };
 
+  
   const createAdmin = async () => {
     setLoading(true);
     setError('');

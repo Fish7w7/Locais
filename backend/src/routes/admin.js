@@ -19,4 +19,5 @@ router.get('/stats', protect, adminOnly, getStats);
 router.delete('/users/:id', protect, adminOnly, deleteUser);
 router.put('/users/:id', protect, adminOnly, updateUser);
 
+
 export default router;

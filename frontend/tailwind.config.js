@@ -23,6 +23,12 @@ export default {
       },
       maxWidth: {
         'mobile': '480px'
+      },
+      animation: {
+        'spin-slow': 'spin 3s linear infinite',
+      },
+      screens: {
+        'xs': '360px',
       }
     },
   },
