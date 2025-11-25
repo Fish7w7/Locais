@@ -132,7 +132,7 @@ FRONTEND_URL=http://localhost:5173
 - [x] Propostas para prestadores (Empresas)
 - [x] Tema claro/escuro
 - [x] Design mobile-first
-
+- [x] Dashboard com estatísticas
 ### 🔜 Próximas Features
 
 - [ ] Chat integrado
@@ -140,7 +140,6 @@ FRONTEND_URL=http://localhost:5173
 - [ ] Upload de fotos (portfólio)
 - [ ] Sistema de pagamentos
 - [ ] Verificação de identidade
-- [ ] Dashboard com estatísticas
 - [ ] Filtros avançados de busca
 - [ ] Histórico completo de transações
 
