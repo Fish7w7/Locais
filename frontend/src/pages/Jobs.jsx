@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Briefcase, MapPin, DollarSign, Clock, Users, Plus, Calendar } from 'lucide-react';
+import { Briefcase, MapPin, DollarSign, Clock, Users, Plus, Calendar, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { jobAPI } from '../api/services';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import CreateJobModal from '../components/CreateJobModal';
 
 const Jobs = () => {
   const { user } = useAuth();
@@ -16,6 +17,9 @@ const Jobs = () => {
   const [activeTab, setActiveTab] = useState('available');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('');
+  
+  // Modal state
+  const [showCreateJobModal, setShowCreateJobModal] = useState(false);
 
   const jobTypes = {
     temporary: 'Temporária',
@@ -40,7 +44,7 @@ const Jobs = () => {
       } else if (activeTab === 'my-proposals' && (user.type === 'provider' || user.type === 'admin')) {
         const res = await jobAPI.getMyProposals();
         setMyProposals(res.data.proposals);
-      } else if (activeTab === 'my-jobs' && user.type === 'company') {
+      } else if (activeTab === 'my-jobs' && (user.type === 'company' || user.type === 'admin')) {
         const res = await jobAPI.getJobs();
         const companyJobs = res.data.jobs.filter(job => job.companyId._id === user.id);
         setMyCompanyJobs(companyJobs);
@@ -61,6 +65,32 @@ const Jobs = () => {
       loadData();
     } catch (error) {
       alert(error.response?.data?.message || 'Erro ao candidatar-se');
+    }
+  };
+
+  const handleAcceptProposal = async (proposalId) => {
+    try {
+      await jobAPI.respondToProposal(proposalId, {
+        status: 'accepted',
+        providerResponse: 'Aceito a proposta!'
+      });
+      alert('Proposta aceita!');
+      loadData();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Erro ao aceitar proposta');
+    }
+  };
+
+  const handleRejectProposal = async (proposalId) => {
+    try {
+      await jobAPI.respondToProposal(proposalId, {
+        status: 'rejected',
+        providerResponse: 'Não posso aceitar no momento.'
+      });
+      alert('Proposta rejeitada');
+      loadData();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Erro ao rejeitar proposta');
     }
   };
 
@@ -103,11 +133,16 @@ const Jobs = () => {
             {user.type === 'company' && 'Gerencie suas vagas e candidatos'}
             {user.type === 'provider' && 'Veja propostas de empresas'}
             {user.type === 'client' && 'Encontre oportunidades de trabalho'}
+            {user.type === 'admin' && 'Gerencie todas as vagas'}
           </p>
         </div>
         
         {(user.type === 'company' || user.type === 'admin') && (
-          <Button icon={Plus} size="sm">
+          <Button 
+            icon={Plus} 
+            size="sm"
+            onClick={() => setShowCreateJobModal(true)}
+          >
             Nova Vaga
           </Button>
         )}
@@ -126,7 +161,7 @@ const Jobs = () => {
           Vagas Disponíveis
         </button>
         
-        {user.type === 'client' && (
+        {(user.type === 'client' || user.type === 'admin') && (
           <button
             onClick={() => setActiveTab('my-applications')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${
@@ -260,7 +295,7 @@ const Jobs = () => {
                     </div>
                   </div>
 
-                  {user.type === 'client' && (
+                  {(user.type === 'client' || user.type === 'admin') && (
                     <Button 
                       variant="primary" 
                       fullWidth 
@@ -375,10 +410,22 @@ const Jobs = () => {
 
                 {proposal.status === 'pending' && (
                   <div className="flex gap-2 mt-3">
-                    <Button variant="primary" fullWidth size="sm">
+                    <Button 
+                      variant="primary" 
+                      fullWidth 
+                      size="sm"
+                      icon={CheckCircle}
+                      onClick={() => handleAcceptProposal(proposal._id)}
+                    >
                       Aceitar
                     </Button>
-                    <Button variant="danger" fullWidth size="sm">
+                    <Button 
+                      variant="danger" 
+                      fullWidth 
+                      size="sm"
+                      icon={XCircle}
+                      onClick={() => handleRejectProposal(proposal._id)}
+                    >
                       Recusar
                     </Button>
                   </div>
@@ -413,7 +460,10 @@ const Jobs = () => {
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
                   Você ainda não criou nenhuma vaga
                 </p>
-                <Button icon={Plus}>
+                <Button 
+                  icon={Plus}
+                  onClick={() => setShowCreateJobModal(true)}
+                >
                   Criar Primeira Vaga
                 </Button>
               </div>
@@ -452,7 +502,7 @@ const Jobs = () => {
 
                 <div className="flex gap-2">
                   <Button variant="secondary" fullWidth size="sm">
-                    Ver Candidatos
+                    Ver Candidatos ({job.applicationsCount})
                   </Button>
                   <Button variant="ghost" size="sm">
                     Editar
@@ -463,9 +513,15 @@ const Jobs = () => {
           )}
         </div>
       )}
+
+      {/* Modal Criar Vaga */}
+      <CreateJobModal
+        isOpen={showCreateJobModal}
+        onClose={() => setShowCreateJobModal(false)}
+        onSuccess={loadData}
+      />
     </div>
   );
-  
 };
 
 export default Jobs;

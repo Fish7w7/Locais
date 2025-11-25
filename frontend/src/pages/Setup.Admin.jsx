@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Shield, Check, AlertCircle } from 'lucide-react';
+import api from '../api/axios';
 
 const SetupAdmin = () => {
   const [loading, setLoading] = useState(false);
@@ -8,7 +9,6 @@ const SetupAdmin = () => {
   const [adminData, setAdminData] = useState({
     name: 'Admin Master',
     email: 'admin@servicos.com',
-    phone: '(21) 99999-9999',
     password: 'admin123'
   });
 
@@ -18,31 +18,22 @@ const SetupAdmin = () => {
     setSuccess(false);
   };
 
-  
   const createAdmin = async () => {
     setLoading(true);
     setError('');
     setSuccess(false);
 
     try {
-      const response = await fetch('http://localhost:5000/api/admin/create-admin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(adminData)
-      });
-
-      const data = await response.json();
+      const response = await api.post('/admin/create-admin', adminData);
       
-      if (data.success) {
+      if (response.data.success) {
         setSuccess(true);
         alert('✅ Admin criado com sucesso!\n\nEmail: ' + adminData.email + '\nSenha: ' + adminData.password);
       } else {
-        setError(data.message || 'Erro ao criar admin');
+        setError(response.data.message || 'Erro ao criar admin');
       }
     } catch (err) {
-      setError(err.message || 'Erro ao criar admin');
+      setError(err.response?.data?.message || err.message || 'Erro ao criar admin');
     } finally {
       setLoading(false);
     }
@@ -136,20 +127,6 @@ const SetupAdmin = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Telefone
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={adminData.phone}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="(21) 99999-9999"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Senha
                 </label>
                 <input
@@ -159,6 +136,7 @@ const SetupAdmin = () => {
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                   placeholder="Senha forte"
+                  minLength={6}
                 />
               </div>
 

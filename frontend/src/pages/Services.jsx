@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Search, MapPin, Star, Clock, Plus } from 'lucide-react';
+import { Search, MapPin, Star, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { userAPI, serviceAPI } from '../api/services';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import CreateServiceModal from '../components/CreateServiceModal';
 
 const Services = () => {
   const { user } = useAuth();
@@ -15,6 +16,10 @@ const Services = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [activeTab, setActiveTab] = useState('providers');
+  
+  // Modal state
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState(null);
 
   const categories = [
     'Eletricista',
@@ -31,7 +36,7 @@ const Services = () => {
 
   useEffect(() => {
     loadData();
-  }, [activeTab]);
+  }, [activeTab, selectedCategory]);
 
   const loadData = async () => {
     try {
@@ -51,6 +56,41 @@ const Services = () => {
       console.error('Erro ao carregar dados:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRequestService = (provider) => {
+    setSelectedProvider(provider);
+    setShowServiceModal(true);
+  };
+
+  const handleAcceptService = async (serviceId) => {
+    try {
+      await serviceAPI.updateStatus(serviceId, { status: 'accepted' });
+      alert('Serviço aceito!');
+      loadData();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Erro ao aceitar serviço');
+    }
+  };
+
+  const handleRejectService = async (serviceId) => {
+    try {
+      await serviceAPI.updateStatus(serviceId, { status: 'rejected' });
+      alert('Serviço rejeitado');
+      loadData();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Erro ao rejeitar serviço');
+    }
+  };
+
+  const handleCompleteService = async (serviceId) => {
+    try {
+      await serviceAPI.updateStatus(serviceId, { status: 'completed' });
+      alert('Serviço marcado como concluído!');
+      loadData();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Erro ao concluir serviço');
     }
   };
 
@@ -222,7 +262,18 @@ const Services = () => {
                       </div>
                     </div>
                   </div>
-                  <Button variant="primary" fullWidth className="mt-3" size="sm">
+                  {provider.description && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 line-clamp-2">
+                      {provider.description}
+                    </p>
+                  )}
+                  <Button 
+                    variant="primary" 
+                    fullWidth 
+                    className="mt-3" 
+                    size="sm"
+                    onClick={() => handleRequestService(provider)}
+                  >
                     Solicitar Serviço
                   </Button>
                 </Card>
@@ -281,7 +332,6 @@ const Services = () => {
         </div>
       )}
 
-
       {/* Serviços Recebidos (Prestador) */}
       {activeTab === 'received' && (user.type === 'provider' || user.type === 'admin') && (
         <div className="space-y-3">
@@ -311,10 +361,14 @@ const Services = () => {
                     {getStatusText(service.status)}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                   {service.description}
                 </p>
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 mb-3">
+                  <MapPin className="w-4 h-4" />
+                  {service.location}
+                </div>
+                <div className="flex items-center justify-between text-sm mb-3">
                   <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                     <Clock className="w-4 h-4" />
                     {new Date(service.requestedDate).toLocaleDateString()}
@@ -325,20 +379,58 @@ const Services = () => {
                     </span>
                   )}
                 </div>
+                
                 {service.status === 'pending' && (
-                  <div className="flex gap-2 mt-3">
-                    <Button variant="primary" fullWidth size="sm">
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="primary" 
+                      fullWidth 
+                      size="sm"
+                      icon={CheckCircle}
+                      onClick={() => handleAcceptService(service._id)}
+                    >
                       Aceitar
                     </Button>
-                    <Button variant="danger" fullWidth size="sm">
+                    <Button 
+                      variant="danger" 
+                      fullWidth 
+                      size="sm"
+                      icon={XCircle}
+                      onClick={() => handleRejectService(service._id)}
+                    >
                       Recusar
                     </Button>
                   </div>
+                )}
+
+                {service.status === 'accepted' && (
+                  <Button 
+                    variant="primary" 
+                    fullWidth 
+                    size="sm"
+                    icon={RefreshCw}
+                    onClick={() => handleCompleteService(service._id)}
+                  >
+                    Marcar como Concluído
+                  </Button>
                 )}
               </Card>
             ))
           )}
         </div>
+      )}
+
+      {/* Modal */}
+      {selectedProvider && (
+        <CreateServiceModal
+          isOpen={showServiceModal}
+          onClose={() => {
+            setShowServiceModal(false);
+            setSelectedProvider(null);
+          }}
+          provider={selectedProvider}
+          onSuccess={loadData}
+        />
       )}
     </div>
   );
