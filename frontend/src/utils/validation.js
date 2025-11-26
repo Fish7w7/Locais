@@ -1,9 +1,6 @@
 // frontend/src/utils/validation.js
 
-// ===================================
 // VALIDAÇÕES GERAIS
-// ===================================
-
 export const validateEmail = (email) => {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return regex.test(email);
@@ -39,9 +36,7 @@ export const validatePassword = (password) => {
   return { valid: true, message: 'Senha válida' };
 };
 
-// ===================================
 // SANITIZAÇÃO
-// ===================================
 
 export const sanitizeInput = (input) => {
   if (!input) return '';
@@ -59,9 +54,7 @@ export const sanitizeHTML = (html) => {
   return div.innerHTML;
 };
 
-// ===================================
 // VALIDAÇÕES DE FORMULÁRIO
-// ===================================
 
 export const validateRegisterForm = (data) => {
   const errors = {};
@@ -172,9 +165,7 @@ export const validateJobForm = (data) => {
   };
 };
 
-// ===================================
 // MÁSCARAS DE INPUT
-// ===================================
 
 export const maskPhone = (value) => {
   if (!value) return '';
@@ -199,9 +190,7 @@ export const maskCNPJ = (value) => {
   );
 };
 
-// ===================================
 // HELPERS
-// ===================================
 
 export const hasError = (errors, field) => {
   return errors && errors[field];

@@ -1,4 +1,4 @@
-// backend/src/routes/auth.js - VERSÃO ATUALIZADA
+// backend/src/routes/auth.js
 import express from 'express';
 import {
   register,

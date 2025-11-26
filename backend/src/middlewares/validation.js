@@ -19,9 +19,7 @@ export const validate = (req, res, next) => {
   next();
 };
 
-// ===================================
 // VALIDAÇÕES DE AUTENTICAÇÃO
-// ===================================
 
 export const validateRegister = [
   body('name')
@@ -73,9 +71,7 @@ export const validateLogin = [
   validate
 ];
 
-// ===================================
 // VALIDAÇÕES DE SERVIÇO
-// ===================================
 
 export const validateServiceRequest = [
   body('providerId')
@@ -125,9 +121,7 @@ export const validateServiceRequest = [
   validate
 ];
 
-// ===================================
 // VALIDAÇÕES DE VAGA
-// ===================================
 
 export const validateJobCreation = [
   body('title')
@@ -169,9 +163,7 @@ export const validateJobCreation = [
   validate
 ];
 
-// ===================================
 // VALIDAÇÕES DE PARÂMETROS
-// ===================================
 
 export const validateMongoId = [
   param('id')
@@ -195,9 +187,7 @@ export const validatePagination = [
   validate
 ];
 
-// ===================================
 // SANITIZAÇÃO DE STRINGS
-// ===================================
 
 export const sanitizeString = (str) => {
   if (!str) return '';

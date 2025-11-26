@@ -4,6 +4,7 @@ import axios from 'axios';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import EditUserModal from '../components/EditUserModal';
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
@@ -11,6 +12,8 @@ const ManageUsers = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => {
     loadUsers();
@@ -72,6 +75,11 @@ const ManageUsers = () => {
     } catch (error) {
       alert(error.response?.data?.message || 'Erro ao excluir usuário');
     }
+  };
+
+  const handleEditUser = (user) => {
+    setSelectedUser(user);
+    setShowEditModal(true);
   };
 
   const getUserTypeIcon = (type) => {
@@ -292,7 +300,7 @@ const ManageUsers = () => {
                         variant="ghost"
                         size="sm"
                         icon={Edit}
-                        onClick={() => alert('Editar usuário em desenvolvimento')}
+                        onClick={() => handleEditUser(user)}
                       >
                         Editar
                       </Button>
@@ -314,6 +322,17 @@ const ManageUsers = () => {
           })}
         </div>
       )}
+
+      {/* Edit Modal */}
+      <EditUserModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+        onSuccess={loadUsers}
+      />
     </div>
   );
 };

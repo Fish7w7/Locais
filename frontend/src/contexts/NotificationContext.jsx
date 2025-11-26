@@ -98,7 +98,7 @@ export const NotificationProvider = ({ children }) => {
   );
 };
 
-// EXEMPLO DE USO:
+// Se vc Quiser usar em algum componente, importe o hook assim:
 // import { useNotification } from '../contexts/NotificationContext';
 // const { success, error } = useNotification();
 // success('Operação realizada com sucesso!');

@@ -7,7 +7,7 @@ export const generalLimiter = rateLimit({
   max: 100,
   message: {
     success: false,
-    message: '⏱️ Muitas requisições. Tente novamente em alguns minutos.'
+    message: ' Muitas requisições. Tente novamente em alguns minutos.'
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -20,7 +20,7 @@ export const authLimiter = rateLimit({
   skipSuccessfulRequests: true, // Não conta requisições bem-sucedidas
   message: {
     success: false,
-    message: '🔒 Muitas tentativas de login. Aguarde 15 minutos e tente novamente.'
+    message: ' Muitas tentativas de login. Aguarde 15 minutos e tente novamente.'
   }
 });
 
@@ -30,7 +30,7 @@ export const createLimiter = rateLimit({
   max: 10,
   message: {
     success: false,
-    message: '⚠️ Limite de criação atingido. Aguarde 1 hora.'
+    message: ' Limite de criação atingido. Aguarde 1 hora.'
   }
 });
 
@@ -40,6 +40,6 @@ export const strictLimiter = rateLimit({
   max: 3,
   message: {
     success: false,
-    message: '🛑 Operação bloqueada temporariamente por segurança.'
+    message: ' Operação bloqueada temporariamente por segurança.'
   }
 });

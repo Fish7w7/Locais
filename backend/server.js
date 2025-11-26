@@ -1,4 +1,4 @@
-// backend/server.js - VERSÃO ATUALIZADA COM SEGURANÇA
+// backend/server.js
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
@@ -21,9 +21,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ===================================
 // MIDDLEWARES DE SEGURANÇA
-// ===================================
 
 // CORS configurado
 const corsOptions = {
@@ -52,9 +50,7 @@ securityMiddlewares(app);
 // Rate limiting geral
 app.use('/api/', generalLimiter);
 
-// ===================================
 // MONGODB CONNECTION
-// ===================================
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
@@ -75,9 +71,7 @@ mongoose.connection.on('error', (err) => {
   console.error('❌ Erro no MongoDB:', err);
 });
 
-// ===================================
 // ROTAS
-// ===================================
 
 // Health check
 app.get('/', (req, res) => {
@@ -111,9 +105,7 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/admin', adminRoutes);
 
-// ===================================
 // ERROR HANDLERS
-// ===================================
 
 // 404 Handler 
 app.use((req, res) => {
@@ -174,30 +166,26 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ===================================
 // GRACEFUL SHUTDOWN
-// ===================================
 
 process.on('SIGTERM', async () => {
-  console.log('👋 SIGTERM recebido, fechando servidor...');
+  console.log(' SIGTERM recebido, fechando servidor...');
   
   await mongoose.connection.close();
-  console.log('✅ MongoDB desconectado');
+  console.log(' MongoDB desconectado');
   
   process.exit(0);
 });
 
 process.on('unhandledRejection', (err) => {
-  console.error('❌ Unhandled Rejection:', err);
+  console.error(' Unhandled Rejection:', err);
   process.exit(1);
 });
 
-// ===================================
 // START SERVER
-// ===================================
 
 app.listen(PORT, () => {
-  console.log('\n🚀 ================================');
+  console.log('\n================================');
   console.log(`   Servidor rodando na porta ${PORT}`);
   console.log(`📍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔒 Rate Limiting: Ativo`);

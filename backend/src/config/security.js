@@ -50,7 +50,7 @@ export const securityMiddlewares = (app) => {
     next();
   });
 
-  // Logging de tentativas suspeitas - VERSÃO CORRIGIDA
+  // Logging de tentativas suspeitas
   app.use((req, res, next) => {
     // Padrões que indicam ATAQUE REAL (não JSON válido)
     const suspiciousPatterns = [
@@ -74,7 +74,7 @@ export const securityMiddlewares = (app) => {
       // Command Injection
       /;.*\b(ls|cat|wget|curl|bash|sh)\b/i,
       
-      // NoSQL Injection (já tratado pelo mongoSanitize, mas logamos)
+      // NoSQL Injection 
       /\$where/i,
       /\$ne/i,
       /\$gt/i,

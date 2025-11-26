@@ -1,4 +1,4 @@
-// backend/src/routes/admin.js - VERSÃO ATUALIZADA COM SEGURANÇA
+// backend/src/routes/admin.js
 import express from 'express';
 import {
   createAdmin,

@@ -1,4 +1,3 @@
-
 const Input = ({
   label,
   type = 'text',

@@ -27,7 +27,9 @@ const Login = () => {
     phone: '',
     password: '',
     confirmPassword: '',
-    type: 'client'
+    type: 'client',
+    cnpj: '',
+    companyDescription: ''
   });
 
   const handleLoginChange = (e) => {
@@ -36,7 +38,20 @@ const Login = () => {
   };
 
   const handleRegisterChange = (e) => {
-    setRegisterData({ ...registerData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // Se mudou o tipo e não é mais empresa, limpa CNPJ
+    if (name === 'type' && value !== 'company') {
+      setRegisterData({ 
+        ...registerData, 
+        [name]: value,
+        cnpj: '',
+        companyDescription: ''
+      });
+    } else {
+      setRegisterData({ ...registerData, [name]: value });
+    }
+    
     setError('');
   };
 
@@ -56,34 +71,41 @@ const Login = () => {
   };
 
   const handleRegister = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError('');
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-  // VALIDAR FORMULÁRIO
-  const validation = validateRegisterForm(registerData);
-  if (!validation.valid) {
-    const firstError = Object.values(validation.errors)[0];
-    setError(firstError);        // aparece visual no card vermelho
-    notifyError(firstError);     // aparece notificação popup
-    setLoading(false);
-    return;
-  }
+    // VALIDAR FORMULÁRIO
+    const validation = validateRegisterForm(registerData);
+    if (!validation.valid) {
+      const firstError = Object.values(validation.errors)[0];
+      setError(firstError);
+      notifyError(firstError);
+      setLoading(false);
+      return;
+    }
 
-  try {
-    const { confirmPassword, ...userData } = registerData;
-    await register(userData);
+    try {
+      const { confirmPassword, ...userData } = registerData;
+      
+      // Remove CNPJ se não for empresa
+      if (userData.type !== 'company') {
+        delete userData.cnpj;
+        delete userData.companyDescription;
+      }
+      
+      await register(userData);
 
-    success('Conta criada com sucesso!');
-    navigate('/');
-  } catch (err) {
-    const msg = err.response?.data?.message || 'Erro ao criar conta';
-    setError(msg);
-    notifyError(msg);
-  } finally {
-    setLoading(false);
-  }
-};
+      success('Conta criada com sucesso!');
+      navigate('/');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Erro ao criar conta';
+      setError(msg);
+      notifyError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 dark:from-gray-900 dark:to-gray-800 px-4">
@@ -237,6 +259,36 @@ const Login = () => {
                 </select>
               </div>
 
+              {/* CNPJ - Aparece apenas se for empresa */}
+              {registerData.type === 'company' && (
+                <>
+                  <Input
+                    label="CNPJ"
+                    type="text"
+                    name="cnpj"
+                    value={registerData.cnpj}
+                    onChange={handleRegisterChange}
+                    placeholder="00.000.000/0000-00"
+                    icon={Building}
+                    required
+                  />
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Descrição da Empresa
+                    </label>
+                    <textarea
+                      name="companyDescription"
+                      value={registerData.companyDescription}
+                      onChange={handleRegisterChange}
+                      rows={3}
+                      placeholder="Conte sobre sua empresa..."
+                      className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                </>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Senha
@@ -294,6 +346,5 @@ const Login = () => {
     </div>
   );
 };
-
 
 export default Login;

@@ -28,7 +28,7 @@ const SetupAdmin = () => {
       
       if (response.data.success) {
         setSuccess(true);
-        alert('✅ Admin criado com sucesso!\n\nEmail: ' + adminData.email + '\nSenha: ' + adminData.password);
+        alert(' Admin criado com sucesso!\n\nEmail: ' + adminData.email + '\nSenha: ' + adminData.password);
       } else {
         setError(response.data.message || 'Erro ao criar admin');
       }

@@ -36,7 +36,7 @@ export const protect = async (req, res, next) => {
 };
 
 // Middleware para verificar tipo de usuário
-// ⚠️ ADMIN TEM ACESSO A TUDO!
+// ADMIN TEM ACESSO A TUDO!
 export const authorize = (...types) => {
   return (req, res, next) => {
     // Admin bypassa TODAS as verificações de tipo
