@@ -50,13 +50,35 @@ export const securityMiddlewares = (app) => {
     next();
   });
 
-  // Logging de tentativas suspeitas
+  // Logging de tentativas suspeitas - VERSÃO CORRIGIDA
   app.use((req, res, next) => {
+    // Padrões que indicam ATAQUE REAL (não JSON válido)
     const suspiciousPatterns = [
-      /(\.|<|>|'|"|;|\$|{|})/g,
+      // SQL Injection
+      /(\bor\b|\band\b).*['"=]/i,
       /union.*select/i,
-      /<script>/i,
-      /javascript:/i
+      /insert.*into/i,
+      /delete.*from/i,
+      /drop.*table/i,
+      /exec(\s|\()/i,
+      
+      // XSS básico
+      /<script[^>]*>.*?<\/script>/i,
+      /javascript:/i,
+      /onerror\s*=/i,
+      /onload\s*=/i,
+      
+      // Path Traversal
+      /\.\.[\/\\]/,
+      
+      // Command Injection
+      /;.*\b(ls|cat|wget|curl|bash|sh)\b/i,
+      
+      // NoSQL Injection (já tratado pelo mongoSanitize, mas logamos)
+      /\$where/i,
+      /\$ne/i,
+      /\$gt/i,
+      /\$regex/i
     ];
 
     const checkSuspicious = (obj) => {
@@ -65,12 +87,14 @@ export const securityMiddlewares = (app) => {
       return suspiciousPatterns.some(pattern => pattern.test(str));
     };
 
-    if (checkSuspicious(req.body) || checkSuspicious(req.query)) {
+    if (checkSuspicious(req.body) || checkSuspicious(req.query) || checkSuspicious(req.params)) {
       console.warn('🚨 ATIVIDADE SUSPEITA DETECTADA:', {
         ip: req.ip,
         path: req.path,
         method: req.method,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        body: req.body,
+        query: req.query
       });
     }
 

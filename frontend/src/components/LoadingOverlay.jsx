@@ -12,3 +12,5 @@ const LoadingOverlay = ({ message = 'Carregando...' }) => {
     </div>
   );
 };
+
+export default LoadingOverlay;
