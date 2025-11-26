@@ -10,6 +10,7 @@ import Services from './pages/Services';
 import Jobs from './pages/Jobs';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
+import ManageUsers from './pages/ManageUsers';
 import NotFound from './pages/NotFound';
 import SetupAdmin from './pages/Setup.Admin';
 import Login from './pages/Login';
@@ -83,6 +84,13 @@ function App() {
           <Route path="admin" element={
             <AdminRoute>
               <AdminDashboard />
+            </AdminRoute>
+          } />
+          
+          {/* Rota Admin Gerenciar Usuários */}
+          <Route path="admin/users" element={
+            <AdminRoute>
+              <ManageUsers />
             </AdminRoute>
           } />
         </Route>

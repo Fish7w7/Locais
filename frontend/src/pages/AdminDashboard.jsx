@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, Briefcase, CheckCircle, TrendingUp, Building2, UserCheck, Clock, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import Card from '../components/Card';
 import Button from '../components/Button';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -299,16 +301,36 @@ const AdminDashboard = () => {
           Ações Rápidas
         </h3>
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="secondary" size="sm" fullWidth>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            fullWidth
+            onClick={() => navigate('/admin/users')}
+          >
             Gerenciar Usuários
           </Button>
-          <Button variant="secondary" size="sm" fullWidth>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            fullWidth
+            onClick={() => navigate('/jobs')}
+          >
             Gerenciar Vagas
           </Button>
-          <Button variant="secondary" size="sm" fullWidth>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            fullWidth
+            onClick={() => navigate('/services')}
+          >
             Gerenciar Serviços
           </Button>
-          <Button variant="secondary" size="sm" fullWidth>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            fullWidth
+            onClick={() => alert('Funcionalidade de Relatórios em desenvolvimento')}
+          >
             Relatórios
           </Button>
         </div>
