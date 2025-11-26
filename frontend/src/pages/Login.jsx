@@ -4,6 +4,8 @@ import { Mail, Lock, Eye, EyeOff, User, Phone, Building } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import { validateRegisterForm } from '../utils/validation';
+import { useNotification } from '../contexts/NotificationContext';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -12,6 +14,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { success, error: notifyError } = useNotification();
 
   const [loginData, setLoginData] = useState({
     email: '',
@@ -53,32 +56,34 @@ const Login = () => {
   };
 
   const handleRegister = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    if (registerData.password !== registerData.confirmPassword) {
-      setError('As senhas não coincidem');
-      setLoading(false);
-      return;
-    }
+  // VALIDAR FORMULÁRIO
+  const validation = validateRegisterForm(registerData);
+  if (!validation.valid) {
+    const firstError = Object.values(validation.errors)[0];
+    setError(firstError);        // aparece visual no card vermelho
+    notifyError(firstError);     // aparece notificação popup
+    setLoading(false);
+    return;
+  }
 
-    if (registerData.password.length < 6) {
-      setError('A senha deve ter no mínimo 6 caracteres');
-      setLoading(false);
-      return;
-    }
+  try {
+    const { confirmPassword, ...userData } = registerData;
+    await register(userData);
 
-    try {
-      const { confirmPassword, ...userData } = registerData;
-      await register(userData);
-      navigate('/');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao criar conta');
-    } finally {
-      setLoading(false);
-    }
-  };
+    success('Conta criada com sucesso!');
+    navigate('/');
+  } catch (err) {
+    const msg = err.response?.data?.message || 'Erro ao criar conta';
+    setError(msg);
+    notifyError(msg);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 dark:from-gray-900 dark:to-gray-800 px-4">
