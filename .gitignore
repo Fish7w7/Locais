@@ -1,7 +1,9 @@
 # Dependencies
 node_modules/
-package-lock.json
 yarn.lock
+
+# Mantenha package.json e package-lock.json commitados
+# NÃO ignore: package.json, package-lock.json
 
 # Environment variables
 .env
