@@ -33,3 +33,12 @@ coverage/
 *.seed
 *.pid
 *.pid.lock
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.production.local
+
+# Mantenha apenas os templates commitados
+!.env.example
