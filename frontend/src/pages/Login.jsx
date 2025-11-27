@@ -34,6 +34,24 @@ const Login = () => {
     companyDescription: ''
   });
 
+  // Função para formatar telefone automaticamente
+  const formatPhone = (value) => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '');
+    
+    // Limita a 11 dígitos
+    const limited = numbers.slice(0, 11);
+    
+    // Aplica formatação
+    if (limited.length <= 10) {
+      // Formato: (21) 9999-9999
+      return limited.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '');
+    } else {
+      // Formato: (21) 99999-9999
+      return limited.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '');
+    }
+  };
+
   const handleLoginChange = (e) => {
     setLoginData({ ...loginData, [e.target.name]: e.target.value });
     setError('');
@@ -41,6 +59,17 @@ const Login = () => {
 
   const handleRegisterChange = (e) => {
     const { name, value } = e.target;
+    
+    // Auto-formatar telefone
+    if (name === 'phone') {
+      const formattedPhone = formatPhone(value);
+      setRegisterData({ ...registerData, phone: formattedPhone });
+      setError('');
+      if (formErrors.phone) {
+        setFormErrors({ ...formErrors, phone: undefined });
+      }
+      return;
+    }
     
     // Se mudou o tipo e não é mais empresa, limpa CNPJ
     if (name === 'type' && value !== 'company') {
@@ -301,7 +330,6 @@ const Login = () => {
                           : 'border-gray-300 dark:border-gray-600 focus:ring-primary-500'
                       } focus:ring-2`}
                     />
-                    {/* Mostrar erro */}
                     {formErrors.companyDescription && (
                       <p className="mt-1 text-sm text-red-500">{formErrors.companyDescription}</p>
                     )}
@@ -339,7 +367,6 @@ const Login = () => {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
-                {/* Mostrar erro */}
                 {formErrors.password && (
                   <p className="mt-1 text-sm text-red-500">{formErrors.password}</p>
                 )}
