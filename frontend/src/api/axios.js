@@ -1,10 +1,12 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
+  // Em produção usa a env var, em dev usa proxy local
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  timeout: 10000
 });
 
 // Interceptor para adicionar token

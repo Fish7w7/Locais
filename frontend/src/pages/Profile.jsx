@@ -1,15 +1,23 @@
+// frontend/src/pages/Profile.jsx 
 import { useState } from 'react';
 import { User, Mail, Phone, MapPin, Star, Briefcase, LogOut, Edit2, Save, DollarSign, Award } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { userAPI } from '../api/services';
+import { useNotification } from '../contexts/NotificationContext';
+import { useLoading } from '../contexts/LoadingContext';
+import { useConfirm } from '../hooks/useConfirm';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import ConfirmModal from '../components/ConfirmModal';
 
 const Profile = () => {
   const { user, logout, updateUser } = useAuth();
+  const { success, error: showError } = useNotification();
+  const { showLoading, hideLoading } = useLoading();
+  const { confirmState, confirm, cancel } = useConfirm();
+
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [showUpgradeForm, setShowUpgradeForm] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -54,37 +62,59 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      setLoading(true);
+      showLoading('Salvando perfil...');
       const response = await userAPI.updateProfile(formData);
       updateUser(response.data.user);
       setIsEditing(false);
-      alert('Perfil atualizado com sucesso!');
+      success('Perfil atualizado com sucesso!');
     } catch (error) {
-      alert(error.response?.data?.message || 'Erro ao atualizar perfil');
+      showError(error.response?.data?.message || 'Erro ao atualizar perfil');
     } finally {
-      setLoading(false);
+      hideLoading();
     }
   };
 
   const handleUpgradeToProvider = async () => {
     try {
-      setLoading(true);
+      showLoading('Convertendo para prestador...');
       const response = await userAPI.upgradeToProvider(upgradeData);
       updateUser(response.data.user);
       setShowUpgradeForm(false);
-      alert('Parabéns! Agora você é um prestador de serviços!');
+      success('Parabéns! Agora você é um prestador de serviços!');
     } catch (error) {
-      alert(error.response?.data?.message || 'Erro ao converter para prestador');
+      showError(error.response?.data?.message || 'Erro ao converter para prestador');
     } finally {
-      setLoading(false);
+      hideLoading();
     }
+  };
+
+  const handleLogout = async () => {
+    await confirm({
+      title: 'Sair da Conta',
+      message: 'Tem certeza que deseja sair?',
+      variant: 'warning',
+      onConfirm: () => {
+        logout();
+      }
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setFormData({
+      name: user?.name || '',
+      phone: user?.phone || '',
+      city: user?.city || '',
+      state: user?.state || ''
+    });
   };
 
   const getUserTypeLabel = (type) => {
     const labels = {
       client: 'Cliente',
       provider: 'Prestador de Serviços',
-      company: 'Empresa'
+      company: 'Empresa',
+      admin: 'Administrador'
     };
     return labels[type] || type;
   };
@@ -190,7 +220,6 @@ const Profile = () => {
               variant="primary" 
               fullWidth
               onClick={handleSave}
-              loading={loading}
               icon={Save}
             >
               Salvar
@@ -198,15 +227,7 @@ const Profile = () => {
             <Button 
               variant="secondary" 
               fullWidth
-              onClick={() => {
-                setIsEditing(false);
-                setFormData({
-                  name: user?.name || '',
-                  phone: user?.phone || '',
-                  city: user?.city || '',
-                  state: user?.state || ''
-                });
-              }}
+              onClick={handleCancelEdit}
             >
               Cancelar
             </Button>
@@ -384,7 +405,6 @@ const Profile = () => {
                 variant="primary" 
                 fullWidth
                 onClick={handleUpgradeToProvider}
-                loading={loading}
               >
                 Confirmar
               </Button>
@@ -406,11 +426,21 @@ const Profile = () => {
           variant="danger" 
           fullWidth
           icon={LogOut}
-          onClick={logout}
+          onClick={handleLogout}
         >
           Sair da Conta
         </Button>
       </Card>
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={cancel}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        variant={confirmState.variant}
+      />
     </div>
   );
 };

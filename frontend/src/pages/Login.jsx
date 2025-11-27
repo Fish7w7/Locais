@@ -1,3 +1,4 @@
+// frontend/src/pages/Login.jsx 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, User, Phone, Building } from 'lucide-react';
@@ -15,6 +16,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { success, error: notifyError } = useNotification();
+  const [formErrors, setFormErrors] = useState({});
 
   const [loginData, setLoginData] = useState({
     email: '',
@@ -53,6 +55,9 @@ const Login = () => {
     }
     
     setError('');
+    if (formErrors[name]) {
+      setFormErrors({ ...formErrors, [name]: undefined });
+    }
   };
 
   const handleLogin = async (e) => {
@@ -75,15 +80,17 @@ const Login = () => {
     setLoading(true);
     setError('');
 
-    // VALIDAR FORMULÁRIO
     const validation = validateRegisterForm(registerData);
     if (!validation.valid) {
       const firstError = Object.values(validation.errors)[0];
       setError(firstError);
       notifyError(firstError);
+      setFormErrors(validation.errors);
       setLoading(false);
       return;
     }
+
+    setFormErrors({}); 
 
     try {
       const { confirmPassword, ...userData } = registerData;
@@ -95,7 +102,6 @@ const Login = () => {
       }
       
       await register(userData);
-
       success('Conta criada com sucesso!');
       navigate('/');
     } catch (err) {
@@ -131,6 +137,7 @@ const Login = () => {
               onClick={() => {
                 setIsLogin(true);
                 setError('');
+                setFormErrors({});
               }}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                 isLogin
@@ -144,6 +151,7 @@ const Login = () => {
               onClick={() => {
                 setIsLogin(false);
                 setError('');
+                setFormErrors({}); 
               }}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                 !isLogin
@@ -218,6 +226,7 @@ const Login = () => {
                 onChange={handleRegisterChange}
                 placeholder="João Silva"
                 icon={User}
+                error={formErrors.name} 
                 required
               />
 
@@ -229,6 +238,7 @@ const Login = () => {
                 onChange={handleRegisterChange}
                 placeholder="seu@email.com"
                 icon={Mail}
+                error={formErrors.email} 
                 required
               />
 
@@ -240,6 +250,7 @@ const Login = () => {
                 onChange={handleRegisterChange}
                 placeholder="(21) 99999-9999"
                 icon={Phone}
+                error={formErrors.phone} 
                 required
               />
 
@@ -270,6 +281,7 @@ const Login = () => {
                     onChange={handleRegisterChange}
                     placeholder="00.000.000/0000-00"
                     icon={Building}
+                    error={formErrors.cnpj} 
                     required
                   />
                   
@@ -283,8 +295,16 @@ const Login = () => {
                       onChange={handleRegisterChange}
                       rows={3}
                       placeholder="Conte sobre sua empresa..."
-                      className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+                      className={`w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
+                        formErrors.companyDescription 
+                          ? 'border-red-500 focus:ring-red-500' 
+                          : 'border-gray-300 dark:border-gray-600 focus:ring-primary-500'
+                      } focus:ring-2`}
                     />
+                    {/* Mostrar erro */}
+                    {formErrors.companyDescription && (
+                      <p className="mt-1 text-sm text-red-500">{formErrors.companyDescription}</p>
+                    )}
                   </div>
                 </>
               )}
@@ -305,7 +325,11 @@ const Login = () => {
                     placeholder="Mínimo 6 caracteres"
                     required
                     minLength={6}
-                    className="w-full pl-10 pr-10 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+                    className={`w-full pl-10 pr-10 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
+                      formErrors.password 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 dark:border-gray-600 focus:ring-primary-500'
+                    } focus:ring-2`}
                   />
                   <button
                     type="button"
@@ -315,6 +339,10 @@ const Login = () => {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {/* Mostrar erro */}
+                {formErrors.password && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.password}</p>
+                )}
               </div>
 
               <Input
@@ -325,6 +353,7 @@ const Login = () => {
                 onChange={handleRegisterChange}
                 placeholder="Digite a senha novamente"
                 icon={Lock}
+                error={formErrors.confirmPassword} 
                 required
               />
 
