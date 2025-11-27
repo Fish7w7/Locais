@@ -1,10 +1,10 @@
-// frontend/src/pages/Login.jsx 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, User, Phone, Building } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import TermsModal from '../components/TermsModal';
 import { validateRegisterForm } from '../utils/validation';
 import { useNotification } from '../contexts/NotificationContext';
 
@@ -17,6 +17,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const { success, error: notifyError } = useNotification();
   const [formErrors, setFormErrors] = useState({});
+  const [showTerms, setShowTerms] = useState(false);
 
   const [loginData, setLoginData] = useState({
     email: '',
@@ -34,20 +35,13 @@ const Login = () => {
     companyDescription: ''
   });
 
-  // Função para formatar telefone automaticamente
   const formatPhone = (value) => {
-    // Remove tudo que não é número
     const numbers = value.replace(/\D/g, '');
-    
-    // Limita a 11 dígitos
     const limited = numbers.slice(0, 11);
     
-    // Aplica formatação
     if (limited.length <= 10) {
-      // Formato: (21) 9999-9999
       return limited.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '');
     } else {
-      // Formato: (21) 99999-9999
       return limited.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '');
     }
   };
@@ -60,7 +54,6 @@ const Login = () => {
   const handleRegisterChange = (e) => {
     const { name, value } = e.target;
     
-    // Auto-formatar telefone
     if (name === 'phone') {
       const formattedPhone = formatPhone(value);
       setRegisterData({ ...registerData, phone: formattedPhone });
@@ -71,7 +64,6 @@ const Login = () => {
       return;
     }
     
-    // Se mudou o tipo e não é mais empresa, limpa CNPJ
     if (name === 'type' && value !== 'company') {
       setRegisterData({ 
         ...registerData, 
@@ -124,7 +116,6 @@ const Login = () => {
     try {
       const { confirmPassword, ...userData } = registerData;
       
-      // Remove CNPJ se não for empresa
       if (userData.type !== 'company') {
         delete userData.cnpj;
         delete userData.companyDescription;
@@ -299,7 +290,6 @@ const Login = () => {
                 </select>
               </div>
 
-              {/* CNPJ - Aparece apenas se for empresa */}
               {registerData.type === 'company' && (
                 <>
                   <Input
@@ -391,14 +381,20 @@ const Login = () => {
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer com Termos de Uso */}
         <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">
           Ao continuar, você concorda com nossos{' '}
-          <a href="#" className="text-primary-600 hover:underline">
+          <button
+            onClick={() => setShowTerms(true)}
+            className="text-primary-600 dark:text-primary-400 hover:underline font-medium"
+          >
             Termos de Uso
-          </a>
+          </button>
         </p>
       </div>
+
+      {/* Modal de Termos de Uso */}
+      <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
     </div>
   );
 };
