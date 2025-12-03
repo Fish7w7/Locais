@@ -58,26 +58,21 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
     : '0.00';
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
-      title="Solicitar Serviço" 
-      size="lg"  
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="Solicitar Serviço" size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Informações do Prestador */}
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4">
+        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
           <div className="flex items-center gap-3">
             <img
               src={provider?.avatar || `https://ui-avatars.com/api/?name=${provider?.name}&background=random`}
               alt={provider?.name}
-              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex-shrink-0"
+              className="w-12 h-12 rounded-full"
             />
-            <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white">
                 {provider?.name}
               </h3>
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 {provider?.category} • R$ {provider?.pricePerHour}/hora
               </p>
             </div>
@@ -108,7 +103,7 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
             rows={4}
             required
             placeholder="Descreva detalhadamente o serviço que você precisa..."
-            className="w-full px-3 sm:px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-sm sm:text-base"
+            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
           />
         </div>
 
@@ -124,14 +119,14 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
         />
 
         {/* Data e Horas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Data Desejada
               <span className="text-red-500 ml-1">*</span>
             </label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="date"
                 name="requestedDate"
@@ -139,7 +134,7 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
                 onChange={handleChange}
                 required
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-sm sm:text-base"
+                className="w-full pl-10 pr-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
               />
             </div>
           </div>
@@ -160,11 +155,11 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
 
         {/* Preço Estimado */}
         {formData.estimatedHours && (
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 sm:p-4">
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
+          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
               Valor estimado:
             </p>
-            <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
               R$ {estimatedPrice}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -174,7 +169,7 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
         )}
 
         {/* Botões */}
-        <div className="flex flex-col sm:flex-row gap-2 pt-2">
+        <div className="flex gap-2 pt-4">
           <Button
             type="submit"
             variant="primary"
@@ -188,8 +183,6 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
             variant="secondary"
             onClick={onClose}
             disabled={loading}
-            fullWidth
-            className="sm:w-auto sm:min-w-[100px]"
           >
             Cancelar
           </Button>

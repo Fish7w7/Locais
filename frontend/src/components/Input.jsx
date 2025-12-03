@@ -9,10 +9,7 @@ const Input = ({
   required = false,
   disabled = false,
   icon: Icon,
-  className = '',
-  min,
-  max,
-  step
+  className = ''
 }) => {
   return (
     <div className={`w-full ${className}`}>
@@ -25,8 +22,8 @@ const Input = ({
       
       <div className="relative">
         {Icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <Icon className="w-5 h-5" />
           </div>
         )}
         
@@ -38,36 +35,21 @@ const Input = ({
           placeholder={placeholder}
           disabled={disabled}
           required={required}
-          min={min}
-          max={max}
-          step={step}
           className={`
-            w-full 
-            px-3 sm:px-4 
-            py-2 
-            rounded-lg 
-            border 
+            w-full px-4 py-2 rounded-lg border
             bg-white dark:bg-gray-800
             text-gray-900 dark:text-white
             border-gray-300 dark:border-gray-600
             focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-            disabled:bg-gray-100 dark:disabled:bg-gray-700 
-            disabled:cursor-not-allowed
-            text-sm sm:text-base
-            min-h-[44px]
-            ${Icon ? 'pl-9 sm:pl-10' : ''}
+            disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed
+            ${Icon ? 'pl-10' : ''}
             ${error ? 'border-red-500 focus:ring-red-500' : ''}
           `}
-          style={{
-            fontSize: '16px',
-            WebkitAppearance: 'none',
-            MozAppearance: 'textfield'
-          }}
         />
       </div>
       
       {error && (
-        <p className="mt-1 text-xs sm:text-sm text-red-500">{error}</p>
+        <p className="mt-1 text-sm text-red-500">{error}</p>
       )}
     </div>
   );
