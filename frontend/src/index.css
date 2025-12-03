@@ -1,4 +1,3 @@
-/* frontend/src/index.css - VERSÃO COMPLETA */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -229,7 +228,6 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Hide scrollbar but keep functionality */
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -239,7 +237,6 @@ html {
   display: none;
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -271,10 +268,6 @@ html {
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* 
-   FOCUS VISIBLE
-   */
-
 *:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
@@ -284,10 +277,6 @@ html {
 .dark *:focus-visible {
   outline-color: #60a5fa;
 }
-
-/* 
-   TRUNCATE TEXT
- */
 
 .line-clamp-1 {
   overflow: hidden;
@@ -310,10 +299,6 @@ html {
   -webkit-box-orient: vertical;
 }
 
-/* 
-   GRADIENT BACKGROUNDS
- */
-
 .gradient-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
@@ -325,10 +310,6 @@ html {
 .gradient-danger {
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
 }
-
-/* 
-   GLASSMORPHISM
- */
 
 .glass {
   background: rgba(255, 255, 255, 0.1);
@@ -342,17 +323,11 @@ html {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* 
-   MOBILE OPTIMIZATIONS
- */
-
 @media (max-width: 640px) {
-  /* Prevent text size adjustment on iOS */
   body {
     -webkit-text-size-adjust: 100%;
   }
 
-  /* Better touch targets */
   button,
   a,
   input,
@@ -362,16 +337,11 @@ html {
     min-width: 44px;
   }
 
-  /* Prevent horizontal scroll */
   html,
   body {
     overflow-x: hidden;
   }
 }
-
-/* 
-   PRINT STYLES
- */
 
 @media print {
   body {
@@ -383,12 +353,7 @@ html {
     display: none !important;
   }
 }
-
-/* 
-   UTILITIES
- */
-
-.text-balance {
+text-balance {
   text-wrap: balance;
 }
 
@@ -399,8 +364,6 @@ html {
 .aspect-video {
   aspect-ratio: 16 / 9;
 }
-
-/* Safe area for devices with notch */
 
 .safe-top {
   padding-top: env(safe-area-inset-top);
@@ -416,4 +379,776 @@ html {
 
 .safe-right {
   padding-right: env(safe-area-inset-right);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Container mobile com padding correto */
+.container-mobile {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 auto;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+/* Fix para cards que estavam cortando */
+.space-y-3 > * {
+  width: 100%;
+  max-width: 100%;
+}
+
+.space-y-4 > * {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Garantir que cards não ultrapassem a tela */
+[class*="rounded-lg"],
+[class*="rounded-xl"],
+[class*="bg-white"],
+[class*="bg-gray"] {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Fix para inputs e selects */
+input,
+select,
+textarea {
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Fix para botões em mobile */
+button {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Fix para imagens */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 640px) {
+  /* Headers menores em mobile */
+  h1 {
+    font-size: 1.5rem !important; /* 24px */
+    line-height: 2rem !important;
+  }
+
+  h2 {
+    font-size: 1.25rem !important; /* 20px */
+    line-height: 1.75rem !important;
+  }
+
+  h3 {
+    font-size: 1.125rem !important; /* 18px */
+    line-height: 1.5rem !important;
+  }
+
+  /* Texto base ajustado */
+  body {
+    font-size: 0.875rem; /* 14px */
+    line-height: 1.25rem;
+  }
+
+  /* Ajuste de padding em cards */
+  [class*="p-6"] {
+    padding: 1rem !important;
+  }
+
+  [class*="p-4"] {
+    padding: 0.75rem !important;
+  }
+
+  /* Ajuste de gap em flex/grid */
+  [class*="gap-4"] {
+    gap: 0.75rem !important;
+  }
+
+  [class*="gap-3"] {
+    gap: 0.5rem !important;
+  }
+}
+
+/* Prevenir scroll horizontal em TODOS os elementos */
+* {
+  max-width: 100%;
+}
+
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
+}
+
+#root {
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
+}
+
+/* Tabs responsivos */
+.flex.gap-2.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.flex.gap-2.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
+
+/* Botões de tab com tamanho mínimo */
+.flex.gap-2.overflow-x-auto button {
+  flex-shrink: 0;
+  min-width: fit-content;
+  white-space: nowrap;
+}
+
+/* Garantir que bottom nav não ultrapasse */
+nav[class*="fixed bottom-0"] {
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 100vw;
+}
+
+@media (max-width: 640px) {
+  /* Modals ocupam mais espaço em mobile */
+  [class*="max-w-md"],
+  [class*="max-w-lg"],
+  [class*="max-w-xl"] {
+    max-width: calc(100vw - 2rem) !important;
+    margin: 1rem !important;
+  }
+
+  /* Altura máxima para modals */
+  [class*="max-h-"][class*="vh"] {
+    max-height: 80vh !important;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Avatares um pouco menores em mobile */
+  img[class*="w-16"],
+  img[class*="w-12"] {
+    width: 3rem !important;
+    height: 3rem !important;
+  }
+
+  img[class*="w-24"] {
+    width: 4rem !important;
+    height: 4rem !important;
+  }
+}
+
+[class*="rounded-full"][class*="px-"] {
+  font-size: 0.75rem !important; /* 12px */
+  padding: 0.25rem 0.5rem !important;
+}
+
+@media (max-width: 640px) {
+  /* Grids de 2 colunas com gap menor */
+  .grid.grid-cols-2 {
+    gap: 0.75rem !important;
+  }
+
+  /* Cards em grid menores */
+  .grid.grid-cols-2 > * {
+    padding: 0.75rem !important;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Labels menores */
+  label {
+    font-size: 0.875rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  /* Inputs com altura adequada */
+  input,
+  select,
+  textarea {
+    min-height: 2.75rem; /* 44px - tamanho mínimo recomendado para touch */
+    font-size: 1rem; /* 16px - previne zoom em iOS */
+  }
+
+  /* Botões com altura adequada para touch */
+  button {
+    min-height: 2.75rem; /* 44px */
+  }
+}
+
+/* Adicionar padding nas safe areas */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Header com safe area */
+header[class*="fixed top-0"] {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Bottom nav com safe area */
+nav[class*="fixed bottom-0"] {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Otimizar animações em mobile */
+@media (max-width: 640px) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Otimizar renderização */
+  img,
+  video {
+    will-change: transform;
+  }
+}
+
+@media (max-width: 640px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="password"],
+  select,
+  textarea {
+    font-size: 16px !important; /* Previne zoom no iOS */
+  }
+}
+
+/* Garantir que conteúdo de cards não ultrapasse */
+[class*="rounded-lg"] > * {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Truncar textos longos */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  /* Skeletons menores em mobile */
+  [class*="animate-pulse"] {
+    min-height: 2rem;
+  }
+}
+
+
+/* 
+   CORREÇÕES GLOBAIS PARA MODAIS MOBILE
+    */
+
+/* Garantir que modais ocupem largura adequada */
+@media (max-width: 640px) {
+  /* Containers de modal */
+  [class*="max-w-sm"],
+  [class*="max-w-md"],
+  [class*="max-w-lg"],
+  [class*="max-w-xl"],
+  [class*="max-w-2xl"] {
+    max-width: calc(100vw - 2rem) !important;
+    width: calc(100vw - 2rem) !important;
+    margin: 0 1rem !important;
+  }
+
+  /* Modal específico - largura mínima */
+  .fixed.inset-0.z-50 > div > div {
+    min-width: calc(100vw - 2rem);
+    max-width: calc(100vw - 2rem);
+  }
+
+  /* Conteúdo do modal */
+  [class*="bg-white dark:bg-gray-800"][class*="rounded-lg"] {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Padding interno dos modais */
+  [class*="modal"] > div,
+  [class*="Modal"] > div {
+    padding: 1rem !important;
+  }
+
+  /* Header do modal */
+  [class*="border-b"] {
+    padding: 0.75rem 1rem !important;
+  }
+
+  /* Inputs dentro de modais */
+  [class*="modal"] input,
+  [class*="modal"] select,
+  [class*="modal"] textarea,
+  [class*="Modal"] input,
+  [class*="Modal"] select,
+  [class*="Modal"] textarea {
+    font-size: 16px !important; /* Previne zoom no iOS */
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Botões dentro de modais */
+  [class*="modal"] button,
+  [class*="Modal"] button {
+    min-height: 44px; /* Touch target */
+    width: 100%;
+    font-size: 14px;
+  }
+
+  /* Grid de 2 colunas em modais */
+  [class*="modal"] .grid-cols-2,
+  [class*="Modal"] .grid-cols-2 {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  /* Labels em modais */
+  [class*="modal"] label,
+  [class*="Modal"] label {
+    font-size: 0.875rem;
+  }
+
+  /* Títulos em modais */
+  [class*="modal"] h1,
+  [class*="Modal"] h1,
+  [class*="modal"] h2,
+  [class*="Modal"] h2,
+  [class*="modal"] h3,
+  [class*="Modal"] h3 {
+    font-size: 1.125rem !important;
+    line-height: 1.5rem !important;
+  }
+}
+
+/* Modais em landscape (celular deitado) */
+@media (max-width: 896px) and (orientation: landscape) {
+  /* Altura máxima menor em landscape */
+  [class*="max-h-"] {
+    max-height: 85vh !important;
+  }
+
+  /* Modal overflow */
+  .fixed.inset-0.z-50 {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* 
+   CORREÇÕES ESPECÍFICAS POR MODAL
+    */
+
+/* CreateServiceModal, CreateJobModal, etc */
+@media (max-width: 640px) {
+  /* Área scrollable do conteúdo */
+  [class*="overflow-y-auto"] {
+    max-height: calc(90vh - 80px); /* Viewport - header */
+    padding-bottom: 1rem;
+  }
+
+  /* Cards dentro de modais */
+  [class*="modal"] > div > div[class*="rounded-lg"],
+  [class*="Modal"] > div > div[class*="rounded-lg"] {
+    padding: 0.75rem !important;
+  }
+
+  /* Info do prestador no modal */
+  [class*="bg-gray-50"] img {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+  }
+}
+
+/* 
+   CORREÇÕES DE OVERLAY/BACKDROP
+    */
+
+/* Backdrop mais escuro para melhor contraste */
+.fixed.inset-0[class*="bg-black"] {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Smooth transitions */
+[class*="transition"] {
+  transition: all 0.2s ease-in-out;
+}
+
+/* 
+   CORREÇÕES DE SCROLL
+    */
+
+/* Scroll suave no conteúdo do modal */
+[class*="overflow-y-auto"] {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar mas mantém funcionalidade */
+[class*="overflow-y-auto"]::-webkit-scrollbar {
+  width: 4px;
+}
+
+[class*="overflow-y-auto"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[class*="overflow-y-auto"]::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  /* Padding bottom para iPhones com notch */
+  .fixed.bottom-0[class*="Modal"],
+  .fixed.bottom-0[class*="modal"] {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  }
+
+  /* Botões na parte inferior do modal */
+  [class*="modal"] > div:last-child,
+  [class*="Modal"] > div:last-child {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+[class*="transform"][class*="transition-all"] {
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@media (max-width: 640px) {
+  /* Quando teclado abrir, ajustar altura */
+  .fixed.inset-0.z-50 {
+    height: 100dvh; /* Dynamic viewport height */
+  }
+
+  /* Input focado */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    scroll-margin-top: 100px;
+    scroll-margin-bottom: 100px;
+  }
+}
+
+/* 
+   CORREÇÃO PARA BOTÃO DE FECHAR (X)
+    */
+
+@media (max-width: 640px) {
+  /* Botão X maior e mais fácil de clicar */
+  button[aria-label="Fechar"],
+  button[aria-label="Close"] {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    padding: 0.5rem !important;
+  }
+
+  button[aria-label="Fechar"] svg,
+  button[aria-label="Close"] svg {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+}
+
+/* Adicione ao frontend/src/index.css */
+
+/* ========================================
+   MODAIS - DESKTOP + MOBILE RESPONSIVO
+   ======================================== */
+
+/* DESKTOP: Limitar largura máxima */
+@media (min-width: 640px) {
+  /* Garantir que modais não ocupem tela inteira em desktop */
+  .fixed.inset-0.z-50 > div > div {
+    min-width: 384px;  /* Largura mínima */
+    max-width: 672px;  /* Largura máxima padrão */
+  }
+
+  /* Modals específicos por tamanho */
+  [class*="sm:max-w-sm"] {
+    max-width: 384px !important;
+  }
+
+  [class*="sm:max-w-md"] {
+    max-width: 448px !important;
+  }
+
+  [class*="sm:max-w-lg"] {
+    max-width: 512px !important;
+  }
+
+  [class*="sm:max-w-xl"] {
+    max-width: 576px !important;
+  }
+
+  [class*="sm:max-w-2xl"] {
+    max-width: 672px !important;
+  }
+
+  [class*="sm:max-w-4xl"] {
+    max-width: 896px !important;
+  }
+
+  /* Padding interno maior em desktop */
+  .fixed.inset-0.z-50 [class*="p-4"] {
+    padding: 1.5rem;
+  }
+
+  /* Grid volta a ser 2 colunas em desktop */
+  .grid-cols-1.sm\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* MOBILE: Ocupar quase tela inteira */
+@media (max-width: 639px) {
+  /* Modal ocupa largura disponível */
+  .fixed.inset-0.z-50 > div > div {
+    width: calc(100vw - 2rem) !important;
+    max-width: calc(100vw - 2rem) !important;
+    margin: 0 1rem;
+  }
+
+  /* Remover larguras fixas em mobile */
+  [class*="max-w-"] {
+    max-width: calc(100vw - 2rem) !important;
+  }
+
+  /* Padding menor em mobile */
+  .fixed.inset-0.z-50 [class*="p-4"],
+  .fixed.inset-0.z-50 [class*="p-6"] {
+    padding: 1rem !important;
+  }
+
+  /* Grid sempre 1 coluna em mobile */
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Inputs e botões full width */
+  input,
+  select,
+  textarea,
+  button {
+    width: 100% !important;
+  }
+}
+
+/* ========================================
+   CORREÇÕES ESPECÍFICAS POR TAMANHO
+   ======================================== */
+
+/* Tamanho SM - Confirmações */
+@media (min-width: 640px) {
+  [class*="sm:max-w-sm"] {
+    width: 384px;
+  }
+}
+
+/* Tamanho MD - Formulários simples */
+@media (min-width: 640px) {
+  [class*="sm:max-w-md"] {
+    width: 448px;
+  }
+}
+
+/* Tamanho LG - Formulários complexos */
+@media (min-width: 640px) {
+  [class*="sm:max-w-lg"] {
+    width: 512px;
+  }
+}
+
+/* Tamanho XL - Formulários grandes */
+@media (min-width: 640px) {
+  [class*="sm:max-w-xl"] {
+    width: 576px;
+  }
+}
+
+/* ========================================
+   PREVENIR OVERFLOW HORIZONTAL
+   ======================================== */
+
+/* Garantir que nada ultrapasse o modal */
+.fixed.inset-0.z-50 * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* ========================================
+   BACKDROP MELHORADO
+   ======================================== */
+
+/* Backdrop mais escuro e com blur */
+.fixed.inset-0[class*="bg-black"] {
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* ========================================
+   TRANSIÇÕES SUAVES
+   ======================================== */
+
+/* Animação de entrada do modal */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.fixed.inset-0.z-50 > div > div {
+  animation: modalSlideIn 0.2s ease-out;
+}
+
+/* ========================================
+   CENTRALIZAÇÃO PERFEITA
+   ======================================== */
+
+/* Garantir que modal fique centralizado */
+.fixed.inset-0.z-50 > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+/* ========================================
+   BOTÃO DE FECHAR (X)
+   ======================================== */
+
+/* Botão X sempre visível e clicável */
+button[aria-label="Fechar"] {
+  position: relative;
+  z-index: 10;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+button[aria-label="Fechar"]:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark button[aria-label="Fechar"]:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* ========================================
+   SCROLL CUSTOMIZADO
+   ======================================== */
+
+/* Scroll suave e estilizado */
+.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.7);
+}
+
+/* ========================================
+   TABLET (iPad, etc)
+   ======================================== */
+
+@media (min-width: 640px) and (max-width: 1024px) {
+  /* Modais ocupam 80% da largura em tablets */
+  .fixed.inset-0.z-50 > div > div {
+    max-width: 80vw !important;
+  }
+
+  /* Máximo de 672px em tablet */
+  [class*="sm:max-w-2xl"] {
+    max-width: min(672px, 80vw) !important;
+  }
 }

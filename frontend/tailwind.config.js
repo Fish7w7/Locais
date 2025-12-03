@@ -21,16 +21,32 @@ export default {
           900: '#1e3a8a',
         }
       },
-      maxWidth: {
-        'mobile': '480px'
+      screens: {
+        'xs': '360px',
+        'sm': '640px',
+        'md': '768px',
+        'lg': '1024px',
+        'xl': '1280px',
+      },
+      spacing: {
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
       },
       animation: {
         'spin-slow': 'spin 3s linear infinite',
       },
-      screens: {
-        'xs': '360px',
+      minHeight: {
+        'touch': '44px', 
+      },
+      minWidth: {
+        'touch': '44px',
       }
     },
   },
   plugins: [],
+  corePlugins: {
+    container: false,
+  }
 }
