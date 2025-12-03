@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Briefcase, CheckCircle, TrendingUp, Building2, UserCheck, Clock, AlertCircle } from 'lucide-react';
+import { Users, Briefcase, CheckCircle, TrendingUp, Building2, UserCheck, Clock, AlertCircle, MessageSquare } from 'lucide-react';
 import axios from 'axios';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -8,11 +8,13 @@ import Button from '../components/Button';
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
+  const [pendingReviewsCount, setPendingReviewsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     loadStats();
+    loadPendingReviewsCount();
   }, []);
 
   const loadStats = async () => {
@@ -31,6 +33,19 @@ const AdminDashboard = () => {
       setError('Erro ao carregar estatísticas');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPendingReviewsCount = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/reviews/pending', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setPendingReviewsCount(response.data.count || response.data.reviews?.length || 0);
+    } catch (err) {
+      console.error('Erro ao carregar contagem de avaliações:', err);
     }
   };
 
@@ -144,10 +159,41 @@ const AdminDashboard = () => {
             Visão geral do sistema
           </p>
         </div>
-        <Button size="sm" onClick={loadStats}>
+        <Button size="sm" onClick={() => {
+          loadStats();
+          loadPendingReviewsCount();
+        }}>
           Atualizar
         </Button>
       </div>
+
+      {/* ALERTA DE AVALIAÇÕES PENDENTES */}
+      {pendingReviewsCount > 0 && (
+        <Card className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+                <MessageSquare className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-yellow-900 dark:text-yellow-100">
+                  {pendingReviewsCount} {pendingReviewsCount === 1 ? 'avaliação pendente' : 'avaliações pendentes'}
+                </h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  Avaliações aguardando moderação
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => navigate('/admin/reviews')}
+            >
+              Moderar
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -313,6 +359,14 @@ const AdminDashboard = () => {
             variant="secondary" 
             size="sm" 
             fullWidth
+            onClick={() => navigate('/admin/reviews')}
+          >
+            Moderar Avaliações
+          </Button>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            fullWidth
             onClick={() => navigate('/jobs')}
           >
             Gerenciar Vagas
@@ -324,14 +378,6 @@ const AdminDashboard = () => {
             onClick={() => navigate('/services')}
           >
             Gerenciar Serviços
-          </Button>
-          <Button 
-            variant="secondary" 
-            size="sm" 
-            fullWidth
-            onClick={() => alert('Funcionalidade de Relatórios em desenvolvimento')}
-          >
-            Relatórios
           </Button>
         </div>
       </Card>

@@ -80,34 +80,48 @@ const Jobs = () => {
   }, [activeTab, selectedType]);
 
   const loadData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  try {
+    setLoading(true);
+    setError(null);
+    
+    if (activeTab === 'available') {
+      const res = await jobAPI.getJobs({ type: selectedType });
+      setJobs(res.data.jobs || []);
+    } else if (activeTab === 'my-applications') {
+      const res = await jobAPI.getMyApplications();
+      setMyApplications(res.data.applications || []);
+    } else if (activeTab === 'my-proposals' && (user?.type === 'provider' || user?.type === 'admin')) {
+      const res = await jobAPI.getMyProposals();
+      setMyProposals(res.data.proposals || []);
+    } else if (activeTab === 'my-jobs' && (user?.type === 'company' || user?.type === 'admin')) {
+      const res = await jobAPI.getJobs();
+      const allJobs = res.data.jobs || [];
       
-      if (activeTab === 'available') {
-        const res = await jobAPI.getJobs({ type: selectedType });
-        setJobs(res.data.jobs || []);
-      } else if (activeTab === 'my-applications') {
-        const res = await jobAPI.getMyApplications();
-        setMyApplications(res.data.applications || []);
-      } else if (activeTab === 'my-proposals' && (user?.type === 'provider' || user?.type === 'admin')) {
-        const res = await jobAPI.getMyProposals();
-        setMyProposals(res.data.proposals || []);
-      } else if (activeTab === 'my-jobs' && (user?.type === 'company' || user?.type === 'admin')) {
-        const res = await jobAPI.getJobs();
-        const companyJobs = (res.data.jobs || []).filter(job => 
-          job.companyId?._id === user.id
-        );
-        setMyCompanyJobs(companyJobs);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar vagas:', err);
-      setError(err.response?.data?.message || 'Erro ao carregar dados');
-      showError('Erro ao carregar vagas');
-    } finally {
-      setLoading(false);
+      console.log('📊 Debug - Todas as vagas:', allJobs);
+      console.log('📊 Debug - User ID:', user.id);
+      
+      const companyJobs = allJobs.filter(job => {
+        console.log('🔍 Comparando:', {
+          jobCompanyId: job.companyId?._id || job.companyId,
+          userId: user.id,
+          match: (job.companyId?._id || job.companyId) === user.id
+        });
+
+        const jobCompanyId = job.companyId?._id || job.companyId;
+        return jobCompanyId === user.id || String(jobCompanyId) === String(user.id);
+      });
+      
+      console.log('✅ Vagas filtradas da empresa:', companyJobs.length);
+      setMyCompanyJobs(companyJobs);
     }
-  };
+  } catch (err) {
+    console.error('Erro ao carregar vagas:', err);
+    setError(err.response?.data?.message || 'Erro ao carregar dados');
+    showError('Erro ao carregar vagas');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleApply = async (jobId, jobTitle) => {
     await confirm({

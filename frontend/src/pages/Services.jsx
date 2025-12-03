@@ -1,4 +1,4 @@
-// frontend/src/pages/Services.jsx 
+// frontend/src/pages/Services.jsx - COM LINKS PARA PERFIL
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, MapPin, Star, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
@@ -13,6 +13,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import UserProfileLink from '../components/UserProfileLink';
 import CreateServiceModal from '../components/CreateServiceModal';
 import ConfirmModal from '../components/ConfirmModal';
 import PullToRefresh from '../components/PullToRefresh';
@@ -34,7 +35,6 @@ const Services = () => {
   const { showLoading, hideLoading } = useLoading();
   const { confirmState, confirm, cancel } = useConfirm();
 
-  // Hooks de Drag Scroll
   const tabsScrollRef = useDragScroll();
   const filtersScrollRef = useDragScroll();
 
@@ -172,7 +172,6 @@ const Services = () => {
     provider.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   );
 
-  // Renderizar conteúdo baseado no estado
   const renderContent = () => {
     if (loading) {
       return (
@@ -187,7 +186,7 @@ const Services = () => {
       return <EmptyStateError message={error} onRetry={loadData} />;
     }
 
-    // Buscar Prestadores
+    // Buscar Prestadores - COM LINK PARA PERFIL
     if (activeTab === 'providers') {
       if (filteredProviders.length === 0 && debouncedSearchTerm) {
         return (
@@ -213,47 +212,47 @@ const Services = () => {
       return (
         <div className="space-y-3">
           {filteredProviders.map((provider) => (
-            <Card key={provider._id} hoverable>
-              <div className="flex gap-4">
-                <img
-                  src={provider.avatar || `https://ui-avatars.com/api/?name=${provider.name}&background=random`}
-                  alt={provider.name}
-                  className="w-16 h-16 rounded-full object-cover"
-                />
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                    {provider.name}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {provider.category}
-                  </p>
-                  {provider.city && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      <MapPin className="w-3 h-3" />
-                      {provider.city}, {provider.state}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                      <span className="text-sm font-medium">
-                        {provider.providerRating?.toFixed(1) || '0.0'}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        ({provider.providerReviewCount || 0})
-                      </span>
-                    </div>
-                    <div className="text-sm font-semibold text-primary-600 dark:text-primary-400">
-                      R$ {provider.pricePerHour}/hora
-                    </div>
-                  </div>
+            <Card key={provider._id}>
+              {/* NOME CLICÁVEL - LEVA AO PERFIL */}
+              <UserProfileLink
+                userId={provider._id}
+                userName={provider.name}
+                userAvatar={provider.avatar}
+                subtitle={provider.category}
+              />
+
+              {/* Localização */}
+              {provider.city && (
+                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  <MapPin className="w-3 h-3" />
+                  {provider.city}, {provider.state}
+                </div>
+              )}
+
+              {/* Rating e Preço */}
+              <div className="flex items-center gap-3 mt-2">
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                  <span className="text-sm font-medium">
+                    {provider.providerRating?.toFixed(1) || '0.0'}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    ({provider.providerReviewCount || 0})
+                  </span>
+                </div>
+                <div className="text-sm font-semibold text-primary-600 dark:text-primary-400">
+                  R$ {provider.pricePerHour}/hora
                 </div>
               </div>
+
+              {/* Descrição */}
               {provider.description && (
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 line-clamp-2">
                   {provider.description}
                 </p>
               )}
+
+              {/* Botão Solicitar */}
               <Button 
                 variant="primary" 
                 fullWidth 
@@ -269,7 +268,7 @@ const Services = () => {
       );
     }
 
-    // Minhas Solicitações
+    // Minhas Solicitações - COM LINK PARA PERFIL DO PRESTADOR
     if (activeTab === 'my-requests') {
       if (myRequests.length === 0) {
         return (
@@ -284,19 +283,28 @@ const Services = () => {
           {myRequests.map((request) => (
             <Card key={request._id}>
               <div className="flex justify-between items-start mb-3">
-                <div>
+                <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900 dark:text-white">
                     {request.title}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {request.providerId.name} • {request.category}
-                  </p>
+                  
+                  {/* NOME DO PRESTADOR CLICÁVEL */}
+                  <UserProfileLink
+                    userId={request.providerId._id}
+                    userName={request.providerId.name}
+                    userAvatar={request.providerId.avatar}
+                    subtitle={request.category}
+                    showArrow={false}
+                    className="mt-1"
+                  />
                 </div>
                 <StatusBadge status={request.status} />
               </div>
+              
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                 {request.description}
               </p>
+              
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                   <Clock className="w-4 h-4" />
@@ -314,7 +322,7 @@ const Services = () => {
       );
     }
 
-    // Serviços Recebidos
+    // Serviços Recebidos - COM LINK PARA PERFIL DO SOLICITANTE
     if (activeTab === 'received') {
       if (receivedServices.length === 0) {
         return <EmptyStateNoReceivedServices />;
@@ -325,23 +333,33 @@ const Services = () => {
           {receivedServices.map((service) => (
             <Card key={service._id}>
               <div className="flex justify-between items-start mb-3">
-                <div>
+                <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900 dark:text-white">
                     {service.title}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    De: {service.requesterId.name}
-                  </p>
+                  
+                  {/* NOME DO CLIENTE CLICÁVEL */}
+                  <UserProfileLink
+                    userId={service.requesterId._id}
+                    userName={service.requesterId.name}
+                    userAvatar={service.requesterId.avatar}
+                    subtitle="Cliente"
+                    showArrow={false}
+                    className="mt-1"
+                  />
                 </div>
                 <StatusBadge status={service.status} />
               </div>
+              
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                 {service.description}
               </p>
+              
               <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 mb-3">
                 <MapPin className="w-4 h-4" />
                 {service.location}
               </div>
+              
               <div className="flex items-center justify-between text-sm mb-3">
                 <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                   <Clock className="w-4 h-4" />
@@ -410,7 +428,7 @@ const Services = () => {
           </p>
         </div>
 
-        {/* Tabs com Drag Scroll */}
+        {/* Tabs */}
         <div 
           ref={tabsScrollRef}
           className="flex gap-2 overflow-x-auto hide-scrollbar pb-2"
@@ -449,7 +467,7 @@ const Services = () => {
           )}
         </div>
 
-        {/* Search and Filters - Apenas em Buscar Prestadores */}
+        {/* Search and Filters */}
         {activeTab === 'providers' && (
           <div className="space-y-3">
             <Input
@@ -459,7 +477,6 @@ const Services = () => {
               icon={Search}
             />
 
-            {/* Filtros de Categoria com Drag Scroll */}
             <div 
               ref={filtersScrollRef}
               className="flex gap-2 overflow-x-auto hide-scrollbar pb-2"

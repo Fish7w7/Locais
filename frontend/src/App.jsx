@@ -9,8 +9,10 @@ import Home from './pages/Home';
 import Services from './pages/Services';
 import Jobs from './pages/Jobs';
 import Profile from './pages/Profile';
+import PublicProfile from './pages/PublicProfile';
 import AdminDashboard from './pages/AdminDashboard';
 import ManageUsers from './pages/ManageUsers';
+import ModerateReviews from './pages/ModerateReviews';
 import NotFound from './pages/NotFound';
 import SetupAdmin from './pages/Setup.Admin';
 import Login from './pages/Login';
@@ -79,6 +81,7 @@ function App() {
           <Route path="services" element={<Services />} />
           <Route path="jobs" element={<Jobs />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="user/:userId" element={<PublicProfile />} />
           
           {/* Rota Admin Dashboard */}
           <Route path="admin" element={
@@ -91,6 +94,13 @@ function App() {
           <Route path="admin/users" element={
             <AdminRoute>
               <ManageUsers />
+            </AdminRoute>
+          } />
+          
+          {/* Rota Admin Moderar Avaliações */}
+          <Route path="admin/reviews" element={
+            <AdminRoute>
+              <ModerateReviews />
             </AdminRoute>
           } />
         </Route>
