@@ -470,3 +470,84 @@ html {
     padding-right: 36px;
   }
 }
+
+/* 
+   CUSTOM SCROLLBAR - Esconder mas manter funcionalidade
+ */
+
+/* Esconder scrollbar mas manter scroll */
+.custom-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Opera */
+}
+
+/* 
+   DRAG SCROLL - Permitir arrastar para rolar
+ */
+
+.drag-scroll {
+  cursor: grab;
+  user-select: none;
+  scroll-behavior: smooth;
+}
+
+.drag-scroll:active {
+  cursor: grabbing;
+}
+
+/* Smooth scroll em containers */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* iOS smooth scroll */
+}
+
+/* 
+   APLICAR EM TABS E FILTROS HORIZONTAIS
+ */
+
+/* Esconder scrollbar horizontal em tabs */
+.horizontal-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.horizontal-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Gradient fade nas bordas */
+.scroll-fade-left::before,
+.scroll-fade-right::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.scroll-fade-left::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(249, 250, 251, 1), transparent);
+}
+
+.scroll-fade-right::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(249, 250, 251, 1), transparent);
+}
+
+.dark .scroll-fade-left::before {
+  background: linear-gradient(to right, rgba(17, 24, 39, 1), transparent);
+}
+
+.dark .scroll-fade-right::after {
+  background: linear-gradient(to left, rgba(17, 24, 39, 1), transparent);
+}

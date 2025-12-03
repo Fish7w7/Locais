@@ -10,6 +10,8 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import ConfirmModal from '../components/ConfirmModal';
+import EditProviderInfoModal from '../components/EditProviderInfoModal';
+import ReviewsSection from '../components/ReviewsSection';
 
 const Profile = () => {
   const { user, logout, updateUser } = useAuth();
@@ -19,6 +21,7 @@ const Profile = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [showUpgradeForm, setShowUpgradeForm] = useState(false);
+  const [showEditProviderInfo, setShowEditProviderInfo] = useState(false);
   
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -107,6 +110,16 @@ const Profile = () => {
       city: user?.city || '',
       state: user?.state || ''
     });
+  };
+
+  const loadUserData = async () => {
+    // Recarregar dados do usuário se necessário
+    try {
+      const response = await userAPI.getProfile();
+      updateUser(response.data.user);
+    } catch (error) {
+      console.error('Erro ao recarregar perfil:', error);
+    }
   };
 
   const getUserTypeLabel = (type) => {
@@ -242,6 +255,7 @@ const Profile = () => {
         </h3>
         
         <div className="space-y-3">
+          {/* Ratings Resumo */}
           {(user?.type === 'provider' || user?.type === 'client') && (
             <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <div className="flex items-center gap-3">
@@ -287,15 +301,30 @@ const Profile = () => {
               </div>
             </div>
           )}
+
+          {/* Seção de Avaliações Completa */}
+          <ReviewsSection 
+            userId={user?.id} 
+            userType={user?.type}
+          />
         </div>
       </Card>
 
       {/* Informações de Prestador */}
       {user?.type === 'provider' && (
         <Card>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Informações Profissionais
-          </h3>
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Informações Profissionais
+            </h3>
+            <Button 
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowEditProviderInfo(true)}
+            >
+              Editar
+            </Button>
+          </div>
           
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -432,7 +461,14 @@ const Profile = () => {
         </Button>
       </Card>
 
-      {/* Confirm Modal */}
+      {/* Modals */}
+      <EditProviderInfoModal
+        isOpen={showEditProviderInfo}
+        onClose={() => setShowEditProviderInfo(false)}
+        user={user}
+        onSuccess={loadUserData}
+      />
+
       <ConfirmModal
         isOpen={confirmState.isOpen}
         onClose={cancel}

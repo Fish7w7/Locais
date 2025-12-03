@@ -7,6 +7,7 @@ import { jobAPI } from '../api/services';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLoading } from '../contexts/LoadingContext';
 import { useDebounce } from '../hooks/useDebounce';
+import { useDragScroll } from '../hooks/useDragScroll';
 import { useConfirm } from '../hooks/useConfirm';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -32,6 +33,10 @@ const Jobs = () => {
   const { success, error: showError } = useNotification();
   const { showLoading, hideLoading } = useLoading();
   const { confirmState, confirm, cancel } = useConfirm();
+
+  // Hooks de Drag Scroll
+  const tabsScrollRef = useDragScroll();
+  const filtersScrollRef = useDragScroll();
 
   const [jobs, setJobs] = useState([]);
   const [myApplications, setMyApplications] = useState([]);
@@ -488,11 +493,14 @@ const Jobs = () => {
           )}
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        {/* Tabs com Drag Scroll */}
+        <div 
+          ref={tabsScrollRef}
+          className="flex gap-2 overflow-x-auto hide-scrollbar pb-2"
+        >
           <button
             onClick={() => setActiveTab('available')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
               activeTab === 'available'
                 ? 'bg-primary-600 text-white'
                 : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -504,7 +512,7 @@ const Jobs = () => {
           {(user?.type === 'client' || user?.type === 'admin') && (
             <button
               onClick={() => setActiveTab('my-applications')}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
                 activeTab === 'my-applications'
                   ? 'bg-primary-600 text-white'
                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -517,7 +525,7 @@ const Jobs = () => {
           {(user?.type === 'provider' || user?.type === 'admin') && (
             <button
               onClick={() => setActiveTab('my-proposals')}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
                 activeTab === 'my-proposals'
                   ? 'bg-primary-600 text-white'
                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -530,7 +538,7 @@ const Jobs = () => {
           {(user?.type === 'company' || user?.type === 'admin') && (
             <button
               onClick={() => setActiveTab('my-jobs')}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
                 activeTab === 'my-jobs'
                   ? 'bg-primary-600 text-white'
                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -551,10 +559,14 @@ const Jobs = () => {
               icon={Briefcase}
             />
 
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            {/* Filtros de Tipo com Drag Scroll */}
+            <div 
+              ref={filtersScrollRef}
+              className="flex gap-2 overflow-x-auto hide-scrollbar pb-2"
+            >
               <button
                 onClick={() => setSelectedType('')}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[36px] ${
                   selectedType === ''
                     ? 'bg-primary-600 text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
@@ -566,7 +578,7 @@ const Jobs = () => {
                 <button
                   key={key}
                   onClick={() => setSelectedType(key)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[36px] ${
                     selectedType === key
                       ? 'bg-primary-600 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'

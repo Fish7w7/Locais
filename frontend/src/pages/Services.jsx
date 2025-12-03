@@ -7,6 +7,7 @@ import { userAPI, serviceAPI } from '../api/services';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLoading } from '../contexts/LoadingContext';
 import { useDebounce } from '../hooks/useDebounce';
+import { useDragScroll } from '../hooks/useDragScroll';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useConfirm } from '../hooks/useConfirm';
 import Card from '../components/Card';
@@ -32,6 +33,10 @@ const Services = () => {
   const { success, error: showError } = useNotification();
   const { showLoading, hideLoading } = useLoading();
   const { confirmState, confirm, cancel } = useConfirm();
+
+  // Hooks de Drag Scroll
+  const tabsScrollRef = useDragScroll();
+  const filtersScrollRef = useDragScroll();
 
   const [providers, setProviders] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
@@ -167,31 +172,7 @@ const Services = () => {
     provider.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   );
 
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      accepted: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-      in_progress: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-      completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-      rejected: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-    };
-    return colors[status] || colors.pending;
-  };
-
-  const getStatusText = (status) => {
-    const texts = {
-      pending: 'Pendente',
-      accepted: 'Aceito',
-      in_progress: 'Em Andamento',
-      completed: 'Concluído',
-      cancelled: 'Cancelado',
-      rejected: 'Rejeitado'
-    };
-    return texts[status] || status;
-  };
-
-  // Renderizar conteúdo com base no estado
+  // Renderizar conteúdo baseado no estado
   const renderContent = () => {
     if (loading) {
       return (
@@ -429,11 +410,14 @@ const Services = () => {
           </p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        {/* Tabs com Drag Scroll */}
+        <div 
+          ref={tabsScrollRef}
+          className="flex gap-2 overflow-x-auto hide-scrollbar pb-2"
+        >
           <button
             onClick={() => setActiveTab('providers')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
               activeTab === 'providers'
                 ? 'bg-primary-600 text-white'
                 : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -443,7 +427,7 @@ const Services = () => {
           </button>
           <button
             onClick={() => setActiveTab('my-requests')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
               activeTab === 'my-requests'
                 ? 'bg-primary-600 text-white'
                 : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -454,7 +438,7 @@ const Services = () => {
           {(user.type === 'provider' || user.type === 'admin') && (
             <button
               onClick={() => setActiveTab('received')}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
                 activeTab === 'received'
                   ? 'bg-primary-600 text-white'
                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -475,10 +459,14 @@ const Services = () => {
               icon={Search}
             />
 
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            {/* Filtros de Categoria com Drag Scroll */}
+            <div 
+              ref={filtersScrollRef}
+              className="flex gap-2 overflow-x-auto hide-scrollbar pb-2"
+            >
               <button
                 onClick={() => setSelectedCategory('')}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[36px] ${
                   selectedCategory === ''
                     ? 'bg-primary-600 text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
@@ -490,7 +478,7 @@ const Services = () => {
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[36px] ${
                     selectedCategory === cat
                       ? 'bg-primary-600 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'

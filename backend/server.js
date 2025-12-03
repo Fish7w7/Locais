@@ -15,6 +15,7 @@ import userRoutes from './src/routes/user.js';
 import serviceRoutes from './src/routes/service.js';
 import jobRoutes from './src/routes/job.js';
 import adminRoutes from './src/routes/admin.js';
+import reviewRoutes from './src/routes/review.js';
 
 dotenv.config();
 
@@ -104,6 +105,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // ERROR HANDLERS
 
