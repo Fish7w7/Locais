@@ -98,7 +98,7 @@ const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Nova Vaga" size="xl">
-      <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+      <form onSubmit={handleSubmit} className="space-y-4">
         
         {/* Título */}
         <Input
@@ -112,7 +112,7 @@ const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
         />
 
         {/* Categoria e Tipo */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Categoria
@@ -123,7 +123,7 @@ const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
               value={formData.category}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 sm:py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
             >
               <option value="">Selecione</option>
               {categories.map(cat => (
@@ -142,7 +142,7 @@ const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
               value={formData.type}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 sm:py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
             >
               <option value="temporary">Temporária</option>
               <option value="trial">Experiência</option>
@@ -164,12 +164,12 @@ const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
             rows={4}
             required
             placeholder="Descreva as atividades e responsabilidades da vaga..."
-            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
           />
         </div>
 
         {/* Salário */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <Input
             label="Salário"
             type="number"
@@ -190,7 +190,7 @@ const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
               name="salaryType"
               value={formData.salaryType}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 sm:py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
             >
               <option value="hour">Por hora</option>
               <option value="day">Por dia</option>
@@ -221,20 +221,20 @@ const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
         />
 
         {/* Datas */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Data de Início
             </label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
               <input
                 type="date"
                 name="startDate"
                 value={formData.startDate}
                 onChange={handleChange}
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+                className="w-full pl-10 pr-4 py-2.5 sm:py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
               />
             </div>
           </div>
@@ -244,14 +244,14 @@ const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
               Data de Término
             </label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
               <input
                 type="date"
                 name="endDate"
                 value={formData.endDate}
                 onChange={handleChange}
                 min={formData.startDate || new Date().toISOString().split('T')[0]}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+                className="w-full pl-10 pr-4 py-2.5 sm:py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
               />
             </div>
           </div>
@@ -280,7 +280,7 @@ const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
             onChange={handleChange}
             rows={3}
             placeholder="Experiência mínima de 2 anos&#10;Ensino médio completo&#10;Disponibilidade para viagens"
-            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
           />
         </div>
 
@@ -295,17 +295,18 @@ const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
             onChange={handleChange}
             rows={3}
             placeholder="Vale transporte&#10;Vale alimentação&#10;Plano de saúde"
-            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
           />
         </div>
 
         {/* Botões */}
-        <div className="flex gap-2 pt-4 sticky bottom-0 bg-white dark:bg-gray-800">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
           <Button
             type="submit"
             variant="primary"
             fullWidth
             loading={loading}
+            className="min-h-[44px]"
           >
             Publicar Vaga
           </Button>
@@ -314,6 +315,8 @@ const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
             variant="secondary"
             onClick={onClose}
             disabled={loading}
+            fullWidth
+            className="sm:w-auto min-h-[44px]"
           >
             Cancelar
           </Button>

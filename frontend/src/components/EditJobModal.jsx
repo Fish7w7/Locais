@@ -122,7 +122,7 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Editar Vaga" size="xl">
-      <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+      <form onSubmit={handleSubmit} className="space-y-4">
         
         {/* Status da Vaga */}
         <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -150,7 +150,7 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
         />
 
         {/* Categoria e Tipo */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Categoria
@@ -161,7 +161,7 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
               value={formData.category}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 sm:py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
             >
               <option value="">Selecione</option>
               {categories.map(cat => (
@@ -180,7 +180,7 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
               value={formData.type}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 sm:py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
             >
               <option value="temporary">Temporária</option>
               <option value="trial">Experiência</option>
@@ -202,12 +202,12 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
             rows={4}
             required
             placeholder="Descreva as atividades e responsabilidades da vaga..."
-            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
           />
         </div>
 
         {/* Salário */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <Input
             label="Salário"
             type="number"
@@ -228,7 +228,7 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
               name="salaryType"
               value={formData.salaryType}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 sm:py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
             >
               <option value="hour">Por hora</option>
               <option value="day">Por dia</option>
@@ -259,19 +259,19 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
         />
 
         {/* Datas */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Data de Início
             </label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
               <input
                 type="date"
                 name="startDate"
                 value={formData.startDate}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+                className="w-full pl-10 pr-4 py-2.5 sm:py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
               />
             </div>
           </div>
@@ -281,14 +281,14 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
               Data de Término
             </label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
               <input
                 type="date"
                 name="endDate"
                 value={formData.endDate}
                 onChange={handleChange}
                 min={formData.startDate}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+                className="w-full pl-10 pr-4 py-2.5 sm:py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
               />
             </div>
           </div>
@@ -317,7 +317,7 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
             onChange={handleChange}
             rows={3}
             placeholder="Experiência mínima de 2 anos&#10;Ensino médio completo&#10;Disponibilidade para viagens"
-            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
           />
         </div>
 
@@ -332,18 +332,19 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
             onChange={handleChange}
             rows={3}
             placeholder="Vale transporte&#10;Vale alimentação&#10;Plano de saúde"
-            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
           />
         </div>
 
         {/* Botões */}
-        <div className="space-y-2 pt-4 sticky bottom-0 bg-white dark:bg-gray-800">
-          <div className="flex gap-2">
+        <div className="space-y-2 pt-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <Button
               type="submit"
               variant="primary"
               fullWidth
               loading={loading}
+              className="min-h-[44px]"
             >
               Salvar Alterações
             </Button>
@@ -352,6 +353,8 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
               variant="secondary"
               onClick={onClose}
               disabled={loading || deleting}
+              fullWidth
+              className="sm:w-auto min-h-[44px]"
             >
               Cancelar
             </Button>
@@ -365,6 +368,7 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
             onClick={handleDelete}
             loading={deleting}
             disabled={loading}
+            className="min-h-[44px]"
           >
             Excluir Vaga
           </Button>

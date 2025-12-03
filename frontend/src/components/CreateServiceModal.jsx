@@ -61,15 +61,15 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
     <Modal isOpen={isOpen} onClose={onClose} title="Solicitar Serviço" size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Informações do Prestador */}
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4">
           <div className="flex items-center gap-3">
             <img
               src={provider?.avatar || `https://ui-avatars.com/api/?name=${provider?.name}&background=random`}
               alt={provider?.name}
-              className="w-12 h-12 rounded-full"
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex-shrink-0"
             />
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">
+            <div className="min-w-0">
+              <h3 className="font-semibold text-gray-900 dark:text-white truncate">
                 {provider?.name}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -103,7 +103,7 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
             rows={4}
             required
             placeholder="Descreva detalhadamente o serviço que você precisa..."
-            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
           />
         </div>
 
@@ -119,14 +119,14 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
         />
 
         {/* Data e Horas */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Data Desejada
               <span className="text-red-500 ml-1">*</span>
             </label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
               <input
                 type="date"
                 name="requestedDate"
@@ -134,7 +134,7 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
                 onChange={handleChange}
                 required
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
+                className="w-full pl-10 pr-4 py-2.5 sm:py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
               />
             </div>
           </div>
@@ -169,12 +169,13 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
         )}
 
         {/* Botões */}
-        <div className="flex gap-2 pt-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
           <Button
             type="submit"
             variant="primary"
             fullWidth
             loading={loading}
+            className="min-h-[44px]"
           >
             Enviar Solicitação
           </Button>
@@ -183,6 +184,8 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
             variant="secondary"
             onClick={onClose}
             disabled={loading}
+            fullWidth
+            className="sm:w-auto min-h-[44px]"
           >
             Cancelar
           </Button>

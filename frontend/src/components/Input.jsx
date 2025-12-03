@@ -9,7 +9,10 @@ const Input = ({
   required = false,
   disabled = false,
   icon: Icon,
-  className = ''
+  className = '',
+  min,
+  max,
+  step
 }) => {
   return (
     <div className={`w-full ${className}`}>
@@ -22,7 +25,7 @@ const Input = ({
       
       <div className="relative">
         {Icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
             <Icon className="w-5 h-5" />
           </div>
         )}
@@ -35,8 +38,11 @@ const Input = ({
           placeholder={placeholder}
           disabled={disabled}
           required={required}
+          min={min}
+          max={max}
+          step={step}
           className={`
-            w-full px-4 py-2 rounded-lg border
+            w-full px-4 py-2.5 sm:py-2 rounded-lg border text-base
             bg-white dark:bg-gray-800
             text-gray-900 dark:text-white
             border-gray-300 dark:border-gray-600
@@ -44,6 +50,8 @@ const Input = ({
             disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed
             ${Icon ? 'pl-10' : ''}
             ${error ? 'border-red-500 focus:ring-red-500' : ''}
+            min-h-[44px]
+            touch-manipulation
           `}
         />
       </div>
