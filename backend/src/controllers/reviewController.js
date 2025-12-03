@@ -27,20 +27,20 @@ export const createReview = async (req, res) => {
       });
     }
 
-    // Verificar se já avaliou este serviço
-    if (serviceId) {
-      const existingReview = await Review.findOne({
-        reviewerId: req.user.id,
-        reviewedUserId,
-        serviceId
-      });
+    const existingReview = await Review.findOne({
+      reviewerId: req.user.id,
+      reviewedUserId,
+      $or: [
+        { serviceId: serviceId || null },
+        { serviceId: null }
+      ]
+    });
 
-      if (existingReview) {
-        return res.status(400).json({
-          success: false,
-          message: 'Você já avaliou este serviço'
-        });
-      }
+    if (existingReview) {
+      return res.status(400).json({
+        success: false,
+        message: 'Você já avaliou este usuário. Cada pessoa pode ser avaliada apenas uma vez.'
+      });
     }
 
     // Criar avaliação
@@ -51,7 +51,7 @@ export const createReview = async (req, res) => {
       rating,
       comment,
       serviceId: serviceId || null,
-      status: 'pending' // Precisa de moderação
+      status: 'pending'
     });
 
     const populatedReview = await Review.findById(review._id)
@@ -64,6 +64,14 @@ export const createReview = async (req, res) => {
     });
   } catch (error) {
     console.error('Erro ao criar avaliação:', error);
+    
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Você já avaliou este usuário anteriormente'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Erro ao criar avaliação',

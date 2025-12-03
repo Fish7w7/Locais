@@ -13,7 +13,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
   useEffect(() => {
@@ -27,7 +27,8 @@ export const AuthProvider = ({ children }) => {
   const loadUser = async () => {
     try {
       const response = await authAPI.getMe();
-      setUser(response.data.user);
+      const userData = response.data.user;
+      setUser({ ...userData, id: userData.id || userData._id });
     } catch (error) {
       console.error('Erro ao carregar usuário:', error);
       logout();
@@ -42,7 +43,7 @@ export const AuthProvider = ({ children }) => {
     
     localStorage.setItem('token', token);
     setToken(token);
-    setUser(user);
+    setUser({ ...user, id: user.id || user._id });
     
     return user;
   };
@@ -53,7 +54,7 @@ export const AuthProvider = ({ children }) => {
     
     localStorage.setItem('token', token);
     setToken(token);
-    setUser(user);
+    setUser({ ...user, id: user.id || user._id });
     
     return user;
   };
@@ -65,7 +66,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = (updatedData) => {
-    setUser(prev => ({ ...prev, ...updatedData }));
+    setUser(prev => ({ 
+      ...prev, 
+      ...updatedData,
+      id: updatedData.id || updatedData._id || prev.id 
+    }));
   };
 
   const value = {

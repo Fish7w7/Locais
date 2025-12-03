@@ -1,6 +1,6 @@
 // frontend/src/components/EditProviderInfoModal.jsx
 import { useState, useEffect } from 'react';
-import { Briefcase, DollarSign, FileText, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Briefcase, DollarSign, FileText } from 'lucide-react';
 import Modal from './Modal';
 import Input from './Input';
 import Button from './Button';

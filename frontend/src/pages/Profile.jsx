@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { User, Mail, Phone, MapPin, Star, Briefcase, LogOut, Edit2, Save, DollarSign, Award } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { userAPI } from '../api/services';
+import { userAPI, authAPI } from '../api/services';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLoading } from '../contexts/LoadingContext';
 import { useConfirm } from '../hooks/useConfirm';
@@ -113,12 +113,12 @@ const Profile = () => {
   };
 
   const loadUserData = async () => {
-    // Recarregar dados do usuário se necessário
     try {
-      const response = await userAPI.getProfile();
+      const response = await authAPI.getMe();
       updateUser(response.data.user);
     } catch (error) {
       console.error('Erro ao recarregar perfil:', error);
+      showError('Erro ao recarregar perfil');
     }
   };
 
