@@ -16,7 +16,7 @@ import serviceRoutes from './src/routes/service.js';
 import jobRoutes from './src/routes/job.js';
 import adminRoutes from './src/routes/admin.js';
 import reviewRoutes from './src/routes/review.js';
-
+import chatRoutes from './src/routes/chat.js';
 dotenv.config();
 
 const app = express();
@@ -106,6 +106,7 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/chat', chatRoutes);
 
 // ERROR HANDLERS
 

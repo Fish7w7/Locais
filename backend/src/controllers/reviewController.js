@@ -10,7 +10,6 @@ export const createReview = async (req, res) => {
   try {
     const { reviewedUserId, type, rating, comment, serviceId } = req.body;
 
-    // Verificar se o usuário avaliado existe
     const reviewedUser = await User.findById(reviewedUserId);
     if (!reviewedUser) {
       return res.status(404).json({
@@ -19,7 +18,6 @@ export const createReview = async (req, res) => {
       });
     }
 
-    // Não pode avaliar a si mesmo
     if (reviewedUserId === req.user.id) {
       return res.status(400).json({
         success: false,
@@ -93,11 +91,17 @@ export const getUserReviews = async (req, res) => {
       status
     };
 
-    if (type) query.type = type;
+    if (type) {
+      query.type = type;
+    }
+
+    console.log(' Query de busca:', JSON.stringify(query));
 
     const reviews = await Review.find(query)
       .populate('reviewerId', 'name avatar')
       .sort('-createdAt');
+
+    console.log(` Encontradas ${reviews.length} avaliações`);
 
     // Calcular estatísticas
     const stats = {
@@ -120,7 +124,7 @@ export const getUserReviews = async (req, res) => {
       stats
     });
   } catch (error) {
-    console.error('Erro ao buscar avaliações:', error);
+    console.error('❌ Erro ao buscar avaliações:', error);
     res.status(500).json({
       success: false,
       message: 'Erro ao buscar avaliações',
@@ -178,7 +182,6 @@ export const moderateReview = async (req, res) => {
       review.rejectionReason = rejectionReason;
     }
 
-    // Se aprovado, atualizar o rating do usuário
     if (status === 'approved') {
       const reviewedUser = await User.findById(review.reviewedUserId);
       
@@ -221,7 +224,7 @@ export const moderateReview = async (req, res) => {
 // @access  Private
 export const markHelpful = async (req, res) => {
   try {
-    const { helpful } = req.body; // true = útil, false = não útil
+    const { helpful } = req.body; 
 
     const review = await Review.findById(req.params.id);
 

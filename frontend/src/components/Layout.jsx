@@ -1,5 +1,6 @@
+// frontend/src/components/Layout.jsx
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Briefcase, Search, User, Moon, Sun, Shield } from 'lucide-react';
+import { Home, Briefcase, Search, User, Moon, Sun, Shield, MessageCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -15,6 +16,7 @@ const Layout = () => {
     { path: '/', icon: Home, label: 'Início' },
     { path: '/services', icon: Search, label: 'Serviços' },
     { path: '/jobs', icon: Briefcase, label: 'Vagas' },
+    { path: '/chat', icon: MessageCircle, label: 'Chat' },
     { path: '/profile', icon: User, label: 'Perfil' },
   ];
 

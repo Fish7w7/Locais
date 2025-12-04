@@ -1,14 +1,20 @@
-/* frontend/src/index.css - VERSÃO COMPLETA */
+
+/* 
+  CONFIGURAÇÕES BASE
+ */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Reset Global */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* Configurações do Body */
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -17,6 +23,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Root Container */
 #root {
   min-height: 100vh;
   background-color: #f5f5f5;
@@ -27,6 +34,7 @@ body {
   color: #fff;
 }
 
+/* Container Mobile */
 .container-mobile {
   max-width: 480px;
   margin: 0 auto;
@@ -34,9 +42,10 @@ body {
 }
 
 /* 
-   ANIMAÇÕES DE ENTRADA
- */
+   ANIMAÇÕES
+*/
 
+/* Keyframes de Entrada */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -90,8 +99,35 @@ body {
   }
 }
 
+/* Animação de Spin */
+@keyframes spin-smooth {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animação de Pulse */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Animação de Skeleton Shimmer */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 /* 
-   CLASSES DE ANIMAÇÃO
+  CLASSES DE ANIMAÇÃO
  */
 
 .animate-fade-in {
@@ -114,8 +150,16 @@ body {
   animation: bounce 2s ease-in-out infinite;
 }
 
+.animate-spin-smooth {
+  animation: spin-smooth 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* 
-   TRANSIÇÕES SUAVES
+  TRANSIÇÕES
  */
 
 .transition-smooth {
@@ -127,8 +171,8 @@ body {
 }
 
 /* 
-   HOVER EFFECTS
- */
+ EFEITOS DE HOVER
+*/
 
 .hover-lift {
   transition: transform 0.2s ease;
@@ -155,48 +199,8 @@ body {
 }
 
 /* 
-   LOADING SPINNER PERSONALIZADO
- */
-
-@keyframes spin-smooth {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin-smooth {
-  animation: spin-smooth 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-/* 
-   PULSE ANIMATION
- */
-
-@keyframes pulse-slow {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-.animate-pulse-slow {
-  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* 
-   SKELETON LOADING
- */
-
-@keyframes skeleton-shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
+  SKELETON LOADING
+*/
 
 .skeleton-shimmer {
   background: linear-gradient(
@@ -223,13 +227,14 @@ body {
 
 /* 
    SCROLL BEHAVIOR
- */
+*/
 
+/* Scroll Suave */
 html {
   scroll-behavior: smooth;
 }
 
-/* Hide scrollbar but keep functionality */
+/* Esconder Scrollbar */
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -239,7 +244,7 @@ html {
   display: none;
 }
 
-/* Custom scrollbar */
+/* Scrollbar Customizada */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -271,9 +276,79 @@ html {
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* Custom Scrollbar - Esconder mas manter funcionalidade */
+.custom-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Opera */
+}
+
+/* Smooth Scroll em Containers */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* iOS smooth scroll */
+}
+
+/* Scroll Horizontal */
+.horizontal-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.horizontal-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Gradient Fade nas Bordas */
+.scroll-fade-left::before,
+.scroll-fade-right::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.scroll-fade-left::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(249, 250, 251, 1), transparent);
+}
+
+.scroll-fade-right::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(249, 250, 251, 1), transparent);
+}
+
+.dark .scroll-fade-left::before {
+  background: linear-gradient(to right, rgba(17, 24, 39, 1), transparent);
+}
+
+.dark .scroll-fade-right::after {
+  background: linear-gradient(to left, rgba(17, 24, 39, 1), transparent);
+}
+
+/* Drag Scroll */
+.drag-scroll {
+  cursor: grab;
+  user-select: none;
+  scroll-behavior: smooth;
+}
+
+.drag-scroll:active {
+  cursor: grabbing;
+}
+
 /* 
-   FOCUS VISIBLE
-   */
+  FOCUS VISIBLE
+ */
 
 *:focus-visible {
   outline: 2px solid #2563eb;
@@ -311,7 +386,7 @@ html {
 }
 
 /* 
-   GRADIENT BACKGROUNDS
+  GRADIENT BACKGROUNDS
  */
 
 .gradient-primary {
@@ -327,7 +402,7 @@ html {
 }
 
 /* 
-   GLASSMORPHISM
+  GLASSMORPHISM
  */
 
 .glass {
@@ -343,50 +418,8 @@ html {
 }
 
 /* 
-   MOBILE OPTIMIZATIONS
- */
-
-@media (max-width: 640px) {
-  /* Prevent text size adjustment on iOS */
-  body {
-    -webkit-text-size-adjust: 100%;
-  }
-
-  /* Better touch targets */
-  button,
-  a,
-  input,
-  select,
-  textarea {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  /* Prevent horizontal scroll */
-  html,
-  body {
-    overflow-x: hidden;
-  }
-}
-
-/* 
-   PRINT STYLES
- */
-
-@media print {
-  body {
-    background: white;
-    color: black;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-}
-
-/* 
-   UTILITIES
- */
+  UTILITIES
+*/
 
 .text-balance {
   text-wrap: balance;
@@ -400,8 +433,7 @@ html {
   aspect-ratio: 16 / 9;
 }
 
-/* Safe area for devices with notch */
-
+/* Safe Area para dispositivos com notch */
 .safe-top {
   padding-top: env(safe-area-inset-top);
 }
@@ -419,16 +451,16 @@ html {
 }
 
 /* 
-   MOBILE OPTIMIZATIONS
- */
+  OTIMIZAÇÕES MOBILE
+*/
 
 @media (max-width: 640px) {
-  /* Prevent text size adjustment on iOS */
+  /* Prevenir ajuste de tamanho de texto no iOS */
   body {
     -webkit-text-size-adjust: 100%;
   }
 
-  /* Better touch targets - MINIMUM 44x44px */
+  /* Touch targets mínimos - 44x44px */
   button,
   a,
   input,
@@ -437,18 +469,18 @@ html {
     min-height: 44px;
   }
   
-  /* Ensure buttons in flex containers maintain size */
+  /* Garantir que botões em flex containers mantenham tamanho */
   button {
     min-width: fit-content;
   }
 
-  /* Prevent horizontal scroll */
+  /* Prevenir scroll horizontal */
   html,
   body {
     overflow-x: hidden;
   }
   
-  /* Better spacing for form elements */
+  /* Melhor espaçamento para elementos de formulário */
   input[type="text"],
   input[type="email"],
   input[type="password"],
@@ -457,11 +489,11 @@ html {
   input[type="date"],
   select,
   textarea {
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px; /* Previne zoom no iOS */
     padding: 12px 16px;
   }
   
-  /* Touch-friendly select dropdowns */
+  /* Dropdowns de select amigáveis ao toque */
   select {
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
@@ -472,82 +504,16 @@ html {
 }
 
 /* 
-   CUSTOM SCROLLBAR - Esconder mas manter funcionalidade
- */
+  PRINT STYLES
+*/
 
-/* Esconder scrollbar mas manter scroll */
-.custom-scrollbar {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-}
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
 
-.custom-scrollbar::-webkit-scrollbar {
-  display: none; /* Chrome/Safari/Opera */
-}
-
-/* 
-   DRAG SCROLL - Permitir arrastar para rolar
- */
-
-.drag-scroll {
-  cursor: grab;
-  user-select: none;
-  scroll-behavior: smooth;
-}
-
-.drag-scroll:active {
-  cursor: grabbing;
-}
-
-/* Smooth scroll em containers */
-.smooth-scroll {
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch; /* iOS smooth scroll */
-}
-
-/* 
-   APLICAR EM TABS E FILTROS HORIZONTAIS
- */
-
-/* Esconder scrollbar horizontal em tabs */
-.horizontal-scroll {
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-}
-
-.horizontal-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-/* Gradient fade nas bordas */
-.scroll-fade-left::before,
-.scroll-fade-right::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 20px;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.scroll-fade-left::before {
-  left: 0;
-  background: linear-gradient(to right, rgba(249, 250, 251, 1), transparent);
-}
-
-.scroll-fade-right::after {
-  right: 0;
-  background: linear-gradient(to left, rgba(249, 250, 251, 1), transparent);
-}
-
-.dark .scroll-fade-left::before {
-  background: linear-gradient(to right, rgba(17, 24, 39, 1), transparent);
-}
-
-.dark .scroll-fade-right::after {
-  background: linear-gradient(to left, rgba(17, 24, 39, 1), transparent);
+  .no-print {
+    display: none !important;
+  }
 }

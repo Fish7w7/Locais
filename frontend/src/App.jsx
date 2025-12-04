@@ -16,6 +16,7 @@ import ModerateReviews from './pages/ModerateReviews';
 import NotFound from './pages/NotFound';
 import SetupAdmin from './pages/Setup.Admin';
 import Login from './pages/Login';
+import Chat from './pages/Chat';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -80,6 +81,7 @@ function App() {
           <Route index element={<Home />} />
           <Route path="services" element={<Services />} />
           <Route path="jobs" element={<Jobs />} />
+          <Route path="chat" element={<Chat />} />
           <Route path="profile" element={<Profile />} />
           <Route path="user/:userId" element={<PublicProfile />} />
           

@@ -41,3 +41,13 @@ export const jobAPI = {
   getMyProposals: () => api.get('/jobs/my-proposals'),
   respondToProposal: (id, data) => api.put(`/jobs/proposals/${id}`, data)
 };
+
+// CHAT
+export const chatAPI = {
+  createOrGetConversation: (data) => api.post('/chat/conversation', data),
+  getMyConversations: () => api.get('/chat/conversations'),
+  getMessages: (conversationId, params) => 
+    api.get(`/chat/conversations/${conversationId}/messages`, { params }),
+  sendMessage: (conversationId, data) => 
+    api.post(`/chat/conversations/${conversationId}/messages`, data)
+};

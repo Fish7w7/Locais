@@ -13,26 +13,49 @@ const ReviewsSection = ({ userId, userType }) => {
   const [selectedType, setSelectedType] = useState('provider');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  if (!userId) return null;
-  useEffect(() => {
-  if (!userId) return; 
-  loadReviews();
-}, [userId]);
+  if (!userId) {
+    console.warn('⚠️ ReviewsSection: userId não fornecido');
+    return null;
+  }
 
+  useEffect(() => {
+    if (!userId) {
+      console.warn('⚠️ useEffect: userId não disponível');
+      return;
+    }
+    
+    console.log(`🔄 Carregando avaliações: userId=${userId}, type=${selectedType}`);
+    loadReviews();
+  }, [userId, selectedType]);
 
   const loadReviews = async () => {
+    if (!userId) {
+      console.error('❌ loadReviews chamado sem userId');
+      return;
+    }
+
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
+      
       const response = await axios.get(`/api/reviews/user/${userId}`, {
-        params: { type: selectedType },
+        params: { 
+          type: selectedType,
+          status: 'approved'
+        },
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      console.log(`✅ ${response.data.reviews?.length || 0} avaliações carregadas (${selectedType})`);
       
       setReviews(response.data.reviews || []);
       setStats(response.data.stats || null);
     } catch (error) {
-      console.error('Erro ao carregar avaliações:', error);
+      console.error('❌ Erro ao carregar avaliações:', error.response?.status, error.message);
+            if (error.response?.status === 429) {
+        console.error('⚠️ RATE LIMIT: Muitas requisições. Aguarde alguns segundos.');
+      }
+      
     } finally {
       setLoading(false);
     }
@@ -45,9 +68,10 @@ const ReviewsSection = ({ userId, userType }) => {
         { helpful },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      loadReviews();
+      await loadReviews();
     } catch (error) {
       console.error('Erro ao marcar avaliação:', error);
+      alert('Erro ao marcar avaliação como útil');
     }
   };
 
@@ -84,12 +108,12 @@ const ReviewsSection = ({ userId, userType }) => {
         </Button>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - APENAS SE FOR PRESTADOR */}
       {userType === 'provider' && (
         <div className="flex gap-2">
           <button
             onClick={() => setSelectedType('provider')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg font-medium transition-colors min-h-[44px] ${
               selectedType === 'provider'
                 ? 'bg-primary-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
@@ -99,7 +123,7 @@ const ReviewsSection = ({ userId, userType }) => {
           </button>
           <button
             onClick={() => setSelectedType('client')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg font-medium transition-colors min-h-[44px] ${
               selectedType === 'client'
                 ? 'bg-primary-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
@@ -163,7 +187,7 @@ const ReviewsSection = ({ userId, userType }) => {
           <div className="text-center py-8">
             <MessageCircle className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
             <p className="text-gray-600 dark:text-gray-400">
-              Nenhuma avaliação ainda
+              Nenhuma avaliação {selectedType === 'provider' ? 'como prestador' : 'como cliente'} ainda
             </p>
           </div>
         </Card>
@@ -226,7 +250,10 @@ const ReviewsSection = ({ userId, userType }) => {
         onClose={() => setShowCreateModal(false)}
         userId={userId}
         userType={selectedType}
-        onSuccess={loadReviews}
+        onSuccess={() => {
+          setShowCreateModal(false);
+          loadReviews(); 
+        }}
       />
     </div>
   );

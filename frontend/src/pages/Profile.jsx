@@ -113,14 +113,14 @@ const Profile = () => {
   };
 
   const loadUserData = async () => {
-    try {
-      const response = await authAPI.getMe();
-      updateUser(response.data.user);
-    } catch (error) {
-      console.error('Erro ao recarregar perfil:', error);
-      showError('Erro ao recarregar perfil');
-    }
-  };
+  try {
+    const response = await authAPI.getMe();
+    updateUser(response.data.user);
+  } catch (error) {
+    console.error('Erro ao recarregar perfil:', error);
+    showError('Erro ao recarregar perfil');
+  }
+};
 
   const getUserTypeLabel = (type) => {
     const labels = {

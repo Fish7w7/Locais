@@ -78,7 +78,6 @@ const ReviewSchema = new mongoose.Schema({
 ReviewSchema.index({ reviewedUserId: 1, status: 1 });
 ReviewSchema.index({ reviewerId: 1 });
 ReviewSchema.index({ status: 1 });
-
-ReviewSchema.index({ reviewerId: 1, reviewedUserId: 1, serviceId: 1 }, { unique: true, sparse: true });
+ReviewSchema.index({ reviewerId: 1, reviewedUserId: 1, type: 1 }, { unique: true });
 
 export default mongoose.model('Review', ReviewSchema);
