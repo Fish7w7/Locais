@@ -1,24 +1,28 @@
-// backend/src/routes/review.js
 import express from 'express';
 import {
   createReview,
   getUserReviews,
-  getPendingReviews,
+  getFlaggedReviews,
   moderateReview,
   markHelpful,
-  deleteReview
+  deleteReview,
+  reportReview 
 } from '../controllers/reviewController.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
 
 const router = express.Router();
 
+// Públicas
 router.get('/user/:userId', getUserReviews);
 
+// Privadas
 router.post('/', protect, createReview);
+router.post('/:id/report', protect, reportReview); 
 router.post('/:id/helpful', protect, markHelpful);
 router.delete('/:id', protect, deleteReview);
 
-router.get('/pending', protect, adminOnly, getPendingReviews);
+// Admin
+router.get('/flagged', protect, adminOnly, getFlaggedReviews); 
 router.put('/:id/moderate', protect, adminOnly, moderateReview);
 
 export default router;

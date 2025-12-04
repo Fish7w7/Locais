@@ -1,8 +1,10 @@
+// backend/src/controllers/adminController.js
 import User from '../models/User.js';
 import ServiceRequest from '../models/ServiceRequest.js';
 import JobVacancy from '../models/JobVacancy.js';
 import Application from '../models/Application.js';
 import JobProposal from '../models/JobProposal.js';
+import Review from '../models/Review.js';
 
 // @desc    Criar conta admin
 // @route   POST /api/admin/create-admin
@@ -11,7 +13,6 @@ export const createAdmin = async (req, res) => {
   try {
     const { email, password, name } = req.body;
 
-    // Verificar se já existe admin com este email
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
@@ -20,7 +21,6 @@ export const createAdmin = async (req, res) => {
       });
     }
 
-    // Criar admin
     const admin = await User.create({
       name: name || 'Admin Master',
       email,
@@ -129,6 +129,48 @@ export const getStats = async (req, res) => {
   }
 };
 
+// @desc    Obter estatísticas de reviews
+// @route   GET /api/admin/review-stats
+// @access  Private (apenas admin)
+export const getReviewStats = async (req, res) => {
+  try {
+    const [
+      flaggedCount,
+      underReviewCount,
+      totalReports,
+      topReportedReviews
+    ] = await Promise.all([
+      Review.countDocuments({ status: 'flagged' }),
+      Review.countDocuments({ status: 'under_review' }),
+      Review.aggregate([
+        { $group: { _id: null, total: { $sum: '$reportsCount' } } }
+      ]),
+      Review.find({ reportsCount: { $gt: 0 } })
+        .sort('-reportsCount')
+        .limit(5)
+        .populate('reviewerId', 'name')
+        .populate('reviewedUserId', 'name')
+    ]);
+
+    res.json({
+      success: true,
+      stats: {
+        flagged: flaggedCount,
+        underReview: underReviewCount,
+        totalReports: totalReports[0]?.total || 0,
+        topReported: topReportedReviews
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar estatísticas de reviews:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar estatísticas',
+      error: error.message
+    });
+  }
+};
+
 // @desc    Deletar qualquer usuário
 // @route   DELETE /api/admin/users/:id
 // @access  Private (apenas admin)
@@ -143,7 +185,6 @@ export const deleteUser = async (req, res) => {
       });
     }
 
-    // Não permitir deletar outro admin
     if (user.role === 'admin' && user._id.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,

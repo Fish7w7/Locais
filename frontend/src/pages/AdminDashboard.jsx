@@ -4,6 +4,7 @@ import { Users, Briefcase, CheckCircle, TrendingUp, Building2, UserCheck, Clock,
 import axios from 'axios';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import ReviewModerationStats from '../components/ReviewModerationStats';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -218,6 +219,9 @@ const AdminDashboard = () => {
           </Card>
         ))}
       </div>
+
+        {/* Estatísticas da moderação de avaliações */}
+        <ReviewModerationStats />
 
       {/* Detailed Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

@@ -17,6 +17,7 @@ import NotFound from './pages/NotFound';
 import SetupAdmin from './pages/Setup.Admin';
 import Login from './pages/Login';
 import Chat from './pages/Chat';
+import ModerateReviewsPage from './pages/ModerateReviews';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -84,6 +85,7 @@ function App() {
           <Route path="chat" element={<Chat />} />
           <Route path="profile" element={<Profile />} />
           <Route path="user/:userId" element={<PublicProfile />} />
+          <Route path="/admin/reviews" element={<ModerateReviewsPage />} />
           
           {/* Rota Admin Dashboard */}
           <Route path="admin" element={

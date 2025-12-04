@@ -1,6 +1,6 @@
 // frontend/src/components/ReviewsSection.jsx
 import { useState, useEffect } from 'react';
-import { Star, ThumbsUp, ThumbsDown, MessageCircle, Plus } from 'lucide-react';
+import { Star, ThumbsUp, ThumbsDown, MessageCircle, Plus, Flag } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
 import axios from 'axios';
@@ -24,7 +24,7 @@ const ReviewsSection = ({ userId, userType }) => {
       return;
     }
     
-    console.log(`🔄 Carregando avaliações: userId=${userId}, type=${selectedType}`);
+    console.log(`📄 Carregando avaliações: userId=${userId}, type=${selectedType}`);
     loadReviews();
   }, [userId, selectedType]);
 
@@ -52,10 +52,9 @@ const ReviewsSection = ({ userId, userType }) => {
       setStats(response.data.stats || null);
     } catch (error) {
       console.error('❌ Erro ao carregar avaliações:', error.response?.status, error.message);
-            if (error.response?.status === 429) {
+      if (error.response?.status === 429) {
         console.error('⚠️ RATE LIMIT: Muitas requisições. Aguarde alguns segundos.');
       }
-      
     } finally {
       setLoading(false);
     }
@@ -221,7 +220,7 @@ const ReviewsSection = ({ userId, userType }) => {
                   {review.comment}
                 </p>
 
-                {/* Útil/Não útil */}
+                {/* Útil/Não útil + Denunciar */}
                 <div className="flex items-center gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
                   <button
                     onClick={() => handleHelpful(review._id, true)}
@@ -237,6 +236,12 @@ const ReviewsSection = ({ userId, userType }) => {
                     <ThumbsDown className="w-4 h-4" />
                     <span>{review.notHelpful || 0}</span>
                   </button>
+                  
+                  {/* Botão de Denúncia */}
+                  <ReportReviewButton 
+                    reviewId={review._id} 
+                    onSuccess={loadReviews}
+                  />
                 </div>
               </div>
             </Card>
@@ -256,6 +261,146 @@ const ReviewsSection = ({ userId, userType }) => {
         }}
       />
     </div>
+  );
+};
+
+// Componente de Denúncia
+const ReportReviewButton = ({ reviewId, onSuccess }) => {
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    reason: '',
+    description: ''
+  });
+
+  const reasons = [
+    { value: 'offensive_language', label: 'Linguagem ofensiva' },
+    { value: 'spam', label: 'Spam' },
+    { value: 'false_information', label: 'Informação falsa' },
+    { value: 'harassment', label: 'Assédio' },
+    { value: 'inappropriate', label: 'Conteúdo inapropriado' },
+    { value: 'other', label: 'Outro' }
+  ];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.reason) {
+      alert('Selecione um motivo');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/reviews/${reviewId}/report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert('Denúncia registrada com sucesso. Obrigado por ajudar a manter a comunidade segura!');
+        setShowModal(false);
+        setFormData({ reason: '', description: '' });
+        if (onSuccess) onSuccess();
+      } else {
+        alert(data.message || 'Erro ao registrar denúncia');
+      }
+    } catch (error) {
+      alert('Erro ao registrar denúncia');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setShowModal(true)}
+        className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors ml-auto"
+        title="Denunciar avaliação"
+      >
+        <Flag className="w-4 h-4" />
+        <span>Denunciar</span>
+      </button>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                <Flag className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Denunciar Avaliação
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Ajude-nos a manter a comunidade segura
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Motivo da denúncia *
+                </label>
+                <select
+                  value={formData.reason}
+                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
+                  required
+                >
+                  <option value="">Selecione um motivo</option>
+                  {reasons.map(r => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Detalhes (opcional)
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                  placeholder="Forneça mais informações se necessário..."
+                  className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 font-medium disabled:opacity-50"
+                >
+                  {loading ? 'Enviando...' : 'Enviar Denúncia'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  disabled={loading}
+                  className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg py-2 font-medium"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

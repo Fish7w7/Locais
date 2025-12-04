@@ -28,20 +28,16 @@ export const createReview = async (req, res) => {
     const existingReview = await Review.findOne({
       reviewerId: req.user.id,
       reviewedUserId,
-      $or: [
-        { serviceId: serviceId || null },
-        { serviceId: null }
-      ]
+      serviceId: serviceId || null
     });
 
     if (existingReview) {
       return res.status(400).json({
         success: false,
-        message: 'Você já avaliou este usuário. Cada pessoa pode ser avaliada apenas uma vez.'
+        message: 'Você já avaliou este usuário'
       });
     }
 
-    // Criar avaliação
     const review = await Review.create({
       reviewedUserId,
       reviewerId: req.user.id,
@@ -49,8 +45,21 @@ export const createReview = async (req, res) => {
       rating,
       comment,
       serviceId: serviceId || null,
-      status: 'pending'
+      status: 'approved'
     });
+
+    if (review.status === 'approved') {
+      if (type === 'provider') {
+        const totalRating = (reviewedUser.providerRating * reviewedUser.providerReviewCount) + rating;
+        reviewedUser.providerReviewCount += 1;
+        reviewedUser.providerRating = totalRating / reviewedUser.providerReviewCount;
+      } else {
+        const totalRating = (reviewedUser.clientRating * reviewedUser.clientReviewCount) + rating;
+        reviewedUser.clientReviewCount += 1;
+        reviewedUser.clientRating = totalRating / reviewedUser.clientReviewCount;
+      }
+      await reviewedUser.save();
+    }
 
     const populatedReview = await Review.findById(review._id)
       .populate('reviewerId', 'name avatar')
@@ -58,6 +67,9 @@ export const createReview = async (req, res) => {
 
     res.status(201).json({
       success: true,
+      message: review.status === 'approved' 
+        ? 'Avaliação publicada com sucesso!' 
+        : 'Avaliação enviada para revisão',
       review: populatedReview
     });
   } catch (error) {
@@ -66,7 +78,7 @@ export const createReview = async (req, res) => {
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: 'Você já avaliou este usuário anteriormente'
+        message: 'Você já avaliou este usuário'
       });
     }
     
@@ -83,48 +95,46 @@ export const createReview = async (req, res) => {
 // @access  Public
 export const getUserReviews = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const { type, status = 'approved' } = req.query;
-
+    const { type, status } = req.query;
+    
     const query = {
-      reviewedUserId: userId,
-      status
+      reviewedUserId: req.params.userId,
+      status: status || 'approved'
     };
-
+    
     if (type) {
       query.type = type;
     }
 
-    console.log(' Query de busca:', JSON.stringify(query));
-
     const reviews = await Review.find(query)
       .populate('reviewerId', 'name avatar')
+      .populate('reviewedUserId', 'name')
       .sort('-createdAt');
-
-    console.log(` Encontradas ${reviews.length} avaliações`);
 
     // Calcular estatísticas
     const stats = {
       total: reviews.length,
-      average: reviews.length > 0
-        ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
-        : 0,
-      distribution: {
-        5: reviews.filter(r => r.rating === 5).length,
-        4: reviews.filter(r => r.rating === 4).length,
-        3: reviews.filter(r => r.rating === 3).length,
-        2: reviews.filter(r => r.rating === 2).length,
-        1: reviews.filter(r => r.rating === 1).length
-      }
+      average: 0,
+      distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
     };
+
+    if (reviews.length > 0) {
+      const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
+      stats.average = sum / reviews.length;
+      
+      reviews.forEach(review => {
+        stats.distribution[review.rating]++;
+      });
+    }
 
     res.json({
       success: true,
+      count: reviews.length,
       reviews,
       stats
     });
   } catch (error) {
-    console.error('❌ Erro ao buscar avaliações:', error);
+    console.error('Erro ao buscar avaliações:', error);
     res.status(500).json({
       success: false,
       message: 'Erro ao buscar avaliações',
@@ -133,37 +143,19 @@ export const getUserReviews = async (req, res) => {
   }
 };
 
-// @desc    Obter avaliações pendentes (Admin)
-// @route   GET /api/reviews/pending
-// @access  Private (Admin)
-export const getPendingReviews = async (req, res) => {
+// @desc    Denunciar avaliação
+// @route   POST /api/reviews/:id/report
+// @access  Private
+export const reportReview = async (req, res) => {
   try {
-    const reviews = await Review.find({ status: 'pending' })
-      .populate('reviewerId', 'name avatar email')
-      .populate('reviewedUserId', 'name avatar')
-      .sort('-createdAt');
-
-    res.json({
-      success: true,
-      count: reviews.length,
-      reviews
-    });
-  } catch (error) {
-    console.error('Erro ao buscar avaliações pendentes:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erro ao buscar avaliações pendentes',
-      error: error.message
-    });
-  }
-};
-
-// @desc    Moderar avaliação (Admin)
-// @route   PUT /api/reviews/:id/moderate
-// @access  Private (Admin)
-export const moderateReview = async (req, res) => {
-  try {
-    const { status, rejectionReason } = req.body;
+    const { reason, description } = req.body;
+    
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        message: 'Motivo da denúncia é obrigatório'
+      });
+    }
 
     const review = await Review.findById(req.params.id);
 
@@ -174,28 +166,130 @@ export const moderateReview = async (req, res) => {
       });
     }
 
-    review.status = status;
+    const alreadyReported = review.reports.some(
+      report => report.reporterId.toString() === req.user.id
+    );
+
+    if (alreadyReported) {
+      return res.status(400).json({
+        success: false,
+        message: 'Você já denunciou esta avaliação'
+      });
+    }
+
+    review.reports.push({
+      reporterId: req.user.id,
+      reason,
+      description: description || ''
+    });
+
+    review.reportsCount += 1;
+
+    if (review.reportsCount >= 3 && review.status === 'approved') {
+      review.status = 'flagged';
+      console.log(`⚠️ Avaliação ${review._id} auto-flagged: ${review.reportsCount} denúncias`);
+    }
+
+    await review.save();
+
+    res.json({
+      success: true,
+      message: 'Denúncia registrada com sucesso',
+      reportsCount: review.reportsCount
+    });
+  } catch (error) {
+    console.error('Erro ao denunciar avaliação:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao denunciar avaliação',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Obter avaliações flagged (Admin)
+// @route   GET /api/reviews/flagged
+// @access  Private (Admin)
+export const getFlaggedReviews = async (req, res) => {
+  try {
+    const reviews = await Review.find({ 
+      $or: [
+        { status: 'flagged' },
+        { status: 'under_review' }
+      ]
+    })
+      .populate('reviewerId', 'name avatar email')
+      .populate('reviewedUserId', 'name avatar')
+      .populate('reports.reporterId', 'name email')
+      .sort('-reportsCount -createdAt');
+
+    res.json({
+      success: true,
+      count: reviews.length,
+      reviews
+    });
+  } catch (error) {
+    console.error('Erro ao buscar avaliações flagged:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar avaliações flagged',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Moderar avaliação (Admin)
+// @route   PUT /api/reviews/:id/moderate
+// @access  Private (Admin)
+export const moderateReview = async (req, res) => {
+  try {
+    const { action, rejectionReason } = req.body;
+
+    const review = await Review.findById(req.params.id);
+
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: 'Avaliação não encontrada'
+      });
+    }
+
     review.moderatedBy = req.user.id;
     review.moderatedAt = new Date();
 
-    if (status === 'rejected' && rejectionReason) {
-      review.rejectionReason = rejectionReason;
-    }
-
-    if (status === 'approved') {
-      const reviewedUser = await User.findById(review.reviewedUserId);
+    if (action === 'approve') {
+      review.status = 'approved';
+      review.reports = [];
+      review.reportsCount = 0;
+      review.autoFlaggedReason = null;
       
-      if (review.type === 'provider') {
-        const totalRating = (reviewedUser.providerRating * reviewedUser.providerReviewCount) + review.rating;
-        reviewedUser.providerReviewCount += 1;
-        reviewedUser.providerRating = totalRating / reviewedUser.providerReviewCount;
-      } else {
-        const totalRating = (reviewedUser.clientRating * reviewedUser.clientReviewCount) + review.rating;
-        reviewedUser.clientReviewCount += 1;
-        reviewedUser.clientRating = totalRating / reviewedUser.clientReviewCount;
+    } else if (action === 'reject') {
+      const oldStatus = review.status;
+      review.status = 'rejected';
+      review.rejectionReason = rejectionReason || 'Conteúdo inapropriado';
+      
+      if (oldStatus === 'approved') {
+        const reviewedUser = await User.findById(review.reviewedUserId);
+        
+        if (review.type === 'provider') {
+          const totalRating = (reviewedUser.providerRating * reviewedUser.providerReviewCount) - review.rating;
+          reviewedUser.providerReviewCount = Math.max(0, reviewedUser.providerReviewCount - 1);
+          reviewedUser.providerRating = reviewedUser.providerReviewCount > 0 
+            ? totalRating / reviewedUser.providerReviewCount 
+            : 0;
+        } else {
+          const totalRating = (reviewedUser.clientRating * reviewedUser.clientReviewCount) - review.rating;
+          reviewedUser.clientReviewCount = Math.max(0, reviewedUser.clientReviewCount - 1);
+          reviewedUser.clientRating = reviewedUser.clientReviewCount > 0 
+            ? totalRating / reviewedUser.clientReviewCount 
+            : 0;
+        }
+        
+        await reviewedUser.save();
       }
-
-      await reviewedUser.save();
+      
+    } else if (action === 'keep_flagged') {
+      review.status = 'flagged';
     }
 
     await review.save();
@@ -207,6 +301,7 @@ export const moderateReview = async (req, res) => {
 
     res.json({
       success: true,
+      message: `Avaliação ${action === 'approve' ? 'aprovada' : action === 'reject' ? 'rejeitada' : 'mantida em revisão'}`,
       review: populatedReview
     });
   } catch (error) {
@@ -224,8 +319,7 @@ export const moderateReview = async (req, res) => {
 // @access  Private
 export const markHelpful = async (req, res) => {
   try {
-    const { helpful } = req.body; 
-
+    const { helpful } = req.body;
     const review = await Review.findById(req.params.id);
 
     if (!review) {
@@ -260,7 +354,7 @@ export const markHelpful = async (req, res) => {
 
 // @desc    Deletar avaliação
 // @route   DELETE /api/reviews/:id
-// @access  Private (Dono ou Admin)
+// @access  Private
 export const deleteReview = async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);
@@ -272,14 +366,33 @@ export const deleteReview = async (req, res) => {
       });
     }
 
-    const isAdmin = req.user.type === 'admin' || req.user.role === 'admin';
-    const isOwner = review.reviewerId.toString() === req.user.id;
-
-    if (!isAdmin && !isOwner) {
+    // Apenas o autor ou admin pode deletar
+    if (review.reviewerId.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Sem permissão para deletar esta avaliação'
+        message: 'Não autorizado'
       });
+    }
+
+    // Atualizar ratings se a avaliação estava aprovada
+    if (review.status === 'approved') {
+      const reviewedUser = await User.findById(review.reviewedUserId);
+      
+      if (review.type === 'provider') {
+        const totalRating = (reviewedUser.providerRating * reviewedUser.providerReviewCount) - review.rating;
+        reviewedUser.providerReviewCount = Math.max(0, reviewedUser.providerReviewCount - 1);
+        reviewedUser.providerRating = reviewedUser.providerReviewCount > 0 
+          ? totalRating / reviewedUser.providerReviewCount 
+          : 0;
+      } else {
+        const totalRating = (reviewedUser.clientRating * reviewedUser.clientReviewCount) - review.rating;
+        reviewedUser.clientReviewCount = Math.max(0, reviewedUser.clientReviewCount - 1);
+        reviewedUser.clientRating = reviewedUser.clientReviewCount > 0 
+          ? totalRating / reviewedUser.clientReviewCount 
+          : 0;
+      }
+      
+      await reviewedUser.save();
     }
 
     await review.deleteOne();

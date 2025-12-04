@@ -11,6 +11,7 @@ import { protect, adminOnly } from '../middlewares/auth.js';
 import { devOnly } from '../middlewares/devOnly.js';
 import { strictLimiter } from '../middlewares/rateLimiter.js';
 import { validateMongoId } from '../middlewares/validation.js';
+import { getReviewStats } from '../controllers/adminController.js';
 
 const router = express.Router();
 
@@ -23,5 +24,6 @@ router.get('/users', protect, adminOnly, getAllUsers);
 router.get('/stats', protect, adminOnly, getStats);
 router.delete('/users/:id', protect, adminOnly, validateMongoId, deleteUser);
 router.put('/users/:id', protect, adminOnly, validateMongoId, updateUser);
+router.get('/review-stats', protect, adminOnly, getReviewStats);
 
 export default router;
