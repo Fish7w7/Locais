@@ -107,10 +107,29 @@ const TermsModal = ({ isOpen, onClose }) => {
                 </ul>
               </section>
 
+              {/* Sistema de Comunicação (Chat) */}
+              <section>
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                  5. Sistema de Comunicação (Chat)
+                </h4>
+                <p className="text-sm mb-2">
+                  A plataforma oferece um sistema de chat para facilitar a comunicação direta entre Clientes, Prestadores e Empresas sobre serviços, candidaturas e propostas.
+                </p>
+                <p className="text-sm mb-2">
+                  Você concorda que:
+                </p>
+                <ul className="text-sm space-y-1 ml-4 list-disc">
+                  <li>O chat deve ser usado exclusivamente para fins relacionados à plataforma.</li>
+                  <li>É proibido o envio de conteúdo ofensivo, ilegal, spam ou qualquer forma de assédio.</li>
+                  <li>A plataforma não monitora ativamente as conversas, mas se reserva o direito de acessar e revisar o conteúdo em caso de denúncias ou disputas.</li>
+                  <li>A troca de informações pessoais de contato (como telefone ou e-mail) para contornar a plataforma é de sua inteira responsabilidade.</li>
+                </ul>
+              </section>
+
               {/* Privacidade */}
               <section>
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                  5. Privacidade e Dados
+                  6. Privacidade e Dados
                 </h4>
                 <p className="text-sm">
                   Coletamos e processamos seus dados pessoais de acordo com nossa Política de Privacidade. Ao usar a plataforma, você consente com a coleta, uso e compartilhamento de suas informações conforme descrito em nossa política.
@@ -120,7 +139,7 @@ const TermsModal = ({ isOpen, onClose }) => {
               {/* Avaliações */}
               <section>
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                  6. Sistema de Avaliações
+                  7. Sistema de Avaliações
                 </h4>
                 <p className="text-sm">
                   As avaliações devem ser honestas e baseadas em experiências reais. Avaliações falsas, ofensivas ou que violem nossos termos podem ser removidas, e o usuário responsável pode ter sua conta suspensa.
@@ -130,7 +149,7 @@ const TermsModal = ({ isOpen, onClose }) => {
               {/* Limitação de Responsabilidade */}
               <section>
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                  7. Limitação de Responsabilidade
+                  8. Limitação de Responsabilidade
                 </h4>
                 <p className="text-sm">
                   A plataforma é fornecida "como está". Não garantimos que o serviço será ininterrupto ou livre de erros. Não nos responsabilizamos por danos diretos ou indiretos resultantes do uso da plataforma.
@@ -140,7 +159,7 @@ const TermsModal = ({ isOpen, onClose }) => {
               {/* Suspensão de Conta */}
               <section>
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                  8. Suspensão e Encerramento
+                  9. Suspensão e Encerramento
                 </h4>
                 <p className="text-sm">
                   Reservamos o direito de suspender ou encerrar contas que violem estes termos, sem aviso prévio. Você pode encerrar sua conta a qualquer momento através das configurações de perfil.
@@ -150,7 +169,7 @@ const TermsModal = ({ isOpen, onClose }) => {
               {/* Modificações */}
               <section>
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                  9. Modificações dos Termos
+                  10. Modificações dos Termos
                 </h4>
                 <p className="text-sm">
                   Podemos atualizar estes termos periodicamente. Alterações significativas serão notificadas através da plataforma. O uso continuado após as alterações constitui aceitação dos novos termos.
@@ -160,7 +179,7 @@ const TermsModal = ({ isOpen, onClose }) => {
               {/* Contato */}
               <section>
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                  10. Contato
+                  11. Contato
                 </h4>
                 <p className="text-sm">
                   Para dúvidas sobre estes termos, entre em contato através do email:{' '}
@@ -173,7 +192,7 @@ const TermsModal = ({ isOpen, onClose }) => {
               {/* Data */}
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Última atualização: {new Date().toLocaleDateString('pt-BR')}
+                Última atualização: {'03/12/2025'}
                 </p>
               </div>
             </div>
