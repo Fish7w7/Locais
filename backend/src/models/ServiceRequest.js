@@ -8,7 +8,7 @@ const ServiceRequestSchema = new mongoose.Schema({
   },
   requesterType: {
     type: String,
-    enum: ['client', 'provider', 'company'],
+    enum: ['client', 'provider', 'company', 'admin'],
     required: true
   },
   

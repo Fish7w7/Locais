@@ -18,6 +18,7 @@ import CreateServiceModal from '../components/CreateServiceModal';
 import ConfirmModal from '../components/ConfirmModal';
 import PullToRefresh from '../components/PullToRefresh';
 import { SkeletonList, SkeletonProviderCard, SkeletonServiceCard } from '../components/Skeleton';
+import StartChatButton from '../components/StartChatButton';
 import { 
   EmptyStateNoProviders, 
   EmptyStateNoServices,
@@ -316,6 +317,17 @@ const Services = () => {
                   </span>
                 )}
               </div>
+               {/* BOTÃO CONVERSAR */}
+              {(request.status === 'accepted' || request.status === 'in_progress') && (
+                <div className="mt-3">
+                  <StartChatButton
+                    otherUserId={request.providerId._id}
+                    type="service"
+                    relatedId={request._id}
+                    fullWidth
+                  />
+                </div>
+              )}
             </Card>
           ))}
         </div>
@@ -396,15 +408,24 @@ const Services = () => {
               )}
 
               {service.status === 'accepted' && (
-                <Button 
-                  variant="primary" 
-                  fullWidth 
-                  size="sm"
-                  icon={RefreshCw}
-                  onClick={() => handleCompleteService(service._id)}
-                >
-                  Marcar como Concluído
-                </Button>
+                <div className="flex gap-2 mt-3">
+                  <Button 
+                    variant="primary" 
+                    fullWidth 
+                    size="sm"
+                    icon={RefreshCw}
+                    onClick={() => handleCompleteService(service._id)}
+                  >
+                    Marcar como Concluído
+                  </Button>
+                  {/* BOTÃO CONVERSAR */}
+                  <StartChatButton
+                    otherUserId={service.requesterId._id}
+                    type="service"
+                    relatedId={service._id}
+                    fullWidth
+                  />
+                </div>
               )}
             </Card>
           ))}

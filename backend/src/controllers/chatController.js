@@ -4,6 +4,7 @@ import Message from '../models/Message.js';
 import ServiceRequest from '../models/ServiceRequest.js';
 import Application from '../models/Application.js';
 import JobProposal from '../models/JobProposal.js';
+import mongoose from 'mongoose';
 
 // @desc    Criar ou obter conversa
 // @route   POST /api/chat/conversation
@@ -12,6 +13,7 @@ export const createOrGetConversation = async (req, res) => {
   try {
     const { otherUserId, type, relatedId } = req.body;
     const currentUserId = req.user.id;
+    const relatedObjectId = relatedId ? new mongoose.Types.ObjectId(relatedId) : null; 
 
     // Verificar permissões baseado no tipo
     const hasPermission = await checkConversationPermission(
@@ -32,9 +34,9 @@ export const createOrGetConversation = async (req, res) => {
     let conversation = await Conversation.findOne({
       participants: { $all: [currentUserId, otherUserId] },
       type,
-      ...(type === 'service' && { relatedService: relatedId }),
-      ...(type === 'job_application' && { relatedApplication: relatedId }),
-      ...(type === 'job_proposal' && { relatedProposal: relatedId })
+      ...(type === 'service' && relatedObjectId && { relatedService: relatedObjectId }),
+      ...(type === 'job_application' && relatedObjectId && { relatedApplication: relatedObjectId }),
+      ...(type === 'job_proposal' && relatedObjectId && { relatedProposal: relatedObjectId })
     }).populate('participants', 'name avatar type');
 
     // Se não existir, criar nova
@@ -48,9 +50,9 @@ export const createOrGetConversation = async (req, res) => {
         }
       };
 
-      if (type === 'service') conversationData.relatedService = relatedId;
-      if (type === 'job_application') conversationData.relatedApplication = relatedId;
-      if (type === 'job_proposal') conversationData.relatedProposal = relatedId;
+      if (type === 'service') conversationData.relatedService = relatedObjectId;
+      if (type === 'job_application') conversationData.relatedApplication = relatedObjectId;
+      if (type === 'job_proposal') conversationData.relatedProposal = relatedObjectId;
 
       conversation = await Conversation.create(conversationData);
       conversation = await conversation.populate('participants', 'name avatar type');
@@ -100,7 +102,7 @@ export const getMyConversations = async (req, res) => {
       return {
         ...conv,
         otherUser,
-        unreadCount: conv.unreadCount?.get(req.user.id) || 0
+        unreadCount: conv.unreadCount?.[req.user.id] || 0
       };
     });
 
