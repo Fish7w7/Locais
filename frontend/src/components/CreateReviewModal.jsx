@@ -1,6 +1,6 @@
 // frontend/src/components/CreateReviewModal.jsx
 import { useState } from 'react';
-import { Star } from 'lucide-react';
+import { Star, AlertTriangle, CheckCircle } from 'lucide-react';
 import Modal from './Modal';
 import Button from './Button';
 import axios from 'axios';
@@ -10,6 +10,7 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [needsReview, setNeedsReview] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,7 +29,7 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post('/api/reviews', {
+      const response = await axios.post('/api/reviews', {
         reviewedUserId: userId,
         type: userType,
         rating,
@@ -37,11 +38,17 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      alert('Avaliação enviada! Ela será analisada antes de aparecer no perfil.');
-      setRating(0);
-      setComment('');
-      onClose();
-      if (onSuccess) onSuccess();
+      // Verificar se foi para revisão
+      if (response.data.needsReview) {
+        setNeedsReview(true);
+        // Não fecha o modal, mostra aviso
+      } else {
+        alert('✅ Avaliação publicada com sucesso!');
+        setRating(0);
+        setComment('');
+        onClose();
+        if (onSuccess) onSuccess();
+      }
     } catch (error) {
       alert(error.response?.data?.message || 'Erro ao enviar avaliação');
     } finally {
@@ -49,15 +56,97 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
     }
   };
 
+  const handleCloseAfterReview = () => {
+    setRating(0);
+    setComment('');
+    setNeedsReview(false);
+    onClose();
+    if (onSuccess) onSuccess();
+  };
+
+  // Se a avaliação foi enviada para revisão
+  if (needsReview) {
+    return (
+      <Modal isOpen={isOpen} onClose={handleCloseAfterReview} title="Avaliação em Revisão" size="md">
+        <div className="text-center py-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 dark:bg-yellow-900 rounded-full mb-4">
+            <AlertTriangle className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+          </div>
+          
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            Avaliação Enviada para Revisão
+          </h3>
+          
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            Sua avaliação foi detectada como potencialmente inadequada e será revisada por nossa equipe antes de ser publicada.
+          </p>
+
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              <strong>Por que isso acontece?</strong><br/>
+              Nosso sistema automático detectou palavras ou frases que podem violar nossas diretrizes de comunidade. Um moderador humano irá revisar sua avaliação em breve.
+            </p>
+          </div>
+
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+            <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Sua avaliação:
+            </p>
+            <div className="flex items-center gap-2 mb-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`w-4 h-4 ${
+                    star <= rating ? 'fill-yellow-500 text-yellow-500' : 'text-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-left">
+              "{comment}"
+            </p>
+          </div>
+
+          <Button
+            variant="primary"
+            fullWidth
+            onClick={handleCloseAfterReview}
+            className="min-h-[44px]"
+          >
+            Entendi
+          </Button>
+        </div>
+      </Modal>
+    );
+  }
+
+  // Formulário normal
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Avaliar Usuário" size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
         
-        {/* Aviso */}
+        {/* Aviso sobre sistema híbrido */}
         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-          <p className="text-sm text-blue-800 dark:text-blue-200">
-            Sua avaliação passará por moderação antes de ser publicada. Seja respeitoso e construtivo!
+          <div className="flex gap-2">
+            <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-800 dark:text-blue-200">
+              <p className="font-medium mb-1">Avaliação Instantânea</p>
+              <p>Sua avaliação será publicada imediatamente, a menos que nosso sistema detecte conteúdo inadequado.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Diretrizes */}
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+          <p className="text-xs font-medium text-yellow-900 dark:text-yellow-100 mb-2">
+            ⚠️ Diretrizes da Comunidade
           </p>
+          <ul className="text-xs text-yellow-800 dark:text-yellow-200 space-y-1">
+            <li>• Seja respeitoso e construtivo</li>
+            <li>• Evite linguagem ofensiva ou discriminatória</li>
+            <li>• Foque na experiência, não na pessoa</li>
+            <li>• Não faça ameaças ou acusações sem provas</li>
+          </ul>
         </div>
 
         {/* Estrelas */}
@@ -110,14 +199,18 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
             required
             minLength={10}
             maxLength={500}
-            placeholder="Compartilhe sua experiência... (mínimo 10 caracteres)"
+            placeholder="Compartilhe sua experiência de forma respeitosa e construtiva... (mínimo 10 caracteres)"
             className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
           />
           <div className="flex justify-between mt-1">
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Mínimo 10 caracteres
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className={`text-xs ${
+              comment.length > 500 
+                ? 'text-red-500' 
+                : 'text-gray-500 dark:text-gray-400'
+            }`}>
               {comment.length}/500
             </p>
           </div>
@@ -130,10 +223,10 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
             variant="primary"
             fullWidth
             loading={loading}
-            disabled={rating === 0 || comment.length < 10}
+            disabled={rating === 0 || comment.length < 10 || comment.length > 500}
             className="min-h-[44px]"
           >
-            Enviar Avaliação
+            Publicar Avaliação
           </Button>
           <Button
             type="button"

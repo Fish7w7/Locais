@@ -1,7 +1,6 @@
 // backend/src/controllers/reviewController.js
 import Review from '../models/Review.js';
 import User from '../models/User.js';
-import ServiceRequest from '../models/ServiceRequest.js';
 
 // @desc    Criar avaliação
 // @route   POST /api/reviews
@@ -34,18 +33,18 @@ export const createReview = async (req, res) => {
     if (existingReview) {
       return res.status(400).json({
         success: false,
-        message: 'Você já avaliou este usuário'
+        message: 'Você já avaliou este usuário para este serviço'
       });
     }
 
+    // CRIAR AVALIAÇÃO - Status definido pelo pre-save hook
     const review = await Review.create({
       reviewedUserId,
       reviewerId: req.user.id,
       type,
       rating,
       comment,
-      serviceId: serviceId || null,
-      status: 'approved'
+      serviceId: serviceId || null
     });
 
     if (review.status === 'approved') {
@@ -65,12 +64,16 @@ export const createReview = async (req, res) => {
       .populate('reviewerId', 'name avatar')
       .populate('reviewedUserId', 'name');
 
+    let message = 'Avaliação publicada com sucesso!';
+    if (review.status === 'under_review') {
+      message = '⚠️ Sua avaliação foi enviada para revisão devido a conteúdo potencialmente inadequado. Um moderador irá analisá-la em breve.';
+    }
+
     res.status(201).json({
       success: true,
-      message: review.status === 'approved' 
-        ? 'Avaliação publicada com sucesso!' 
-        : 'Avaliação enviada para revisão',
-      review: populatedReview
+      message,
+      review: populatedReview,
+      needsReview: review.status === 'under_review'
     });
   } catch (error) {
     console.error('Erro ao criar avaliação:', error);
@@ -166,6 +169,7 @@ export const reportReview = async (req, res) => {
       });
     }
 
+    // Verificar se já denunciou
     const alreadyReported = review.reports.some(
       report => report.reporterId.toString() === req.user.id
     );
@@ -177,6 +181,7 @@ export const reportReview = async (req, res) => {
       });
     }
 
+    // Adicionar denúncia
     review.reports.push({
       reporterId: req.user.id,
       reason,
@@ -185,17 +190,19 @@ export const reportReview = async (req, res) => {
 
     review.reportsCount += 1;
 
-    if (review.reportsCount >= 3 && review.status === 'approved') {
+    // AUTO-FLAG: 3+ denúncias = flagged
+    if (review.reportsCount >= 1 && review.status === 'approved') {
       review.status = 'flagged';
-      console.log(`⚠️ Avaliação ${review._id} auto-flagged: ${review.reportsCount} denúncias`);
+      console.log(`🚩 Avaliação ${review._id} auto-flagged: ${review.reportsCount} denúncias`);
     }
 
     await review.save();
 
     res.json({
       success: true,
-      message: 'Denúncia registrada com sucesso',
-      reportsCount: review.reportsCount
+      message: 'Denúncia registrada com sucesso. Obrigado por ajudar a manter a comunidade segura!',
+      reportsCount: review.reportsCount,
+      isFlagged: review.status === 'flagged'
     });
   } catch (error) {
     console.error('Erro ao denunciar avaliação:', error);
@@ -245,6 +252,13 @@ export const moderateReview = async (req, res) => {
   try {
     const { action, rejectionReason } = req.body;
 
+    if (!['approve', 'reject', 'keep_flagged'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ação inválida'
+      });
+    }
+
     const review = await Review.findById(req.params.id);
 
     if (!review) {
@@ -253,6 +267,8 @@ export const moderateReview = async (req, res) => {
         message: 'Avaliação não encontrada'
       });
     }
+
+    const oldStatus = review.status;
 
     review.moderatedBy = req.user.id;
     review.moderatedAt = new Date();
@@ -263,11 +279,28 @@ export const moderateReview = async (req, res) => {
       review.reportsCount = 0;
       review.autoFlaggedReason = null;
       
+      // Adicionar ao rating se estava em revisão
+      if (oldStatus !== 'approved') {
+        const reviewedUser = await User.findById(review.reviewedUserId);
+        
+        if (review.type === 'provider') {
+          const totalRating = (reviewedUser.providerRating * reviewedUser.providerReviewCount) + review.rating;
+          reviewedUser.providerReviewCount += 1;
+          reviewedUser.providerRating = totalRating / reviewedUser.providerReviewCount;
+        } else {
+          const totalRating = (reviewedUser.clientRating * reviewedUser.clientReviewCount) + review.rating;
+          reviewedUser.clientReviewCount += 1;
+          reviewedUser.clientRating = totalRating / reviewedUser.clientReviewCount;
+        }
+        
+        await reviewedUser.save();
+      }
+      
     } else if (action === 'reject') {
-      const oldStatus = review.status;
       review.status = 'rejected';
       review.rejectionReason = rejectionReason || 'Conteúdo inapropriado';
       
+      // Remover do rating se estava aprovado
       if (oldStatus === 'approved') {
         const reviewedUser = await User.findById(review.reviewedUserId);
         
@@ -299,9 +332,15 @@ export const moderateReview = async (req, res) => {
       .populate('reviewedUserId', 'name')
       .populate('moderatedBy', 'name');
 
+    const messages = {
+      approve: 'Avaliação aprovada e publicada',
+      reject: 'Avaliação rejeitada e removida',
+      keep_flagged: 'Avaliação mantida em revisão'
+    };
+
     res.json({
       success: true,
-      message: `Avaliação ${action === 'approve' ? 'aprovada' : action === 'reject' ? 'rejeitada' : 'mantida em revisão'}`,
+      message: messages[action],
       review: populatedReview
     });
   } catch (error) {

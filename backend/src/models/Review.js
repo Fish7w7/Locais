@@ -34,12 +34,14 @@ const ReviewSchema = new mongoose.Schema({
     default: null
   },
   
+  // STATUS DO SISTEMA HÍBRIDO
   status: {
     type: String,
     enum: ['approved', 'flagged', 'rejected', 'under_review'],
     default: 'approved' 
   },
   
+  // DENÚNCIAS
   reports: [{
     reporterId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -69,8 +71,10 @@ const ReviewSchema = new mongoose.Schema({
     default: 0
   },
   
+  // AUTO-DETECÇÃO
   autoFlaggedReason: String,
   
+  // MODERAÇÃO
   moderatedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -85,6 +89,7 @@ const ReviewSchema = new mongoose.Schema({
     default: null
   },
   
+  // FEEDBACK DA COMUNIDADE
   helpful: {
     type: Number,
     default: 0
@@ -102,24 +107,42 @@ ReviewSchema.index({ reviewedUserId: 1, status: 1 });
 ReviewSchema.index({ reviewerId: 1 });
 ReviewSchema.index({ status: 1 });
 ReviewSchema.index({ reportsCount: 1 });
-ReviewSchema.index({ reviewerId: 1, reviewedUserId: 1, type: 1 }, { unique: true });
+ReviewSchema.index({ reviewerId: 1, reviewedUserId: 1, serviceId: 1 }, { unique: true });
 
 ReviewSchema.pre('save', function(next) {
-  if (this.isNew && this.status === 'approved') {
-    const offensiveWords = [
-      'idiota', 'burro', 'incompetente', 'lixo', 'merda',
-    ];
-    
-    const textToCheck = this.comment.toLowerCase();
-    const foundOffensive = offensiveWords.some(word => 
-      textToCheck.includes(word)
-    );
-    
-    if (foundOffensive) {
-      this.status = 'under_review';
-      this.autoFlaggedReason = 'Linguagem potencialmente ofensiva detectada';
-    }
+  if (!this.isNew) {
+    return next();
   }
+
+  const offensiveWords = [
+    // Xingamentos comuns
+    'idiota', 'burro', 'estúpido', 'imbecil', 'cretino',
+    'incompetente', 'lixo', 'merda', 'bosta', 'porcaria',
+    'inútil', 'vagabundo', 'preguiçoso', 'safado', 'fdp',
+    'desgraçado', 'maldito', 'golpista', 'estelionatário',
+    
+    // Discriminação
+    'negro', 'preto', 'gay', 'viado', 'bicha', 'sapatão',
+    'macaco', 'retardado', 'aleijado', 'coxo',
+    
+    // Ameaças
+    'matar', 'morrer', 'morte', 'cadeia', 'processar',
+    'polícia', 'denunciar'
+  ];
+  
+  const textToCheck = this.comment.toLowerCase();
+  
+  const foundOffensive = offensiveWords.some(word => {
+    const regex = new RegExp(`\\b${word}\\b`, 'i');
+    return regex.test(textToCheck);
+  });
+  
+  if (foundOffensive) {
+    this.status = 'under_review';
+    this.autoFlaggedReason = 'Linguagem potencialmente ofensiva detectada automaticamente';
+    console.log(`🤖 Auto-detecção: Avaliação ${this._id} marcada para revisão`);
+  }
+  
   next();
 });
 

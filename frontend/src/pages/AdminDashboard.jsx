@@ -81,10 +81,15 @@ const AdminDashboard = () => {
     );
   }
 
+  // Calcula o total SEM admins
+  const totalWithoutAdmins = (stats?.users?.clients || 0) + 
+                             (stats?.users?.providers || 0) + 
+                             (stats?.users?.companies || 0);
+
   const statCards = [
     {
       title: 'Total de Usuários',
-      value: stats?.users?.total || 0,
+      value: totalWithoutAdmins,
       icon: Users,
       color: 'bg-blue-100 dark:bg-blue-900',
       iconColor: 'text-blue-600 dark:text-blue-400',
@@ -220,8 +225,8 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-        {/* Estatísticas da moderação de avaliações */}
-        <ReviewModerationStats />
+      {/* Estatísticas da moderação de avaliações */}
+      <ReviewModerationStats />
 
       {/* Detailed Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -241,7 +246,7 @@ const AdminDashboard = () => {
                   {stats?.users?.clients || 0}
                 </span>
                 <span className="text-xs text-gray-500">
-                  ({stats?.users?.total ? ((stats.users.clients / stats.users.total) * 100).toFixed(1) : 0}%)
+                  ({totalWithoutAdmins ? ((stats.users.clients / totalWithoutAdmins) * 100).toFixed(1) : 0}%)
                 </span>
               </div>
             </div>
@@ -256,7 +261,7 @@ const AdminDashboard = () => {
                   {stats?.users?.providers || 0}
                 </span>
                 <span className="text-xs text-gray-500">
-                  ({stats?.users?.total ? ((stats.users.providers / stats.users.total) * 100).toFixed(1) : 0}%)
+                  ({totalWithoutAdmins ? ((stats.users.providers / totalWithoutAdmins) * 100).toFixed(1) : 0}%)
                 </span>
               </div>
             </div>
@@ -271,7 +276,7 @@ const AdminDashboard = () => {
                   {stats?.users?.companies || 0}
                 </span>
                 <span className="text-xs text-gray-500">
-                  ({stats?.users?.total ? ((stats.users.companies / stats.users.total) * 100).toFixed(1) : 0}%)
+                  ({totalWithoutAdmins ? ((stats.users.companies / totalWithoutAdmins) * 100).toFixed(1) : 0}%)
                 </span>
               </div>
             </div>
@@ -281,15 +286,15 @@ const AdminDashboard = () => {
               <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
                 <div 
                   className="bg-green-500 h-full"
-                  style={{ width: `${stats?.users?.total ? (stats.users.clients / stats.users.total) * 100 : 0}%` }}
+                  style={{ width: `${totalWithoutAdmins ? (stats.users.clients / totalWithoutAdmins) * 100 : 0}%` }}
                 ></div>
                 <div 
                   className="bg-purple-500 h-full"
-                  style={{ width: `${stats?.users?.total ? (stats.users.providers / stats.users.total) * 100 : 0}%` }}
+                  style={{ width: `${totalWithoutAdmins ? (stats.users.providers / totalWithoutAdmins) * 100 : 0}%` }}
                 ></div>
                 <div 
                   className="bg-orange-500 h-full"
-                  style={{ width: `${stats?.users?.total ? (stats.users.companies / stats.users.total) * 100 : 0}%` }}
+                  style={{ width: `${totalWithoutAdmins ? (stats.users.companies / totalWithoutAdmins) * 100 : 0}%` }}
                 ></div>
               </div>
             </div>
