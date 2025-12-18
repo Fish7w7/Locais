@@ -15,7 +15,9 @@ import Input from '../components/Input';
 import CreateJobModal from '../components/CreateJobModal';
 import ViewCandidatesModal from '../components/ViewCandidatesModal';
 import EditJobModal from '../components/EditJobModal';
+import ApplyToJobModal from '../components/ApplyToJobModal';
 import ConfirmModal from '../components/ConfirmModal';
+import StartChatButton from '../components/StartChatButton';
 import PullToRefresh from '../components/PullToRefresh';
 import { SkeletonList, SkeletonJobCard } from '../components/Skeleton';
 import { 
@@ -34,7 +36,6 @@ const Jobs = () => {
   const { showLoading, hideLoading } = useLoading();
   const { confirmState, confirm, cancel } = useConfirm();
 
-  // Hooks de Drag Scroll
   const tabsScrollRef = useDragScroll();
   const filtersScrollRef = useDragScroll();
 
@@ -54,6 +55,7 @@ const Jobs = () => {
   const [showCreateJobModal, setShowCreateJobModal] = useState(() => {
     return location.state?.openCreateModal || false;
   });
+  const [showApplyModal, setShowApplyModal] = useState(false);
   const [showCandidatesModal, setShowCandidatesModal] = useState(false);
   const [showEditJobModal, setShowEditJobModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
@@ -80,69 +82,42 @@ const Jobs = () => {
   }, [activeTab, selectedType]);
 
   const loadData = async () => {
-  try {
-    setLoading(true);
-    setError(null);
-    
-    if (activeTab === 'available') {
-      const res = await jobAPI.getJobs({ type: selectedType });
-      setJobs(res.data.jobs || []);
-    } else if (activeTab === 'my-applications') {
-      const res = await jobAPI.getMyApplications();
-      setMyApplications(res.data.applications || []);
-    } else if (activeTab === 'my-proposals' && (user?.type === 'provider' || user?.type === 'admin')) {
-      const res = await jobAPI.getMyProposals();
-      setMyProposals(res.data.proposals || []);
-    } else if (activeTab === 'my-jobs' && (user?.type === 'company' || user?.type === 'admin')) {
-      const res = await jobAPI.getJobs();
-      const allJobs = res.data.jobs || [];
+    try {
+      setLoading(true);
+      setError(null);
       
-      console.log('📊 Debug - Todas as vagas:', allJobs);
-      console.log('📊 Debug - User ID:', user.id);
-      
-      const companyJobs = allJobs.filter(job => {
-        console.log('🔍 Comparando:', {
-          jobCompanyId: job.companyId?._id || job.companyId,
-          userId: user.id,
-          match: (job.companyId?._id || job.companyId) === user.id
+      if (activeTab === 'available') {
+        const res = await jobAPI.getJobs({ type: selectedType });
+        setJobs(res.data.jobs || []);
+      } else if (activeTab === 'my-applications') {
+        const res = await jobAPI.getMyApplications();
+        setMyApplications(res.data.applications || []);
+      } else if (activeTab === 'my-proposals' && (user?.type === 'provider' || user?.type === 'admin')) {
+        const res = await jobAPI.getMyProposals();
+        setMyProposals(res.data.proposals || []);
+      } else if (activeTab === 'my-jobs' && (user?.type === 'company' || user?.type === 'admin')) {
+        const res = await jobAPI.getJobs();
+        const allJobs = res.data.jobs || [];
+        
+        const companyJobs = allJobs.filter(job => {
+          const jobCompanyId = job.companyId?._id || job.companyId;
+          return jobCompanyId === user.id || String(jobCompanyId) === String(user.id);
         });
-
-        const jobCompanyId = job.companyId?._id || job.companyId;
-        return jobCompanyId === user.id || String(jobCompanyId) === String(user.id);
-      });
-      
-      console.log('✅ Vagas filtradas da empresa:', companyJobs.length);
-      setMyCompanyJobs(companyJobs);
-    }
-  } catch (err) {
-    console.error('Erro ao carregar vagas:', err);
-    setError(err.response?.data?.message || 'Erro ao carregar dados');
-    showError('Erro ao carregar vagas');
-  } finally {
-    setLoading(false);
-  }
-};
-
-  const handleApply = async (jobId, jobTitle) => {
-    await confirm({
-      title: 'Candidatar-se',
-      message: `Deseja se candidatar para a vaga "${jobTitle}"?`,
-      variant: 'info',
-      onConfirm: async () => {
-        try {
-          showLoading('Enviando candidatura...');
-          await jobAPI.applyToJob(jobId, {
-            message: 'Gostaria de me candidatar para esta vaga.'
-          });
-          success('Candidatura enviada com sucesso!');
-          loadData();
-        } catch (err) {
-          showError(err.response?.data?.message || 'Erro ao candidatar-se');
-        } finally {
-          hideLoading();
-        }
+        
+        setMyCompanyJobs(companyJobs);
       }
-    });
+    } catch (err) {
+      console.error('Erro ao carregar vagas:', err);
+      setError(err.response?.data?.message || 'Erro ao carregar dados');
+      showError('Erro ao carregar vagas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApply = (job) => {
+    setSelectedJob(job);
+    setShowApplyModal(true);
   };
 
   const handleAcceptProposal = async (proposalId) => {
@@ -215,7 +190,6 @@ const Jobs = () => {
     return job?.companyId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}&background=random`;
   };
 
-  // Renderizar conteúdo baseado no estado
   const renderContent = () => {
     if (loading) {
       return <SkeletonList count={5} CardComponent={SkeletonJobCard} />;
@@ -273,12 +247,12 @@ const Jobs = () => {
                 </div>
               </div>
 
-              {(user?.type === 'client' || user?.type === 'admin') && (
+              {(user?.type === 'client' || user?.type === 'provider' || user?.type === 'admin') && (
                 <Button 
                   variant="primary" 
                   fullWidth 
                   size="sm"
-                  onClick={() => handleApply(job._id, job.title)}
+                  onClick={() => handleApply(job)}
                 >
                   Candidatar-se
                 </Button>
@@ -320,15 +294,40 @@ const Jobs = () => {
                 Candidatura em {new Date(application.createdAt).toLocaleDateString()}
               </div>
 
-              {application.companyResponse && (
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mt-3">
+              {/* MENSAGEM DO CANDIDATO */}
+              {application.message && (
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-3">
                   <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Sua mensagem:
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                    {application.message}
+                  </p>
+                </div>
+              )}
+
+              {/* RESPOSTA DA EMPRESA */}
+              {application.companyResponse && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800 mb-3">
+                  <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">
                     Resposta da empresa:
                   </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
                     {application.companyResponse}
                   </p>
                 </div>
+              )}
+
+              {/* ✅ BOTÃO CONVERSAR - Quando aceito */}
+              {application.status === 'accepted' && (
+                <StartChatButton
+                  otherUserId={application.jobId?.companyId?._id || application.jobId?.companyId}
+                  type="job_application"
+                  relatedId={application._id}
+                  variant="primary"
+                  size="sm"
+                  fullWidth
+                />
               )}
             </Card>
           ))}
@@ -404,6 +403,20 @@ const Jobs = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     {proposal.providerResponse}
                   </p>
+                </div>
+              )}
+
+              {/* ✅ BOTÃO CONVERSAR - Quando aceito */}
+              {proposal.status === 'accepted' && (
+                <div className="mt-3">
+                  <StartChatButton
+                    otherUserId={proposal.companyId._id}
+                    type="job_proposal"
+                    relatedId={proposal._id}
+                    variant="primary"
+                    size="sm"
+                    fullWidth
+                  />
                 </div>
               )}
             </Card>
@@ -523,7 +536,7 @@ const Jobs = () => {
             Vagas Disponíveis
           </button>
           
-          {(user?.type === 'client' || user?.type === 'admin') && (
+          {(user?.type === 'client' || user?.type === 'provider' || user?.type === 'admin') && (
             <button
               onClick={() => setActiveTab('my-applications')}
               className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
@@ -612,6 +625,16 @@ const Jobs = () => {
         <CreateJobModal
           isOpen={showCreateJobModal}
           onClose={() => setShowCreateJobModal(false)}
+          onSuccess={loadData}
+        />
+
+        <ApplyToJobModal
+          isOpen={showApplyModal}
+          onClose={() => {
+            setShowApplyModal(false);
+            setSelectedJob(null);
+          }}
+          job={selectedJob}
           onSuccess={loadData}
         />
 

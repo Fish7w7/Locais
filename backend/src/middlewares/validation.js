@@ -20,7 +20,6 @@ export const validate = (req, res, next) => {
 };
 
 // VALIDAÇÕES DE AUTENTICAÇÃO
-
 export const validateRegister = [
   body('name')
     .trim()
@@ -186,14 +185,3 @@ export const validatePagination = [
   
   validate
 ];
-
-// SANITIZAÇÃO DE STRINGS
-
-export const sanitizeString = (str) => {
-  if (!str) return '';
-  return str
-    .trim()
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
-    .replace(/javascript:/gi, '') // Remove javascript:
-    .replace(/on\w+\s*=/gi, ''); // Remove event handlers
-};

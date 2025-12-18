@@ -2,102 +2,62 @@
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
+import hpp from 'hpp';
+import rateLimit from 'express-rate-limit';
+import cors from 'cors';
 
 export const securityMiddlewares = (app) => {
-  // Helmet - Configuração de headers de segurança
+  const limiter = rateLimit({
+    max: 100,
+    windowMs: 15 * 60 * 1000, 
+    message: 'Muitas requisições a partir deste IP, tente novamente após 15 minutos.',
+    standardHeaders: true, 
+    legacyHeaders: false, 
+  });
+  app.use(limiter);
+
+  // Helmet: Configuração de Headers de Segurança HTTP
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", 'data:', 'https:'],
-      }
+        styleSrc: ["'self'", "https:", "http:"], 
+        scriptSrc: ["'self'", "https:", "http:"],
+        imgSrc: ["'self'", 'data:', 'https:', 'http:'],
+        connectSrc: ["'self'", "https:", "http:"],
+        fontSrc: ["'self'", "https:", "http:", 'data:'],
+      },
     },
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+    crossOriginEmbedderPolicy: true, 
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    xssFilter: false, 
   }));
 
   // Sanitização de dados NoSQL
   app.use(mongoSanitize({
     replaceWith: '_',
     onSanitize: ({ req, key }) => {
-      console.warn(`⚠️ Tentativa de NoSQL Injection detectada: ${key}`);
+      console.warn(`[SEGURANÇA] Tentativa de NoSQL Injection detectada e sanitizada na chave: ${key}`);
     }
   }));
 
-  // Proteção contra XSS
+  // Proteção contra XSS 
   app.use(xss());
 
-  // Prevenir parameter pollution
+  // HPP
+  app.use(hpp());
+
+  // CORS 
+  app.use(cors({
+    origin: 'http://localhost:5173',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true, 
+  }));
+
+  // Middleware de Logging de Segurança (Simplificado)
   app.use((req, res, next) => {
-    if (req.query) {
-      Object.keys(req.query).forEach(key => {
-        if (Array.isArray(req.query[key])) {
-          req.query[key] = req.query[key][0];
-        }
-      });
+    if (process.env.NODE_ENV === 'development') {
     }
-    next();
-  });
-
-  // Headers de segurança adicionais
-  app.use((req, res, next) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    next();
-  });
-
-  // Logging de tentativas suspeitas
-  app.use((req, res, next) => {
-    // Padrões que indicam ATAQUE REAL (não JSON válido)
-    const suspiciousPatterns = [
-      // SQL Injection
-      /(\bor\b|\band\b).*['"=]/i,
-      /union.*select/i,
-      /insert.*into/i,
-      /delete.*from/i,
-      /drop.*table/i,
-      /exec(\s|\()/i,
-      
-      // XSS básico
-      /<script[^>]*>.*?<\/script>/i,
-      /javascript:/i,
-      /onerror\s*=/i,
-      /onload\s*=/i,
-      
-      // Path Traversal
-      /\.\.[\/\\]/,
-      
-      // Command Injection
-      /;.*\b(ls|cat|wget|curl|bash|sh)\b/i,
-      
-      // NoSQL Injection 
-      /\$where/i,
-      /\$ne/i,
-      /\$gt/i,
-      /\$regex/i
-    ];
-
-    const checkSuspicious = (obj) => {
-      if (!obj) return false;
-      const str = JSON.stringify(obj);
-      return suspiciousPatterns.some(pattern => pattern.test(str));
-    };
-
-    if (checkSuspicious(req.body) || checkSuspicious(req.query) || checkSuspicious(req.params)) {
-      console.warn('🚨 ATIVIDADE SUSPEITA DETECTADA:', {
-        ip: req.ip,
-        path: req.path,
-        method: req.method,
-        timestamp: new Date().toISOString(),
-        body: req.body,
-        query: req.query
-      });
-    }
-
     next();
   });
 };

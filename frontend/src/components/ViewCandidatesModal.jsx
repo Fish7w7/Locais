@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Users, Star, MapPin, Mail, Phone, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Users, Star, MapPin, Mail, Phone, CheckCircle, XCircle, Clock, MessageCircle } from 'lucide-react';
 import Modal from './Modal';
 import Button from './Button';
 import Card from './Card';
+import StartChatButton from './StartChatButton';
 import { jobAPI } from '../api/services';
 
 const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
@@ -164,7 +165,7 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
                         <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Mensagem do candidato:
                         </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
                           {application.message}
                         </p>
                       </div>
@@ -235,6 +236,18 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
                           >
                             Responder Candidatura
                           </Button>
+                        )}
+
+                        {/* ✅ BOTÃO CONVERSAR - Aparece quando aceito */}
+                        {application.status === 'accepted' && (
+                          <StartChatButton
+                            otherUserId={application.applicantId._id}
+                            type="job_application"
+                            relatedId={application._id}
+                            variant="primary"
+                            size="sm"
+                            fullWidth
+                          />
                         )}
                       </>
                     )}

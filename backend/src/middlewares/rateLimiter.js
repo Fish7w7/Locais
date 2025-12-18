@@ -1,4 +1,3 @@
-// backend/src/middlewares/rateLimiter.js
 import rateLimit from 'express-rate-limit';
 
 // Rate limiter geral - 100 requisições por 15 minutos

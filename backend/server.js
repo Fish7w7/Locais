@@ -48,9 +48,6 @@ if (process.env.NODE_ENV === 'development') {
 // Aplicar todos os middlewares de segurança
 securityMiddlewares(app);
 
-// Rate limiting geral
-app.use('/api/', generalLimiter);
-
 // MONGODB CONNECTION
 
 mongoose.connect(process.env.MONGODB_URI)
