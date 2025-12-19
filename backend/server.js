@@ -1,9 +1,8 @@
-// backend/server.js
 import express from 'express';
 import mongoose from 'mongoose';
-import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import cors from 'cors'; // Reimportado para uso direto
 
 // Middlewares de segurança
 import { securityMiddlewares } from './src/config/security.js';
@@ -14,7 +13,7 @@ import authRoutes from './src/routes/auth.js';
 import userRoutes from './src/routes/user.js';
 import serviceRoutes from './src/routes/service.js';
 import jobRoutes from './src/routes/job.js';
-import adminRoutes from './src/routes/admin.js';
+import adminRoutes from './src/routes/adminRoutes.js';
 import reviewRoutes from './src/routes/review.js';
 import chatRoutes from './src/routes/chat.js';
 dotenv.config();
@@ -22,17 +21,28 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// MIDDLEWARES DE SEGURANÇA
+// --- CORREÇÃO DEFINITIVA DO CORS (APLICADO NO TOPO) ---
+const allowedOrigins = [
+  'http://localhost:5173', // Frontend principal
+  'http://localhost:5174'  // Painel de Administração Dedicado
+];
 
-// CORS configurado
-const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
-  optionsSuccessStatus: 200,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
-app.use(cors(corsOptions))
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); 
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      // Logar a tentativa de acesso não autorizado
+      console.warn(`[CORS BLOQUEADO] Tentativa de acesso de origem não permitida: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true, 
+}));
+// ------------------------------------------------------
 
 // Parsers
 app.use(express.json({ limit: '10mb' }));
@@ -45,11 +55,53 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Aplicar todos os middlewares de segurança
-securityMiddlewares(app);
+// Aplicar os middlewares de segurança restantes (o CORS já foi aplicado)
+// Importar os middlewares de segurança individuais do security.js
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
+import xss from 'xss-clean';
+import hpp from 'hpp';
+import rateLimit from 'express-rate-limit';
+
+// 1. Rate Limiting: Proteção contra ataques de força bruta e DoS
+const limiter = rateLimit({
+  max: 100,
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  message: 'Muitas requisições a partir deste IP, tente novamente após 15 minutos.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+
+// 2. Helmet: Configuração de Headers de Segurança HTTP
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "https:", "http:"], 
+      scriptSrc: ["'self'", "https:", "http:"],
+      imgSrc: ["'self'", 'data:', 'https:', 'http:'],
+      connectSrc: ["'self'", "https:", "http:"],
+      fontSrc: ["'self'", "https:", "http:", 'data:'],
+    },
+  },
+  crossOriginEmbedderPolicy: true, 
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  xssFilter: false, 
+}));
+
+// 3. Sanitização de dados NoSQL (Mongo Sanitize)
+app.use(mongoSanitize({
+  replaceWith: '_',
+}));
+
+// 4. Proteção contra XSS (XSS-Clean)
+app.use(xss());
+
+// 5. Prevenir HTTP Parameter Pollution (HPP)
+app.use(hpp());
 
 // MONGODB CONNECTION
-
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('✅ MongoDB conectado com sucesso');
@@ -70,7 +122,6 @@ mongoose.connection.on('error', (err) => {
 });
 
 // ROTAS
-
 // Health check
 app.get('/', (req, res) => {
   res.json({ 
