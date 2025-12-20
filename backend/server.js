@@ -2,7 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import cors from 'cors'; // Reimportado para uso direto
+import cors from 'cors';
 
 // Middlewares de segurança
 import { securityMiddlewares } from './src/config/security.js';
@@ -16,33 +16,35 @@ import jobRoutes from './src/routes/job.js';
 import adminRoutes from './src/routes/adminRoutes.js';
 import reviewRoutes from './src/routes/review.js';
 import chatRoutes from './src/routes/chat.js';
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// --- CORREÇÃO DEFINITIVA DO CORS (APLICADO NO TOPO) ---
 const allowedOrigins = [
-  'http://localhost:5173', // Frontend principal
-  'http://localhost:5174'  // Painel de Administração Dedicado
-];
+  'http://localhost:5173',
+  'http://localhost:5174',
+  process.env.FRONTEND_URL, 
+  process.env.ADMIN_PANEL_URL 
+].filter(Boolean); 
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); 
+    // Permitir requisições sem origin (mobile apps, Postman, etc)
+    if (!origin) return callback(null, true);
     
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      // Logar a tentativa de acesso não autorizado
-      console.warn(`[CORS BLOQUEADO] Tentativa de acesso de origem não permitida: ${origin}`);
+      console.warn(`[CORS BLOQUEADO] Origem não permitida: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true, 
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
-// ------------------------------------------------------
 
 // Parsers
 app.use(express.json({ limit: '10mb' }));
@@ -55,25 +57,24 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Aplicar os middlewares de segurança restantes (o CORS já foi aplicado)
-// Importar os middlewares de segurança individuais do security.js
+// Aplicar os middlewares de segurança restantes
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
 import hpp from 'hpp';
 import rateLimit from 'express-rate-limit';
 
-// 1. Rate Limiting: Proteção contra ataques de força bruta e DoS
+//Rate Limiting
 const limiter = rateLimit({
   max: 100,
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 15 * 60 * 1000,
   message: 'Muitas requisições a partir deste IP, tente novamente após 15 minutos.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 app.use(limiter);
 
-// 2. Helmet: Configuração de Headers de Segurança HTTP
+//Helmet
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -85,55 +86,53 @@ app.use(helmet({
       fontSrc: ["'self'", "https:", "http:", 'data:'],
     },
   },
-  crossOriginEmbedderPolicy: true, 
+  crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" },
   xssFilter: false, 
 }));
 
-// 3. Sanitização de dados NoSQL (Mongo Sanitize)
+//Sanitização NoSQL
 app.use(mongoSanitize({
   replaceWith: '_',
 }));
 
-// 4. Proteção contra XSS (XSS-Clean)
+//XSS Protection
 app.use(xss());
 
-// 5. Prevenir HTTP Parameter Pollution (HPP)
+//HPP
 app.use(hpp());
 
 // MONGODB CONNECTION
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
-    console.log('✅ MongoDB conectado com sucesso');
-    console.log(`📊 Database: ${mongoose.connection.name}`);
+    console.log('MongoDB conectado com sucesso');
+    console.log(`Database: ${mongoose.connection.name}`);
   })
   .catch((err) => {
-    console.error('❌ Erro ao conectar MongoDB:', err.message);
+    console.error('Erro ao conectar MongoDB:', err.message);
     process.exit(1);
   });
 
 // Monitorar conexão
 mongoose.connection.on('disconnected', () => {
-  console.warn('⚠️ MongoDB desconectado');
+  console.warn('MongoDB desconectado');
 });
 
 mongoose.connection.on('error', (err) => {
-  console.error('❌ Erro no MongoDB:', err);
+  console.error('Erro no MongoDB:', err);
 });
 
 // ROTAS
-// Health check
 app.get('/', (req, res) => {
   res.json({ 
     success: true,
-    message: '🚀 API Serviços Locais',
+    message: 'API Serviços Locais',
     version: '1.0.0',
     status: 'online',
     timestamp: new Date().toISOString()
   });
 });
 
-// Health check detalhado
 app.get('/health', (req, res) => {
   const health = {
     uptime: process.uptime(),
@@ -157,8 +156,6 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', chatRoutes);
 
 // ERROR HANDLERS
-
-// 404 Handler 
 app.use((req, res) => {
   res.status(404).json({ 
     success: false,
@@ -167,11 +164,9 @@ app.use((req, res) => {
   });
 });
 
-// Error Handler Global
 app.use((err, req, res, next) => {
-  console.error('❌ Erro:', err);
+  console.error('Erro:', err);
 
-  // Mongoose validation error
   if (err.name === 'ValidationError') {
     const errors = Object.values(err.errors).map(e => e.message);
     return res.status(400).json({
@@ -181,7 +176,6 @@ app.use((err, req, res, next) => {
     });
   }
 
-  // Mongoose duplicate key error
   if (err.code === 11000) {
     const field = Object.keys(err.keyPattern)[0];
     return res.status(400).json({
@@ -190,7 +184,6 @@ app.use((err, req, res, next) => {
     });
   }
 
-  // JWT error
   if (err.name === 'JsonWebTokenError') {
     return res.status(401).json({
       success: false,
@@ -205,7 +198,6 @@ app.use((err, req, res, next) => {
     });
   }
 
-  // Default error
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({ 
     success: false,
@@ -218,29 +210,26 @@ app.use((err, req, res, next) => {
 });
 
 // GRACEFUL SHUTDOWN
-
 process.on('SIGTERM', async () => {
-  console.log(' SIGTERM recebido, fechando servidor...');
-  
+  console.log('SIGTERM recebido, fechando servidor...');
   await mongoose.connection.close();
-  console.log(' MongoDB desconectado');
-  
+  console.log('MongoDB desconectado');
   process.exit(0);
 });
 
 process.on('unhandledRejection', (err) => {
-  console.error(' Unhandled Rejection:', err);
+  console.error('Unhandled Rejection:', err);
   process.exit(1);
 });
 
 // START SERVER
-
 app.listen(PORT, () => {
   console.log('\n================================');
-  console.log(`   Servidor rodando na porta ${PORT}`);
+  console.log(`✅ Servidor rodando na porta ${PORT}`);
   console.log(`📍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔒 Rate Limiting: Ativo`);
   console.log(`🛡️  Segurança: Helmet + Sanitização`);
+  console.log(`🌐 CORS: Configurado para ${allowedOrigins.length} origens`);
   console.log('================================\n');
 });
 
