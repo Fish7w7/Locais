@@ -5,8 +5,14 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 
 // Middlewares de segurança
-import { securityMiddlewares } from './src/config/security.js';
-import { generalLimiter } from './src/middlewares/rateLimiter.js';
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
+import xss from 'xss-clean';
+import hpp from 'hpp';
+import rateLimit from 'express-rate-limit';
+
+// Middleware de manutenção
+import { checkMaintenance } from './src/middlewares/maintenance.js';
 
 // Rotas
 import authRoutes from './src/routes/auth.js';
@@ -21,29 +27,26 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// --- CORS ---
 const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-  process.env.FRONTEND_URL, 
-  process.env.ADMIN_PANEL_URL 
-].filter(Boolean); 
+  'http://localhost:5173', // Frontend principal
+  'http://localhost:5174'  // Painel de Administração
+];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir requisições sem origin (mobile apps, Postman, etc)
-    if (!origin) return callback(null, true);
+    if (!origin) return callback(null, true); 
     
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      console.warn(`[CORS BLOQUEADO] Origem não permitida: ${origin}`);
+      console.warn(`[CORS BLOQUEADO] Tentativa de acesso de origem não permitida: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
+  credentials: true, 
 }));
 
 // Parsers
@@ -57,14 +60,7 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Aplicar os middlewares de segurança restantes
-import helmet from 'helmet';
-import mongoSanitize from 'express-mongo-sanitize';
-import xss from 'xss-clean';
-import hpp from 'hpp';
-import rateLimit from 'express-rate-limit';
-
-//Rate Limiting
+// 1. Rate Limiting
 const limiter = rateLimit({
   max: 100,
   windowMs: 15 * 60 * 1000,
@@ -74,7 +70,7 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-//Helmet
+// 2. Helmet
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -86,47 +82,48 @@ app.use(helmet({
       fontSrc: ["'self'", "https:", "http:", 'data:'],
     },
   },
-  crossOriginEmbedderPolicy: false,
+  crossOriginEmbedderPolicy: true, 
   crossOriginResourcePolicy: { policy: "cross-origin" },
   xssFilter: false, 
 }));
 
-//Sanitização NoSQL
+// 3. Sanitização NoSQL
 app.use(mongoSanitize({
   replaceWith: '_',
 }));
 
-//XSS Protection
+// 4. XSS-Clean
 app.use(xss());
 
-//HPP
+// 5. HPP
 app.use(hpp());
 
 // MONGODB CONNECTION
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
-    console.log('MongoDB conectado com sucesso');
-    console.log(`Database: ${mongoose.connection.name}`);
+    console.log('✅ MongoDB conectado com sucesso');
+    console.log(`📊 Database: ${mongoose.connection.name}`);
   })
   .catch((err) => {
-    console.error('Erro ao conectar MongoDB:', err.message);
+    console.error('❌ Erro ao conectar MongoDB:', err.message);
     process.exit(1);
   });
 
-// Monitorar conexão
 mongoose.connection.on('disconnected', () => {
-  console.warn('MongoDB desconectado');
+  console.warn('⚠️ MongoDB desconectado');
 });
 
 mongoose.connection.on('error', (err) => {
-  console.error('Erro no MongoDB:', err);
+  console.error('❌ Erro no MongoDB:', err);
 });
 
 // ROTAS
+
+// Health check (sem manutenção)
 app.get('/', (req, res) => {
   res.json({ 
     success: true,
-    message: 'API Serviços Locais',
+    message: '🚀 API Serviços Locais',
     version: '1.0.0',
     status: 'online',
     timestamp: new Date().toISOString()
@@ -146,6 +143,10 @@ app.get('/health', (req, res) => {
   res.status(status).json(health);
 });
 
+// ⚠️ MIDDLEWARE DE MANUTENÇÃO (aplicado ANTES das rotas)
+// Bloqueia todas as rotas exceto /api/admin e /api/auth
+app.use(checkMaintenance);
+
 // Rotas da API
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -156,6 +157,8 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', chatRoutes);
 
 // ERROR HANDLERS
+
+// 404 Handler 
 app.use((req, res) => {
   res.status(404).json({ 
     success: false,
@@ -164,9 +167,11 @@ app.use((req, res) => {
   });
 });
 
+// Error Handler Global
 app.use((err, req, res, next) => {
-  console.error('Erro:', err);
+  console.error('❌ Erro:', err);
 
+  // Mongoose validation error
   if (err.name === 'ValidationError') {
     const errors = Object.values(err.errors).map(e => e.message);
     return res.status(400).json({
@@ -176,6 +181,7 @@ app.use((err, req, res, next) => {
     });
   }
 
+  // Mongoose duplicate key error
   if (err.code === 11000) {
     const field = Object.keys(err.keyPattern)[0];
     return res.status(400).json({
@@ -184,6 +190,7 @@ app.use((err, req, res, next) => {
     });
   }
 
+  // JWT error
   if (err.name === 'JsonWebTokenError') {
     return res.status(401).json({
       success: false,
@@ -198,6 +205,7 @@ app.use((err, req, res, next) => {
     });
   }
 
+  // Default error
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({ 
     success: false,
@@ -211,25 +219,27 @@ app.use((err, req, res, next) => {
 
 // GRACEFUL SHUTDOWN
 process.on('SIGTERM', async () => {
-  console.log('SIGTERM recebido, fechando servidor...');
+  console.log('🛑 SIGTERM recebido, fechando servidor...');
+  
   await mongoose.connection.close();
-  console.log('MongoDB desconectado');
+  console.log('📊 MongoDB desconectado');
+  
   process.exit(0);
 });
 
 process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Rejection:', err);
+  console.error('❌ Unhandled Rejection:', err);
   process.exit(1);
 });
 
 // START SERVER
 app.listen(PORT, () => {
   console.log('\n================================');
-  console.log(`✅ Servidor rodando na porta ${PORT}`);
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log(`📍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔒 Rate Limiting: Ativo`);
   console.log(`🛡️  Segurança: Helmet + Sanitização`);
-  console.log(`🌐 CORS: Configurado para ${allowedOrigins.length} origens`);
+  console.log(`🔧 Modo Manutenção: Verificação ativa`);
   console.log('================================\n');
 });
 

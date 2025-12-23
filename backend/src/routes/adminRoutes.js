@@ -1,4 +1,4 @@
-// Locais/backend/src/routes/adminRoutes.js
+// backend/src/routes/adminRoutes.js
 import express from 'express';
 import { protect, adminOnly } from '../middlewares/auth.js';
 import {
@@ -8,9 +8,6 @@ import {
   getUserById,
   updateUser,
   deleteUser,
-  getPendingReviews,
-  approveReview,
-  rejectReview,
   getContent,
   deleteContent,
   getSettings,
@@ -37,11 +34,6 @@ router.route('/users/:id')
   .get(getUserById) // Obter detalhes de um usuário
   .put(updateUser) // Atualizar usuário
   .delete(deleteUser); // Deletar usuário
-
-// Gerenciamento de Reviews
-router.get('/reviews/pending', getPendingReviews); // Listar reviews pendentes
-router.put('/reviews/:id/approve', approveReview); // Aprovar review
-router.delete('/reviews/:id', rejectReview); // Rejeitar/Remover review
 
 // Gerenciamento de Conteúdo (Serviços/Vagas)
 router.route('/content')

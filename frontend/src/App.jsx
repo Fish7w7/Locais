@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import { useState, useEffect } from 'react';
+import api from './api/axios';
 
 // Layouts
 import Layout from './components/Layout';
@@ -17,7 +19,7 @@ import NotFound from './pages/NotFound';
 import SetupAdmin from './pages/Setup.Admin';
 import Login from './pages/Login';
 import Chat from './pages/Chat';
-import ModerateReviewsPage from './pages/ModerateReviews';
+import Maintenance from './pages/Maintenance';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -64,6 +66,76 @@ const AdminRoute = ({ children }) => {
 };
 
 function App() {
+  const { user } = useAuth();
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [checkingMaintenance, setCheckingMaintenance] = useState(true);
+
+  // Verifica modo de manutenção
+  const checkMaintenance = async () => {
+    try {
+      // Se for admin, não verifica manutenção
+      if (user && (user.type === 'admin' || user.role === 'admin')) {
+        setMaintenanceMode(false);
+        setCheckingMaintenance(false);
+        return;
+      }
+
+      // Faz uma requisição simples para verificar
+      await api.get('/auth/me');
+      setMaintenanceMode(false);
+    } catch (error) {
+      // Se retornar 503, está em manutenção
+      if (error.response?.status === 503 || error.response?.data?.maintenance) {
+        setMaintenanceMode(true);
+      } else {
+        setMaintenanceMode(false);
+      }
+    } finally {
+      setCheckingMaintenance(false);
+    }
+  };
+
+  useEffect(() => {
+    checkMaintenance();
+  }, [user]);
+
+  // Interceptor para detectar modo de manutenção em qualquer requisição
+  useEffect(() => {
+    const interceptor = api.interceptors.response.use(
+      response => response,
+      error => {
+        if (error.response?.status === 503 || error.response?.data?.maintenance) {
+          // Se não for admin, ativa modo manutenção
+          if (!user || (user.type !== 'admin' && user.role !== 'admin')) {
+            setMaintenanceMode(true);
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      api.interceptors.response.eject(interceptor);
+    };
+  }, [user]);
+
+  // Loading inicial
+  if (checkingMaintenance) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Verificando sistema...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Se em manutenção e não for admin
+  if (maintenanceMode && (!user || (user.type !== 'admin' && user.role !== 'admin'))) {
+    return <Maintenance onRetry={checkMaintenance} />;
+  }
+
   return (
     <BrowserRouter>
       <Routes>
@@ -85,7 +157,6 @@ function App() {
           <Route path="chat" element={<Chat />} />
           <Route path="profile" element={<Profile />} />
           <Route path="user/:userId" element={<PublicProfile />} />
-          <Route path="/admin/reviews" element={<ModerateReviewsPage />} />
           
           {/* Rota Admin Dashboard */}
           <Route path="admin" element={

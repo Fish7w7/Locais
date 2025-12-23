@@ -1,29 +1,36 @@
 import mongoose from 'mongoose';
 
 const SettingsSchema = new mongoose.Schema({
-  // O ID é fixo para garantir que haja apenas um documento de configurações
-  _id: {
-    type: mongoose.Schema.Types.ObjectId,
-    default: () => new mongoose.Types.ObjectId('60c72b2f9b1e8b001c8e4d1a'), // ID fixo para upsert
-    required: true,
-  },
   maxUploadSize: {
     type: Number,
-    default: 5, // 5 MB
+    default: 5,
     min: 1,
     max: 100,
+    required: true
   },
   allowedCategories: {
     type: String,
     default: 'Eletricista, Limpeza, Encanador, TI',
+    required: true
   },
   maintenanceMode: {
     type: Boolean,
     default: false,
-  },
-  // Adicione outros campos de configuração global aqui
+    required: true
+  }
 }, {
   timestamps: true,
+  collection: 'settings' // Nome explícito da coleção
+});
+
+// Garante que só exista um documento de configurações
+SettingsSchema.pre('save', async function(next) {
+  const count = await mongoose.models.Settings.countDocuments();
+  if (count > 0 && this.isNew) {
+    const error = new Error('Só pode existir um documento de configurações');
+    return next(error);
+  }
+  next();
 });
 
 const Settings = mongoose.model('Settings', SettingsSchema);
