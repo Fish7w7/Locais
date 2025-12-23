@@ -145,7 +145,7 @@ app.get('/health', (req, res) => {
 
 // ⚠️ MIDDLEWARE DE MANUTENÇÃO (aplicado ANTES das rotas)
 // Bloqueia todas as rotas exceto /api/admin e /api/auth
-app.use(checkMaintenance);
+app.use('/api', checkMaintenance);
 
 // Rotas da API
 app.use('/api/auth', authRoutes);

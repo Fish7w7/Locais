@@ -1,3 +1,4 @@
+// frontend/src/components/Button.jsx
 const Button = ({ 
   children, 
   variant = 'primary', 
@@ -16,6 +17,7 @@ const Button = ({
     primary: 'bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white disabled:bg-primary-300 disabled:cursor-not-allowed',
     secondary: 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed',
     danger: 'bg-red-600 hover:bg-red-700 active:bg-red-800 text-white disabled:bg-red-300 disabled:cursor-not-allowed',
+    warning: 'bg-yellow-600 hover:bg-yellow-700 active:bg-yellow-800 text-white disabled:bg-yellow-300 disabled:cursor-not-allowed',
     ghost: 'hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed'
   };
   

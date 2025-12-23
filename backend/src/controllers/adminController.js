@@ -4,6 +4,7 @@ import ServiceRequest from '../models/ServiceRequest.js';
 import JobVacancy from '../models/JobVacancy.js';
 import Review from '../models/Review.js';
 import Settings from '../models/Settings.js';
+import { refreshMaintenanceCache } from '../middlewares/maintenance.js';
 
 // Função utilitária para lidar com erros assíncronos
 const asyncHandler = fn => (req, res, next) => {
@@ -357,6 +358,10 @@ export const updateSettings = asyncHandler(async (req, res) => {
     );
 
     console.log('✅ Configurações salvas:', settings);
+
+    // 🔥 FORÇA ATUALIZAÇÃO DO CACHE DE MANUTENÇÃO
+    await refreshMaintenanceCache();
+    console.log('🔄 Cache de manutenção atualizado após salvar settings');
 
     res.status(200).json({ 
       success: true, 

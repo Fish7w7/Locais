@@ -68,8 +68,13 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
         {/* Tabs */}
         <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
           <button
-            onClick={() => setActiveTab('deactivate')}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+            onClick={() => {
+              setActiveTab('deactivate');
+              setError('');
+              setPassword('');
+              setConfirmation('');
+            }}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 min-h-[44px] ${
               activeTab === 'deactivate'
                 ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -78,8 +83,13 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
             Desativar Conta
           </button>
           <button
-            onClick={() => setActiveTab('delete')}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+            onClick={() => {
+              setActiveTab('delete');
+              setError('');
+              setPassword('');
+              setConfirmation('');
+            }}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 min-h-[44px] ${
               activeTab === 'delete'
                 ? 'border-red-500 text-red-600 dark:text-red-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -123,7 +133,7 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
               required
             />
 
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 type="submit"
                 variant="warning"
@@ -137,6 +147,8 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                 variant="secondary"
                 onClick={onClose}
                 disabled={loading}
+                fullWidth
+                className="sm:w-auto"
               >
                 Cancelar
               </Button>
@@ -182,11 +194,11 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                 onChange={(e) => setConfirmation(e.target.value)}
                 placeholder="DELETAR PERMANENTEMENTE"
                 required
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 min-h-[44px]"
               />
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 type="submit"
                 variant="danger"
@@ -201,6 +213,8 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
                 variant="secondary"
                 onClick={onClose}
                 disabled={loading}
+                fullWidth
+                className="sm:w-auto"
               >
                 Cancelar
               </Button>

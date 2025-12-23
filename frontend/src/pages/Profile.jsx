@@ -1,6 +1,6 @@
-// frontend/src/pages/Profile.jsx 
+// frontend/src/pages/Profile.jsx
 import { useState } from 'react';
-import { User, Mail, Phone, MapPin, Star, Briefcase, LogOut, Edit2, Save, DollarSign, Award } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Star, Briefcase, LogOut, Edit2, Save, DollarSign, Award, Settings as SettingsIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { userAPI, authAPI } from '../api/services';
 import { useNotification } from '../contexts/NotificationContext';
@@ -11,6 +11,7 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import ConfirmModal from '../components/ConfirmModal';
 import EditProviderInfoModal from '../components/EditProviderInfoModal';
+import AccountSettingsModal from '../components/AccountSettingsModal';
 import ReviewsSection from '../components/ReviewsSection';
 
 const Profile = () => {
@@ -22,6 +23,7 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showUpgradeForm, setShowUpgradeForm] = useState(false);
   const [showEditProviderInfo, setShowEditProviderInfo] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false); // 🔥 NOVO
   
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -113,14 +115,14 @@ const Profile = () => {
   };
 
   const loadUserData = async () => {
-  try {
-    const response = await authAPI.getMe();
-    updateUser(response.data.user);
-  } catch (error) {
-    console.error('Erro ao recarregar perfil:', error);
-    showError('Erro ao recarregar perfil');
-  }
-};
+    try {
+      const response = await authAPI.getMe();
+      updateUser(response.data.user);
+    } catch (error) {
+      console.error('Erro ao recarregar perfil:', error);
+      showError('Erro ao recarregar perfil');
+    }
+  };
 
   const getUserTypeLabel = (type) => {
     const labels = {
@@ -449,6 +451,18 @@ const Profile = () => {
         </Card>
       )}
 
+      {/* 🔥 NOVO: Configurações de Conta */}
+      <Card>
+        <Button 
+          variant="secondary" 
+          fullWidth
+          icon={SettingsIcon}
+          onClick={() => setShowAccountSettings(true)}
+        >
+          Configurações de Conta
+        </Button>
+      </Card>
+
       {/* Logout */}
       <Card>
         <Button 
@@ -467,6 +481,12 @@ const Profile = () => {
         onClose={() => setShowEditProviderInfo(false)}
         user={user}
         onSuccess={loadUserData}
+      />
+
+      {/* 🔥 NOVO: Modal de Configurações de Conta */}
+      <AccountSettingsModal
+        isOpen={showAccountSettings}
+        onClose={() => setShowAccountSettings(false)}
       />
 
       <ConfirmModal

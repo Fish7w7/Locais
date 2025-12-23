@@ -53,7 +53,7 @@ const Maintenance = ({ onRetry }) => {
             Estamos realizando melhorias no sistema.
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-500">
-            Voltaremos em breve! ⚙️
+            Voltaremos em breve!
           </p>
         </div>
 
