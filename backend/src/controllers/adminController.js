@@ -358,8 +358,6 @@ export const updateSettings = asyncHandler(async (req, res) => {
     );
 
     console.log('✅ Configurações salvas:', settings);
-
-    // 🔥 FORÇA ATUALIZAÇÃO DO CACHE DE MANUTENÇÃO
     await refreshMaintenanceCache();
     console.log('🔄 Cache de manutenção atualizado após salvar settings');
 
