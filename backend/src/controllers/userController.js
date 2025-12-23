@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import jwt from 'jsonwebtoken';
 
 // @desc    Atualizar perfil do usuário
 // @route   PUT /api/users/profile
@@ -33,7 +34,7 @@ export const updateProfile = async (req, res) => {
 
 // @desc    Converter cliente em prestador
 // @route   POST /api/users/upgrade-to-provider
-// @access  Private (apenas clientes)
+// @access  Private
 export const upgradeToProvider = async (req, res) => {
   try {
     const { category, pricePerHour, description } = req.body;
@@ -80,7 +81,7 @@ export const upgradeToProvider = async (req, res) => {
 
 // @desc    Atualizar informações de prestador
 // @route   PUT /api/users/provider-info
-// @access  Private (apenas prestadores)
+// @access  Private
 export const updateProviderInfo = async (req, res) => {
   try {
     const { category, pricePerHour, description, portfolio, isAvailableAsProvider } = req.body;
@@ -176,6 +177,143 @@ export const getUserById = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erro ao buscar usuário',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Desativar conta do usuário
+// @route   PUT /api/users/deactivate
+// @access  Private
+export const deactivateAccount = async (req, res) => {
+  try {
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Senha é obrigatória para desativar a conta'
+      });
+    }
+
+    const user = await User.findById(req.user.id).select('+password');
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Senha incorreta'
+      });
+    }
+
+    user.isActive = false;
+    user.deactivatedAt = new Date();
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Conta desativada com sucesso. Você pode reativá-la fazendo login novamente.'
+    });
+  } catch (error) {
+    console.error('Erro ao desativar conta:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao desativar conta',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Reativar conta do usuário
+// @route   POST /api/users/reactivate
+// @access  Public
+export const reactivateAccount = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email }).select('+password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuário não encontrado'
+      });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Credenciais inválidas'
+      });
+    }
+
+    user.isActive = true;
+    user.deactivatedAt = null;
+    await user.save();
+
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRE || '7d' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Conta reativada com sucesso!',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        type: user.type
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao reativar conta:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao reativar conta',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Deletar permanentemente a conta
+// @route   DELETE /api/users/delete-account
+// @access  Private
+export const deleteAccount = async (req, res) => {
+  try {
+    const { password, confirmation } = req.body;
+
+    if (!password || confirmation !== 'DELETAR PERMANENTEMENTE') {
+      return res.status(400).json({
+        success: false,
+        message: 'Confirmação inválida. Digite exatamente: DELETAR PERMANENTEMENTE'
+      });
+    }
+
+    const user = await User.findById(req.user.id).select('+password');
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Senha incorreta'
+      });
+    }
+
+    await user.deleteOne();
+
+    res.json({
+      success: true,
+      message: 'Conta deletada permanentemente'
+    });
+  } catch (error) {
+    console.error('Erro ao deletar conta:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao deletar conta',
       error: error.message
     });
   }

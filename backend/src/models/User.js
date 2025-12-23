@@ -40,8 +40,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  
-  // Avaliações como prestador
+
+  // ======================
+  // Avaliações
+  // ======================
   providerRating: {
     type: Number,
     default: 0,
@@ -52,8 +54,7 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  
-  // Avaliações como cliente
+
   clientRating: {
     type: Number,
     default: 0,
@@ -64,8 +65,10 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  
-  // Campos específicos para PRESTADOR
+
+  // ======================
+  // Campos de PRESTADOR
+  // ======================
   category: {
     type: String,
     default: null
@@ -85,16 +88,21 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  
+
+  // ======================
+  // Empresa
+  // ======================
   cnpj: {
-    type: String,
+    type: String
   },
   companyDescription: {
     type: String,
     default: null
   },
-  
+
+  // ======================
   // Localização
+  // ======================
   city: {
     type: String,
     default: null
@@ -103,45 +111,84 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  
+
+  // ======================
+  // Reset de senha
+  // ======================
+  resetPasswordToken: {
+    type: String,
+    default: null
+  },
+  resetPasswordExpire: {
+    type: Date,
+    default: null
+  },
+
+  // ======================
+  // Ativação / Desativação
+  // ======================
   isActive: {
     type: Boolean,
     default: true
+  },
+  deactivatedAt: {
+    type: Date,
+    default: null
   }
+
 }, { 
   timestamps: true 
 });
 
+// ======================
+// Índices
+// ======================
 UserSchema.index({ cnpj: 1 }, { unique: true, sparse: true });
 
-// Hash password antes de salvar
+// TTL → remove documentos APENAS quando resetPasswordExpire existir
+UserSchema.index(
+  { resetPasswordExpire: 1 },
+  {
+    expireAfterSeconds: 0,
+    partialFilterExpression: {
+      resetPasswordExpire: { $exists: true }
+    }
+  }
+);
+
+// ======================
+// Hooks
+// ======================
 UserSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
-  
+
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-// Método para comparar senha
+// ======================
+// Métodos
+// ======================
 UserSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Método para converter cliente em prestador
 UserSchema.methods.upgradeToProvider = function(providerData) {
   if (this.type === 'company') {
     throw new Error('Empresas não podem ser prestadores');
   }
-  
+
   this.type = 'provider';
   this.isAvailableAsProvider = true;
   this.category = providerData.category;
   this.pricePerHour = providerData.pricePerHour;
   this.description = providerData.description;
-  
+
   return this.save();
 };
 
-// Evitar recompilação do modelo
+// ======================
+// Export
+// ======================
 export default mongoose.models.User || mongoose.model('User', UserSchema);

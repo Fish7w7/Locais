@@ -4,7 +4,9 @@ import {
   register,
   login,
   getMe,
-  updatePassword
+  updatePassword,
+  forgotPassword,
+  resetPassword
 } from '../controllers/authController.js';
 import { protect } from '../middlewares/auth.js';
 import { authLimiter } from '../middlewares/rateLimiter.js';
@@ -15,12 +17,14 @@ import {
 
 const router = express.Router();
 
-// Aplicar rate limiting em todas as rotas de autenticação
+// Aplicar rate limiting
 router.use(authLimiter);
 
-// Rotas públicas com validação
+// Rotas públicas
 router.post('/register', validateRegister, register);
 router.post('/login', validateLogin, login);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password/:token', resetPassword);
 
 // Rotas protegidas
 router.get('/me', protect, getMe);

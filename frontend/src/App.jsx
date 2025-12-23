@@ -18,6 +18,8 @@ import ModerateReviews from './pages/ModerateReviews';
 import NotFound from './pages/NotFound';
 import SetupAdmin from './pages/Setup.Admin';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Chat from './pages/Chat';
 import Maintenance from './pages/Maintenance';
 
@@ -81,7 +83,7 @@ function App() {
       }
 
       // Faz uma requisição simples para verificar
-      await api.get('/auth/me');
+      await api.get('/');
       setMaintenanceMode(false);
     } catch (error) {
       // Se retornar 503, está em manutenção
@@ -142,8 +144,10 @@ function App() {
         {/* Rota de Setup Admin - apenas desenvolvimento */}
         <Route path="/setup-admin" element={<SetupAdmin />} />
         
-        {/* Rota de Login */}
+        {/* Rotas de Autenticação */}
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
         
         {/* Rotas Protegidas */}
         <Route path="/" element={

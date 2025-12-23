@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import crypto from 'crypto';
 
 // Gerar JWT Token
 const generateToken = (id) => {
@@ -189,6 +190,126 @@ export const updatePassword = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erro ao atualizar senha',
+      error: error.message
+    });
+  }
+};
+// @desc    Solicitar reset de senha
+// @route   POST /api/auth/forgot-password
+// @access  Public
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      // Por segurança, não revelar se o email existe
+      return res.json({
+        success: true,
+        message: 'Se o email existir, você receberá instruções de redefinição de senha.'
+      });
+    }
+
+    // Gerar token de reset
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+
+    // Salvar token e expiração no usuário
+    user.resetPasswordToken = resetTokenHash;
+    user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutos
+    await user.save();
+
+    // URL de reset (em produção, enviar por email)
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    console.log('🔑 Token de reset gerado:', resetUrl);
+
+    // TODO: Enviar email com o link
+    // await sendEmail({
+    //   to: user.email,
+    //   subject: 'Redefinição de Senha',
+    //   html: `<p>Clique no link para redefinir sua senha: <a href="${resetUrl}">${resetUrl}</a></p>`
+    // });
+
+    res.json({
+      success: true,
+      message: 'Se o email existir, você receberá instruções de redefinição de senha.',
+      // Em desenvolvimento, retornar o token
+      ...(process.env.NODE_ENV === 'development' && { resetToken, resetUrl })
+    });
+  } catch (error) {
+    console.error('Erro ao solicitar reset:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao processar solicitação',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Resetar senha com token
+// @route   POST /api/auth/reset-password/:token
+// @access  Public
+export const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Senha deve ter no mínimo 6 caracteres'
+      });
+    }
+
+    // Hash do token para comparar
+    const resetTokenHash = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    // Buscar usuário com token válido
+    const user = await User.findOne({
+      resetPasswordToken: resetTokenHash,
+      resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token inválido ou expirado'
+      });
+    }
+
+    // Atualizar senha
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    // Gerar novo token de autenticação
+    const authToken = generateToken(user._id);
+
+    res.json({
+      success: true,
+      message: 'Senha redefinida com sucesso!',
+      token: authToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        type: user.type
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao resetar senha:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao redefinir senha',
       error: error.message
     });
   }
