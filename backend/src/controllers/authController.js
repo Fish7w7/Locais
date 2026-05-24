@@ -1,3 +1,4 @@
+// backend/src/controllers/authController.js
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import crypto from 'crypto';
@@ -14,7 +15,19 @@ const generateToken = (id) => {
 // @access  Public
 export const register = async (req, res) => {
   try {
-    const { name, email, phone, password, type, cnpj, companyDescription } = req.body;
+    const {
+      name,
+      email,
+      phone,
+      password,
+      type,
+      cnpj,
+      companyDescription,
+      category,
+      pricePerHour,
+      description,
+      isAvailableAsProvider
+    } = req.body;
 
     // Verificar se usuário já existe
     const userExists = await User.findOne({ email });
@@ -33,6 +46,17 @@ export const register = async (req, res) => {
       });
     }
 
+    if (type === 'provider') {
+      const normalizedPrice = Number(pricePerHour);
+
+      if (!category || !description || !Number.isFinite(normalizedPrice) || normalizedPrice <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Categoria, preço e descrição são obrigatórios para prestadores'
+        });
+      }
+    }
+
     // Criar usuário
     const userData = {
       name,
@@ -45,6 +69,13 @@ export const register = async (req, res) => {
     if (type === 'company') {
       userData.cnpj = cnpj;
       userData.companyDescription = companyDescription;
+    }
+
+    if (type === 'provider') {
+      userData.category = category;
+      userData.pricePerHour = Number(pricePerHour);
+      userData.description = description;
+      userData.isAvailableAsProvider = isAvailableAsProvider !== false;
     }
 
     const user = await User.create(userData);
@@ -62,7 +93,11 @@ export const register = async (req, res) => {
         phone: user.phone,
         type: user.type,
         role: user.role,
-        avatar: user.avatar
+        avatar: user.avatar,
+        category: user.category,
+        pricePerHour: user.pricePerHour,
+        description: user.description,
+        isAvailableAsProvider: user.isAvailableAsProvider
       }
     });
   } catch (error) {
@@ -109,6 +144,14 @@ export const login = async (req, res) => {
       });
     }
 
+    // 🔥 REATIVA A CONTA AUTOMATICAMENTE NO LOGIN
+    if (!user.isActive) {
+      console.log(`🔄 Reativando conta: ${user.email}`);
+      user.isActive = true;
+      user.deactivatedAt = null;
+      await user.save();
+    }
+
     // Gerar token
     const token = generateToken(user._id);
 
@@ -123,7 +166,8 @@ export const login = async (req, res) => {
         type: user.type,
         role: user.role,
         avatar: user.avatar,
-        isAvailableAsProvider: user.isAvailableAsProvider
+        isAvailableAsProvider: user.isAvailableAsProvider,
+        isActive: user.isActive
       }
     });
   } catch (error) {
@@ -194,6 +238,7 @@ export const updatePassword = async (req, res) => {
     });
   }
 };
+
 // @desc    Solicitar reset de senha
 // @route   POST /api/auth/forgot-password
 // @access  Public

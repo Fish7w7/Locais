@@ -47,6 +47,7 @@ const Jobs = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('');
+  const [proposalStatusFilter, setProposalStatusFilter] = useState('');
   
   const [activeTab, setActiveTab] = useState(() => {
     return location.state?.tab || 'available';
@@ -67,6 +68,16 @@ const Jobs = () => {
     trial: 'Experiência',
     permanent: 'Efetiva'
   };
+
+  const proposalStatusOptions = [
+    { value: '', label: 'Todas' },
+    { value: 'pending', label: 'Pendentes' },
+    { value: 'accepted', label: 'Aceitas' },
+    { value: 'rejected', label: 'Recusadas' },
+    { value: 'cancelled', label: 'Canceladas' }
+  ];
+
+  const formatCurrency = (value) => `R$ ${Number(value).toLocaleString('pt-BR')}`;
 
   useEffect(() => {
     if (location.state?.tab) {
@@ -181,6 +192,10 @@ const Jobs = () => {
     job?.category?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   );
 
+  const visibleMyProposals = proposalStatusFilter
+    ? myProposals.filter(proposal => proposal.status === proposalStatusFilter)
+    : myProposals;
+
   const getCompanyName = (job) => {
     return job?.companyId?.name || 'Empresa não identificada';
   };
@@ -247,7 +262,7 @@ const Jobs = () => {
                 </div>
               </div>
 
-              {(user?.type === 'client' || user?.type === 'provider' || user?.type === 'admin') && (
+              {(user?.type === 'client' || user?.type === 'admin') && (
                 <Button 
                   variant="primary" 
                   fullWidth 
@@ -343,7 +358,15 @@ const Jobs = () => {
 
       return (
         <div className="space-y-3">
-          {myProposals.map((proposal) => (
+          {visibleMyProposals.length === 0 && (
+            <Card>
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center py-6">
+                Nenhuma proposta encontrada para este status.
+              </p>
+            </Card>
+          )}
+
+          {visibleMyProposals.map((proposal) => (
             <Card key={proposal._id}>
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
@@ -357,6 +380,22 @@ const Jobs = () => {
                 <StatusBadge status={proposal.status} />
               </div>
 
+              <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                {proposal.jobId?.type && <JobTypeBadge type={proposal.jobId.type} />}
+                {proposal.jobId?.location && (
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-4 h-4" />
+                    {proposal.jobId.location}
+                  </div>
+                )}
+                {proposal.jobId?.salary && (
+                  <div className="flex items-center gap-1">
+                    <DollarSign className="w-4 h-4" />
+                    Vaga: {formatCurrency(proposal.jobId.salary)}
+                  </div>
+                )}
+              </div>
+
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mb-3">
                 <p className="text-sm text-gray-700 dark:text-gray-300">
                   {proposal.message}
@@ -367,13 +406,13 @@ const Jobs = () => {
                 <div className="flex items-center gap-2 mb-3">
                   <DollarSign className="w-4 h-4 text-green-600" />
                   <span className="font-semibold text-green-600 dark:text-green-400">
-                    R$ {proposal.offeredSalary.toLocaleString('pt-BR')}
+                    Oferta: {formatCurrency(proposal.offeredSalary)}
                   </span>
                 </div>
               )}
 
               {proposal.status === 'pending' && (
-                <div className="flex gap-2 mt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
                   <Button 
                     variant="primary" 
                     fullWidth 
@@ -536,7 +575,7 @@ const Jobs = () => {
             Vagas Disponíveis
           </button>
           
-          {(user?.type === 'client' || user?.type === 'provider' || user?.type === 'admin') && (
+          {(user?.type === 'client' || user?.type === 'admin') && (
             <button
               onClick={() => setActiveTab('my-applications')}
               className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
@@ -575,6 +614,24 @@ const Jobs = () => {
             </button>
           )}
         </div>
+
+        {activeTab === 'my-proposals' && (
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
+            {proposalStatusOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setProposalStatusFilter(option.value)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[36px] ${
+                  proposalStatusFilter === option.value
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Search and Filters - Apenas em Vagas Disponíveis */}
         {activeTab === 'available' && (

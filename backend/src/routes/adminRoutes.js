@@ -1,9 +1,12 @@
 // backend/src/routes/adminRoutes.js
 import express from 'express';
 import { protect, adminOnly } from '../middlewares/auth.js';
+import { devOnly } from '../middlewares/devOnly.js';
+import { strictLimiter } from '../middlewares/rateLimiter.js';
 import {
   createAdmin,
   getStats,
+  getReviewStats,
   getAllUsers,
   getUserById,
   updateUser,
@@ -17,7 +20,7 @@ import {
 const router = express.Router();
 
 // Rota de inicialização (pode ser removida após o primeiro admin ser criado)
-router.post('/create-admin', createAdmin);
+router.post('/create-admin', devOnly, strictLimiter, createAdmin);
 
 // Todas as rotas abaixo exigem autenticação e permissão de administrador
 router.use(protect);
@@ -25,6 +28,7 @@ router.use(adminOnly);
 
 // Dashboard e Estatísticas
 router.get('/stats', getStats);
+router.get('/review-stats', getReviewStats);
 
 // Gerenciamento de Usuários
 router.route('/users')

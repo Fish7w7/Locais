@@ -128,7 +128,10 @@ export const getProviders = async (req, res) => {
 
     const query = {
       type: 'provider',
-      isAvailableAsProvider: true
+      isAvailableAsProvider: true,
+      category: { $nin: [null, ''] },
+      pricePerHour: { $gt: 0 },
+      description: { $nin: [null, ''] }
     };
 
     if (category) query.category = category;

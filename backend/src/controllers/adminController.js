@@ -2,6 +2,8 @@
 import User from '../models/User.js';
 import ServiceRequest from '../models/ServiceRequest.js';
 import JobVacancy from '../models/JobVacancy.js';
+import Application from '../models/Application.js';
+import JobProposal from '../models/JobProposal.js';
 import Review from '../models/Review.js';
 import Settings from '../models/Settings.js';
 import { refreshMaintenanceCache } from '../middlewares/maintenance.js';
@@ -104,7 +106,10 @@ export const getUserById = asyncHandler(async (req, res) => {
 export const getStats = asyncHandler(async (req, res) => {
   const [
     totalUsers,
-    totalServices,
+    services,
+    jobs,
+    applications,
+    proposals,
     pendingReviews,
     clientsCount,
     providersCount,
@@ -112,6 +117,9 @@ export const getStats = asyncHandler(async (req, res) => {
   ] = await Promise.all([
     User.countDocuments(),
     ServiceRequest.countDocuments(),
+    JobVacancy.countDocuments(),
+    Application.countDocuments(),
+    JobProposal.countDocuments(),
     Review.countDocuments({ 
       $or: [
         { status: 'flagged' },
@@ -125,14 +133,45 @@ export const getStats = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    totalUsers,
-    totalServices,
-    pendingReviews,
-    monthlyRevenue: 15000.50, // Simulado
-    users: {
-      clients: clientsCount,
-      providers: providersCount,
-      companies: companiesCount
+    stats: {
+      totalUsers,
+      services,
+      jobs,
+      applications,
+      proposals,
+      pendingReviews,
+      users: {
+        clients: clientsCount,
+        providers: providersCount,
+        companies: companiesCount
+      }
+    }
+  });
+});
+
+// @desc    Obter estatisticas de moderacao de avaliacoes
+// @route   GET /api/admin/review-stats
+// @access  Private (apenas admin)
+export const getReviewStats = asyncHandler(async (req, res) => {
+  const [flagged, underReview, reportTotals] = await Promise.all([
+    Review.countDocuments({ status: 'flagged' }),
+    Review.countDocuments({ status: 'under_review' }),
+    Review.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalReports: { $sum: '$reportsCount' }
+        }
+      }
+    ])
+  ]);
+
+  res.json({
+    success: true,
+    stats: {
+      flagged,
+      underReview,
+      totalReports: reportTotals[0]?.totalReports || 0
     }
   });
 });

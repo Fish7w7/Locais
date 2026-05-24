@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import dns from 'dns';
 
 // Middlewares de segurança
 import helmet from 'helmet';
@@ -22,16 +23,35 @@ import jobRoutes from './src/routes/job.js';
 import adminRoutes from './src/routes/adminRoutes.js';
 import reviewRoutes from './src/routes/review.js';
 import chatRoutes from './src/routes/chat.js';
+import Settings from './src/models/Settings.js';
 
 dotenv.config();
+
+if (process.env.DNS_SERVERS) {
+  const dnsServers = process.env.DNS_SERVERS
+    .split(',')
+    .map(server => server.trim())
+    .filter(Boolean);
+
+  if (dnsServers.length > 0) {
+    dns.setServers(dnsServers);
+    console.log(`🌐 DNS servers configurados para MongoDB: ${dnsServers.join(', ')}`);
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // --- CORS ---
+const configuredFrontendOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
 const allowedOrigins = [
   'http://localhost:5173', // Frontend principal
-  'http://localhost:5174'  // Painel de Administração
+  'http://localhost:5174', // Painel de Administração
+  ...configuredFrontendOrigins
 ];
 
 app.use(cors({
@@ -141,6 +161,26 @@ app.get('/health', (req, res) => {
   
   const status = mongoose.connection.readyState === 1 ? 200 : 503;
   res.status(status).json(health);
+});
+
+app.get('/api/status', async (req, res) => {
+  try {
+    const settings = await Settings.findOne();
+
+    res.json({
+      success: true,
+      maintenance: settings?.maintenanceMode || false,
+      mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.json({
+      success: true,
+      maintenance: false,
+      mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // ⚠️ MIDDLEWARE DE MANUTENÇÃO (aplicado ANTES das rotas)

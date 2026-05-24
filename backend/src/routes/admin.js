@@ -4,6 +4,7 @@ import {
   createAdmin,
   getAllUsers,
   getStats,
+  getReviewStats,
   deleteUser,
   updateUser
 } from '../controllers/adminController.js';
@@ -11,8 +12,6 @@ import { protect, adminOnly } from '../middlewares/auth.js';
 import { devOnly } from '../middlewares/devOnly.js';
 import { strictLimiter } from '../middlewares/rateLimiter.js';
 import { validateMongoId } from '../middlewares/validation.js';
-import { getReviewStats } from '../controllers/adminController.js';
-
 const router = express.Router();
 
 // Apenas desenvolvimento

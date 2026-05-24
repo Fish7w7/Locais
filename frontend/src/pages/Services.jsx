@@ -45,6 +45,7 @@ const Services = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [selectedCategory, setSelectedCategory, clearCategory] = useLocalStorage('service-category', '');
   
   const [activeTab, setActiveTab] = useState(() => {
@@ -68,6 +69,21 @@ const Services = () => {
     'Mecânico',
     'Outro'
   ];
+
+  const serviceStatusOptions = [
+    { value: '', label: 'Todos' },
+    { value: 'pending', label: 'Pendentes' },
+    { value: 'accepted', label: 'Aceitos' },
+    { value: 'completed', label: 'Concluídos' },
+    { value: 'rejected', label: 'Recusados' },
+    { value: 'cancelled', label: 'Cancelados' }
+  ];
+
+  const formatDate = (date) => new Date(date).toLocaleDateString('pt-BR');
+  const formatCurrency = (value) => `R$ ${Number(value).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
 
   useEffect(() => {
     if (location.state?.tab) {
@@ -168,10 +184,38 @@ const Services = () => {
     });
   };
 
+  const handleCancelService = async (serviceId) => {
+    await confirm({
+      title: 'Cancelar Solicitação',
+      message: 'Deseja cancelar esta solicitação de serviço?',
+      variant: 'warning',
+      onConfirm: async () => {
+        try {
+          showLoading('Cancelando solicitação...');
+          await serviceAPI.updateStatus(serviceId, { status: 'cancelled' });
+          success('Solicitação cancelada');
+          loadData();
+        } catch (err) {
+          showError(err.response?.data?.message || 'Erro ao cancelar solicitação');
+        } finally {
+          hideLoading();
+        }
+      }
+    });
+  };
+
   const filteredProviders = providers.filter(provider =>
     provider.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-    provider.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    provider.category?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   );
+
+  const visibleMyRequests = statusFilter
+    ? myRequests.filter(request => request.status === statusFilter)
+    : myRequests;
+
+  const visibleReceivedServices = statusFilter
+    ? receivedServices.filter(service => service.status === statusFilter)
+    : receivedServices;
 
   const renderContent = () => {
     if (loading) {
@@ -281,7 +325,15 @@ const Services = () => {
 
       return (
         <div className="space-y-3">
-          {myRequests.map((request) => (
+          {visibleMyRequests.length === 0 && (
+            <Card>
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center py-6">
+                Nenhuma solicitação encontrada para este status.
+              </p>
+            </Card>
+          )}
+
+          {visibleMyRequests.map((request) => (
             <Card key={request._id}>
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1 min-w-0">
@@ -306,18 +358,38 @@ const Services = () => {
                 {request.description}
               </p>
               
-              <div className="flex items-center justify-between text-sm">
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                  <MapPin className="w-4 h-4" />
+                  <span>{request.location}</span>
+                </div>
+                <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                   <Clock className="w-4 h-4" />
-                  {new Date(request.requestedDate).toLocaleDateString()}
+                    {formatDate(request.requestedDate)}
                 </div>
                 {request.price && (
                   <span className="font-semibold text-primary-600 dark:text-primary-400">
-                    R$ {request.price.toFixed(2)}
+                      {formatCurrency(request.price)}
                   </span>
                 )}
+                </div>
               </div>
                {/* BOTÃO CONVERSAR */}
+              {request.status === 'pending' && (
+                <div className="mt-3">
+                  <Button
+                    variant="secondary"
+                    fullWidth
+                    size="sm"
+                    icon={XCircle}
+                    onClick={() => handleCancelService(request._id)}
+                  >
+                    Cancelar Solicitação
+                  </Button>
+                </div>
+              )}
+
               {(request.status === 'accepted' || request.status === 'in_progress') && (
                 <div className="mt-3">
                   <StartChatButton
@@ -342,7 +414,15 @@ const Services = () => {
 
       return (
         <div className="space-y-3">
-          {receivedServices.map((service) => (
+          {visibleReceivedServices.length === 0 && (
+            <Card>
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center py-6">
+                Nenhum serviço recebido encontrado para este status.
+              </p>
+            </Card>
+          )}
+
+          {visibleReceivedServices.map((service) => (
             <Card key={service._id}>
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1 min-w-0">
@@ -375,11 +455,11 @@ const Services = () => {
               <div className="flex items-center justify-between text-sm mb-3">
                 <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                   <Clock className="w-4 h-4" />
-                  {new Date(service.requestedDate).toLocaleDateString()}
+                  {formatDate(service.requestedDate)}
                 </div>
                 {service.price && (
                   <span className="font-semibold text-primary-600 dark:text-primary-400">
-                    R$ {service.price.toFixed(2)}
+                    {formatCurrency(service.price)}
                   </span>
                 )}
               </div>
@@ -408,7 +488,7 @@ const Services = () => {
               )}
 
               {service.status === 'accepted' && (
-                <div className="flex gap-2 mt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
                   <Button 
                     variant="primary" 
                     fullWidth 
@@ -487,6 +567,24 @@ const Services = () => {
             </button>
           )}
         </div>
+
+        {(activeTab === 'my-requests' || activeTab === 'received') && (
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
+            {serviceStatusOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setStatusFilter(option.value)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[36px] ${
+                  statusFilter === option.value
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Search and Filters */}
         {activeTab === 'providers' && (

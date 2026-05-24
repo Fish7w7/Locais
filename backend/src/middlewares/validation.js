@@ -52,6 +52,28 @@ export const validateRegister = [
     .optional()
     .matches(/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/)
     .withMessage('CNPJ inválido'),
+
+  body('category')
+    .if(body('type').equals('provider'))
+    .trim()
+    .isLength({ min: 3, max: 50 })
+    .withMessage('Categoria é obrigatória para prestadores'),
+
+  body('pricePerHour')
+    .if(body('type').equals('provider'))
+    .isFloat({ min: 1 })
+    .withMessage('Preço por hora deve ser maior que zero'),
+
+  body('description')
+    .if(body('type').equals('provider'))
+    .trim()
+    .isLength({ min: 20, max: 1000 })
+    .withMessage('Descrição deve ter entre 20 e 1000 caracteres'),
+
+  body('isAvailableAsProvider')
+    .optional()
+    .isBoolean()
+    .withMessage('Disponibilidade de prestador inválida'),
   
   validate
 ];

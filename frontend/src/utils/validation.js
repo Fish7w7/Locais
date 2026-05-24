@@ -90,6 +90,20 @@ export const validateRegisterForm = (data) => {
     errors.cnpj = 'CNPJ inválido';
   }
 
+  if (data.type === 'provider') {
+    if (!data.category) {
+      errors.category = 'Categoria é obrigatória para prestadores';
+    }
+
+    if (!data.pricePerHour || Number(data.pricePerHour) <= 0) {
+      errors.pricePerHour = 'Preço por hora deve ser maior que zero';
+    }
+
+    if (!data.description || data.description.trim().length < 20) {
+      errors.description = 'Descrição deve ter no mínimo 20 caracteres';
+    }
+  }
+
   return {
     valid: Object.keys(errors).length === 0,
     errors

@@ -71,6 +71,7 @@ function App() {
   const { user } = useAuth();
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [checkingMaintenance, setCheckingMaintenance] = useState(true);
+  const isDevelopment = import.meta.env.DEV;
 
   // Verifica modo de manutenção
   const checkMaintenance = async () => {
@@ -82,9 +83,8 @@ function App() {
         return;
       }
 
-      // Faz uma requisição simples para verificar
-      await api.get('/');
-      setMaintenanceMode(false);
+      const response = await api.get('/status');
+      setMaintenanceMode(response.data?.maintenance === true);
     } catch (error) {
       // Se retornar 503, está em manutenção
       if (error.response?.status === 503 || error.response?.data?.maintenance) {
@@ -142,7 +142,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Rota de Setup Admin - apenas desenvolvimento */}
-        <Route path="/setup-admin" element={<SetupAdmin />} />
+        <Route path="/setup-admin" element={isDevelopment ? <SetupAdmin /> : <NotFound />} />
         
         {/* Rotas de Autenticação */}
         <Route path="/login" element={<Login />} />

@@ -15,7 +15,6 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     loadStats();
-    loadPendingReviewsCount();
   }, []);
 
   const loadStats = async () => {
@@ -28,25 +27,14 @@ const AdminDashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      setStats(response.data.stats);
+      const nextStats = response.data.stats || response.data;
+      setStats(nextStats);
+      setPendingReviewsCount(nextStats.pendingReviews || 0);
     } catch (err) {
       console.error('Erro ao carregar estatísticas:', err);
       setError('Erro ao carregar estatísticas');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadPendingReviewsCount = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('/api/reviews/pending', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      setPendingReviewsCount(response.data.count || response.data.reviews?.length || 0);
-    } catch (err) {
-      console.error('Erro ao carregar contagem de avaliações:', err);
     }
   };
 
@@ -167,7 +155,6 @@ const AdminDashboard = () => {
         </div>
         <Button size="sm" onClick={() => {
           loadStats();
-          loadPendingReviewsCount();
         }}>
           Atualizar
         </Button>

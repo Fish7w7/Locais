@@ -6,7 +6,7 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "https://SEU-BACKEND.onrender.com/api/:splat"
+  to = "https://servicos-locais-backend.onrender.com/api/:splat"
   status = 200
   force = true
 
