@@ -1,26 +1,23 @@
 // frontend/src/components/ChatList.jsx
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MessageCircle, Search } from 'lucide-react';
-import { chatAPI } from '../api/services';
-import { useAuth } from '../contexts/AuthContext';
+import { useChatNotifications } from '../contexts/ChatNotificationContext';
 import Card from './Card';
 import Input from './Input';
 
 const ChatList = ({ onSelectConversation }) => {
-  const { user } = useAuth();
-  const [conversations, setConversations] = useState([]);
+  const { conversations, syncFromConversations, loadConversations } = useChatNotifications();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    loadConversations();
+    fetchConversations();
   }, []);
 
-  const loadConversations = async () => {
+  const fetchConversations = async () => {
     try {
       setLoading(true);
-      const res = await chatAPI.getMyConversations();
-      setConversations(res.data.conversations || []);
+      await loadConversations();
     } catch (error) {
       console.error('Erro ao carregar conversas:', error);
     } finally {
@@ -28,9 +25,19 @@ const ChatList = ({ onSelectConversation }) => {
     }
   };
 
-  const filteredConversations = conversations.filter(conv =>
-    conv.otherUser?.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredConversations = conversations.filter((conversation) => {
+    const otherUserName = conversation.otherUser?.name || '';
+    return otherUserName.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  const handleSelectConversation = (conversation) => {
+    const updatedConversations = conversations.map((item) =>
+      item._id === conversation._id ? { ...item, unreadCount: 0 } : item
+    );
+
+    syncFromConversations(updatedConversations);
+    onSelectConversation({ ...conversation, unreadCount: 0 });
+  };
 
   const getConversationType = (type) => {
     const types = {
@@ -43,13 +50,16 @@ const ChatList = ({ onSelectConversation }) => {
 
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
+
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now - date;
 
     if (diff < 60000) return 'Agora';
     if (diff < 3600000) return `${Math.floor(diff / 60000)}min`;
-    if (diff < 86400000) return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    if (diff < 86400000) {
+      return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
     return date.toLocaleDateString('pt-BR');
   };
 
@@ -63,7 +73,6 @@ const ChatList = ({ onSelectConversation }) => {
 
   return (
     <div className="space-y-3">
-      {/* Search */}
       <Input
         placeholder="Buscar conversas..."
         value={searchTerm}
@@ -71,7 +80,6 @@ const ChatList = ({ onSelectConversation }) => {
         icon={Search}
       />
 
-      {/* Conversations List */}
       {filteredConversations.length === 0 ? (
         <Card>
           <div className="text-center py-8">
@@ -83,57 +91,68 @@ const ChatList = ({ onSelectConversation }) => {
         </Card>
       ) : (
         <div className="space-y-2">
-          {filteredConversations.map((conversation) => (
-            <Card
-              key={conversation._id}
-              onClick={() => onSelectConversation(conversation)}
-              className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <div className="flex items-start gap-3">
-                {/* Avatar */}
-                <div className="relative">
-                  <img
-                    src={conversation.otherUser?.avatar || `https://ui-avatars.com/api/?name=${conversation.otherUser?.name}&background=random`}
-                    alt={conversation.otherUser?.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  {conversation.unreadCount > 0 && (
-                    <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                      {conversation.unreadCount}
-                    </div>
-                  )}
-                </div>
+          {filteredConversations.map((conversation) => {
+            const otherUser = conversation.otherUser || {};
+            const otherUserName = otherUser.name || 'Usuário removido';
+            const avatarUrl =
+              otherUser.avatar ||
+              `https://ui-avatars.com/api/name=${encodeURIComponent(otherUserName)}&background=random`;
+            const lastMessage = conversation.lastMessage || {};
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between mb-1">
-                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                      {conversation.otherUser?.name}
-                    </h3>
-                    {conversation.lastMessage?.timestamp && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
-                        {formatTime(conversation.lastMessage.timestamp)}
-                      </span>
+            return (
+              <Card
+                key={conversation._id}
+                onClick={() => handleSelectConversation(conversation)}
+                className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="relative">
+                    <img
+                      src={avatarUrl}
+                      alt={otherUserName}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                    {conversation.unreadCount > 0 && (
+                      <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                        {conversation.unreadCount}
+                      </div>
                     )}
                   </div>
 
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    {getConversationType(conversation.type)}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between mb-1">
+                      <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                        {otherUserName}
+                      </h3>
+                      {lastMessage.timestamp && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
+                          {formatTime(lastMessage.timestamp)}
+                        </span>
+                      )}
+                    </div>
 
-                  {conversation.lastMessage?.content && (
-                    <p className={`text-sm truncate ${
-                      conversation.unreadCount > 0
-                        ? 'font-semibold text-gray-900 dark:text-white'
-                        : 'text-gray-600 dark:text-gray-400'
-                    }`}>
-                      {conversation.lastMessage.content}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      {getConversationType(conversation.type)}
                     </p>
-                  )}
+
+                    {lastMessage.content ? (
+                      <p className={`text-sm truncate ${
+                        conversation.unreadCount > 0
+                          ? 'font-semibold text-gray-900 dark:text-white'
+                          : 'text-gray-600 dark:text-gray-400'
+                      }`}>
+                        {lastMessage.content}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                        Conversa iniciada
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

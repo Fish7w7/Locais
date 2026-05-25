@@ -11,28 +11,24 @@ export const createReview = async (req, res) => {
 
     const reviewedUser = await User.findById(reviewedUserId);
     if (!reviewedUser) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Usuário não encontrado'
       });
     }
 
     if (reviewedUserId === req.user.id) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Você não pode avaliar a si mesmo'
       });
     }
 
-    const existingReview = await Review.findOne({
-      reviewerId: req.user.id,
+    const existingReview = await Review.findOne({ reviewerId: req.user.id,
       reviewedUserId,
       serviceId: serviceId || null
     });
 
     if (existingReview) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Você já avaliou este usuário para este serviço'
       });
     }
@@ -79,8 +75,7 @@ export const createReview = async (req, res) => {
     console.error('Erro ao criar avaliação:', error);
     
     if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Você já avaliou este usuário'
       });
     }
@@ -100,8 +95,7 @@ export const getUserReviews = async (req, res) => {
   try {
     const { type, status } = req.query;
     
-    const query = {
-      reviewedUserId: req.params.userId,
+    const query = { reviewedUserId: req.params.userId,
       status: status || 'approved'
     };
     
@@ -115,8 +109,7 @@ export const getUserReviews = async (req, res) => {
       .sort('-createdAt');
 
     // Calcular estatísticas
-    const stats = {
-      total: reviews.length,
+    const stats = { total: reviews.length,
       average: 0,
       distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
     };
@@ -154,8 +147,7 @@ export const reportReview = async (req, res) => {
     const { reason, description } = req.body;
     
     if (!reason) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Motivo da denúncia é obrigatório'
       });
     }
@@ -163,8 +155,7 @@ export const reportReview = async (req, res) => {
     const review = await Review.findById(req.params.id);
 
     if (!review) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Avaliação não encontrada'
       });
     }
@@ -175,8 +166,7 @@ export const reportReview = async (req, res) => {
     );
 
     if (alreadyReported) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Você já denunciou esta avaliação'
       });
     }
@@ -219,8 +209,7 @@ export const reportReview = async (req, res) => {
 // @access  Private (Admin)
 export const getFlaggedReviews = async (req, res) => {
   try {
-    const reviews = await Review.find({ 
-      $or: [
+    const reviews = await Review.find({ $or: [
         { status: 'flagged' },
         { status: 'under_review' }
       ]
@@ -253,8 +242,7 @@ export const moderateReview = async (req, res) => {
     const { action, rejectionReason } = req.body;
 
     if (!['approve', 'reject', 'keep_flagged'].includes(action)) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Ação inválida'
       });
     }
@@ -262,8 +250,7 @@ export const moderateReview = async (req, res) => {
     const review = await Review.findById(req.params.id);
 
     if (!review) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Avaliação não encontrada'
       });
     }
@@ -332,8 +319,7 @@ export const moderateReview = async (req, res) => {
       .populate('reviewedUserId', 'name')
       .populate('moderatedBy', 'name');
 
-    const messages = {
-      approve: 'Avaliação aprovada e publicada',
+    const messages = { approve: 'Avaliação aprovada e publicada',
       reject: 'Avaliação rejeitada e removida',
       keep_flagged: 'Avaliação mantida em revisão'
     };
@@ -362,8 +348,7 @@ export const markHelpful = async (req, res) => {
     const review = await Review.findById(req.params.id);
 
     if (!review) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Avaliação não encontrada'
       });
     }
@@ -399,16 +384,14 @@ export const deleteReview = async (req, res) => {
     const review = await Review.findById(req.params.id);
 
     if (!review) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Avaliação não encontrada'
       });
     }
 
     // Apenas o autor ou admin pode deletar
     if (review.reviewerId.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
+      return res.status(403).json({ success: false,
         message: 'Não autorizado'
       });
     }

@@ -25,15 +25,13 @@ const Profile = () => {
   const [showEditProviderInfo, setShowEditProviderInfo] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false); // 🔥 NOVO
   
-  const [formData, setFormData] = useState({
-    name: user?.name || '',
-    phone: user?.phone || '',
-    city: user?.city || '',
-    state: user?.state || ''
+  const [formData, setFormData] = useState({ name: user.name || '',
+    phone: user.phone || '',
+    city: user.city || '',
+    state: user.state || ''
   });
 
-  const [upgradeData, setUpgradeData] = useState({
-    category: '',
+  const [upgradeData, setUpgradeData] = useState({ category: '',
     pricePerHour: '',
     description: ''
   });
@@ -73,7 +71,7 @@ const Profile = () => {
       setIsEditing(false);
       success('Perfil atualizado com sucesso!');
     } catch (error) {
-      showError(error.response?.data?.message || 'Erro ao atualizar perfil');
+      showError(error.response?.data.message || 'Erro ao atualizar perfil');
     } finally {
       hideLoading();
     }
@@ -87,7 +85,7 @@ const Profile = () => {
       setShowUpgradeForm(false);
       success('Parabéns! Agora você é um prestador de serviços!');
     } catch (error) {
-      showError(error.response?.data?.message || 'Erro ao converter para prestador');
+      showError(error.response?.data.message || 'Erro ao converter para prestador');
     } finally {
       hideLoading();
     }
@@ -96,7 +94,7 @@ const Profile = () => {
   const handleLogout = async () => {
     await confirm({
       title: 'Sair da Conta',
-      message: 'Tem certeza que deseja sair?',
+      message: 'Tem certeza que deseja sair',
       variant: 'warning',
       onConfirm: () => {
         logout();
@@ -107,10 +105,10 @@ const Profile = () => {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setFormData({
-      name: user?.name || '',
-      phone: user?.phone || '',
-      city: user?.city || '',
-      state: user?.state || ''
+      name: user.name || '',
+      phone: user.phone || '',
+      city: user.city || '',
+      state: user.state || ''
     });
   };
 
@@ -125,8 +123,7 @@ const Profile = () => {
   };
 
   const getUserTypeLabel = (type) => {
-    const labels = {
-      client: 'Cliente',
+    const labels = { client: 'Cliente',
       provider: 'Prestador de Serviços',
       company: 'Empresa',
       admin: 'Administrador'
@@ -162,15 +159,15 @@ const Profile = () => {
       <Card>
         <div className="flex flex-col items-center text-center mb-6">
           <img
-            src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name}&size=200&background=random`}
-            alt={user?.name}
+            src={user.avatar || `https://ui-avatars.com/api/name=${user.name}&size=200&background=random`}
+            alt={user.name}
             className="w-24 h-24 rounded-full object-cover mb-4"
           />
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            {user?.name}
+            {user.name}
           </h2>
           <span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200 mt-2">
-            {getUserTypeLabel(user?.type)}
+            {getUserTypeLabel(user.type)}
           </span>
         </div>
 
@@ -178,7 +175,7 @@ const Profile = () => {
         <div className="space-y-4">
           <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
             <Mail className="w-5 h-5 text-gray-400" />
-            <span>{user?.email}</span>
+            <span>{user.email}</span>
           </div>
 
           {isEditing ? (
@@ -217,12 +214,12 @@ const Profile = () => {
             <>
               <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                 <Phone className="w-5 h-5 text-gray-400" />
-                <span>{user?.phone || 'Não informado'}</span>
+                <span>{user.phone || 'Não informado'}</span>
               </div>
-              {(user?.city || user?.state) && (
+              {(user.city || user.state) && (
                 <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                   <MapPin className="w-5 h-5 text-gray-400" />
-                  <span>{user?.city}, {user?.state}</span>
+                  <span>{user.city}, {user.state}</span>
                 </div>
               )}
             </>
@@ -258,7 +255,7 @@ const Profile = () => {
         
         <div className="space-y-3">
           {/* Ratings Resumo */}
-          {(user?.type === 'provider' || user?.type === 'client') && (
+          {(user.type === 'provider' || user.type === 'client') && (
             <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
@@ -270,10 +267,9 @@ const Profile = () => {
                   </p>
                   <div className="flex items-center gap-2">
                     <span className="text-lg font-bold text-gray-900 dark:text-white">
-                      {user?.clientRating?.toFixed(1) || '0.0'}
+                      {user.clientRating.toFixed(1) || '0.0'}
                     </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      ({user?.clientReviewCount || 0} avaliações)
+                    <span className="text-sm text-gray-500 dark:text-gray-400"> ? ({user.clientReviewCount || 0} avaliações)
                     </span>
                   </div>
                 </div>
@@ -281,7 +277,7 @@ const Profile = () => {
             </div>
           )}
 
-          {user?.type === 'provider' && (
+          {user.type === 'provider' && (
             <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
@@ -293,10 +289,9 @@ const Profile = () => {
                   </p>
                   <div className="flex items-center gap-2">
                     <span className="text-lg font-bold text-gray-900 dark:text-white">
-                      {user?.providerRating?.toFixed(1) || '0.0'}
+                      {user.providerRating.toFixed(1) || '0.0'}
                     </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      ({user?.providerReviewCount || 0} avaliações)
+                    <span className="text-sm text-gray-500 dark:text-gray-400"> ? ({user.providerReviewCount || 0} avaliações)
                     </span>
                   </div>
                 </div>
@@ -306,14 +301,14 @@ const Profile = () => {
 
           {/* Seção de Avaliações Completa */}
           <ReviewsSection 
-            userId={user?.id} 
-            userType={user?.type}
+            userId={user.id} 
+            userType={user.type}
           />
         </div>
       </Card>
 
       {/* Informações de Prestador */}
-      {user?.type === 'provider' && (
+      {user.type === 'provider' && (
         <Card>
           <div className="flex justify-between items-start mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -332,18 +327,18 @@ const Profile = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                 <Briefcase className="w-5 h-5 text-gray-400" />
-                <span>{user?.category}</span>
+                <span>{user.category}</span>
               </div>
             </div>
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                 <DollarSign className="w-5 h-5 text-gray-400" />
-                <span>R$ {user?.pricePerHour}/hora</span>
+                <span>R$ {user.pricePerHour}/hora</span>
               </div>
             </div>
 
-            {user?.description && (
+            {user.description && (
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {user.description}
@@ -352,9 +347,9 @@ const Profile = () => {
             )}
 
             <div className="flex items-center gap-2 mt-3">
-              <div className={`w-2 h-2 rounded-full ${user?.isAvailableAsProvider ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <div className={`w-2 h-2 rounded-full ${user.isAvailableAsProvider ? 'bg-green-500' : 'bg-red-500'}`}></div>
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                {user?.isAvailableAsProvider ? 'Disponível para serviços' : 'Indisponível no momento'}
+                {user.isAvailableAsProvider ? 'Disponível para serviços' : 'Indisponível no momento'}
               </span>
             </div>
           </div>
@@ -362,12 +357,12 @@ const Profile = () => {
       )}
 
       {/* Tornar-se Prestador */}
-      {user?.type === 'client' && !showUpgradeForm && (
+      {user.type === 'client' && !showUpgradeForm && (
         <Card>
           <div className="text-center py-4">
             <Briefcase className="w-12 h-12 text-primary-600 mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Quer oferecer seus serviços?
+              Quer oferecer seus serviços
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Torne-se um prestador e comece a receber propostas de trabalho

@@ -1,14 +1,18 @@
-// frontend/src/components/Layout.jsx
+﻿// frontend/src/components/Layout.jsx
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Home, Briefcase, Search, User, Moon, Sun, Shield, MessageCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useChatNotifications } from '../contexts/ChatNotificationContext';
+import { useActivityNotifications } from '../contexts/ActivityNotificationContext';
 
 const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const { darkMode, toggleTheme } = useTheme();
+  const { totalUnread } = useChatNotifications();
+  const { counts: activityCounts } = useActivityNotifications();
 
   const isAdmin = user?.type === 'admin' || user?.role === 'admin';
 
@@ -24,6 +28,12 @@ const Layout = () => {
   if (isAdmin) {
     navItems.push({ path: '/admin', icon: Shield, label: 'Admin' });
   }
+
+  const getNavBadgeCount = (path) => {if (path === '/chat') return totalUnread;
+    if (path === '/services') return activityCounts.services;
+    if (path === '/jobs') return activityCounts.jobs;
+    return 0;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
@@ -75,17 +85,23 @@ const Layout = () => {
           <div className="flex justify-around items-center py-2">
             {navItems.map(({ path, icon: Icon, label }) => {
               const isActive = location.pathname === path;
+              const badgeCount = getNavBadgeCount(path);
               return (
                 <button
                   key={path}
                   onClick={() => navigate(path)}
                   className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
-                    isActive
-                      ? 'text-primary-600 dark:text-primary-400'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-primary-500'
+                    isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400 hover:text-primary-500'
                   }`}
                 >
-                  <Icon className="w-6 h-6" />
+                  <span className="relative">
+                    <Icon className="w-6 h-6" />
+                    {badgeCount > 0 && (
+                      <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] font-bold shadow-sm ring-2 ring-white dark:ring-gray-800">
+                        {badgeCount > 99 ? '99+' : badgeCount}
+                      </span>
+                    )}
+                  </span>
                   <span className="text-xs font-medium">{label}</span>
                 </button>
               );

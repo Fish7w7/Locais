@@ -24,15 +24,13 @@ export const createOrGetConversation = async (req, res) => {
     );
 
     if (!hasPermission.allowed) {
-      return res.status(403).json({
-        success: false,
+      return res.status(403).json({ success: false,
         message: hasPermission.reason
       });
     }
 
     // Buscar conversa existente
-    let conversation = await Conversation.findOne({
-      participants: { $all: [currentUserId, otherUserId] },
+    let conversation = await Conversation.findOne({ participants: { $all: [currentUserId, otherUserId] },
       type,
       ...(type === 'service' && relatedObjectId && { relatedService: relatedObjectId }),
       ...(type === 'job_application' && relatedObjectId && { relatedApplication: relatedObjectId }),
@@ -41,8 +39,7 @@ export const createOrGetConversation = async (req, res) => {
 
     // Se não existir, criar nova
     if (!conversation) {
-      const conversationData = {
-        participants: [currentUserId, otherUserId],
+      const conversationData = { participants: [currentUserId, otherUserId],
         type,
         unreadCount: {
           [currentUserId]: 0,
@@ -57,12 +54,19 @@ export const createOrGetConversation = async (req, res) => {
       conversation = await Conversation.create(conversationData);
       conversation = await conversation.populate('participants', 'name avatar type');
 
-      await Message.create({
+      const systemMessage = await Message.create({
         conversationId: conversation._id,
         sender: currentUserId,
         content: 'Conversa iniciada',
         messageType: 'system'
       });
+
+      conversation.lastMessage = {
+        content: systemMessage.content,
+        sender: currentUserId,
+        timestamp: systemMessage.createdAt
+      };
+      await conversation.save();
     }
 
     res.json({
@@ -84,8 +88,7 @@ export const createOrGetConversation = async (req, res) => {
 // @access  Private
 export const getMyConversations = async (req, res) => {
   try {
-    const conversations = await Conversation.find({
-      participants: req.user.id,
+    const conversations = await Conversation.find({ participants: req.user.id,
       isActive: true
     })
       .populate('participants', 'name avatar type')
@@ -102,6 +105,7 @@ export const getMyConversations = async (req, res) => {
       return {
         ...conv,
         otherUser,
+        lastMessage: conv.lastMessage || null,
         unreadCount: conv.unreadCount?.[req.user.id] || 0
       };
     });
@@ -131,15 +135,13 @@ export const getConversationMessages = async (req, res) => {
     // Verificar se é participante
     const conversation = await Conversation.findById(id);
     if (!conversation) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Conversa não encontrada'
       });
     }
 
     if (!conversation.participants.includes(req.user.id)) {
-      return res.status(403).json({
-        success: false,
+      return res.status(403).json({ success: false,
         message: 'Você não tem acesso a esta conversa'
       });
     }
@@ -195,8 +197,7 @@ export const sendMessage = async (req, res) => {
     const { content } = req.body;
 
     if (!content || content.trim().length === 0) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Mensagem não pode estar vazia'
       });
     }
@@ -204,22 +205,19 @@ export const sendMessage = async (req, res) => {
     // Verificar se é participante
     const conversation = await Conversation.findById(id);
     if (!conversation) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Conversa não encontrada'
       });
     }
 
     if (!conversation.participants.includes(req.user.id)) {
-      return res.status(403).json({
-        success: false,
+      return res.status(403).json({ success: false,
         message: 'Você não tem acesso a esta conversa'
       });
     }
 
     // Criar mensagem
-    const message = await Message.create({
-      conversationId: id,
+    const message = await Message.create({ conversationId: id,
       sender: req.user.id,
       content: content.trim(),
       readBy: [{
@@ -230,8 +228,7 @@ export const sendMessage = async (req, res) => {
 
     await message.populate('sender', 'name avatar');
 
-    const updateData = {
-      lastMessage: {
+    const updateData = { lastMessage: {
         content: content.trim(),
         sender: req.user.id,
         timestamp: new Date()
@@ -240,7 +237,7 @@ export const sendMessage = async (req, res) => {
 
     conversation.participants.forEach(participantId => {
       if (participantId.toString() !== req.user.id) {
-        const currentCount = conversation.unreadCount?.get(participantId.toString()) || 0;
+        const currentCount = conversation.unreadCount.get(participantId.toString()) || 0;
         updateData[`unreadCount.${participantId}`] = currentCount + 1;
       }
     });

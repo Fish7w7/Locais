@@ -11,6 +11,7 @@ import {
   updateApplicationStatus,
   proposeToProvider,
   getMyProposals,
+  getSentProposals,
   respondToProposal
 } from '../controllers/jobController.js';
 import { protect, authorize } from '../middlewares/auth.js';
@@ -20,6 +21,7 @@ router.post('/', protect, authorize('company', 'admin'), createJob);
 router.get('/', getJobs);
 router.get('/my-applications', protect, getMyApplications);
 router.get('/my-proposals', protect, authorize('provider', 'admin'), getMyProposals);
+router.get('/sent-proposals', protect, authorize('company', 'admin'), getSentProposals);
 router.get('/:id', getJobById);
 router.put('/:id', protect, authorize('company', 'admin'), updateJob);
 router.delete('/:id', protect, authorize('company', 'admin'), deleteJob);

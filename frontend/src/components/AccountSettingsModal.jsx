@@ -6,9 +6,11 @@ import Button from './Button';
 import Input from './Input';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 
 const AccountSettingsModal = ({ isOpen, onClose }) => {
   const { logout } = useAuth();
+  const { success } = useNotification();
   const [activeTab, setActiveTab] = useState('deactivate');
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState('');
@@ -22,11 +24,11 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
 
     try {
       await api.put('/users/deactivate', { password });
-      alert('✅ Conta desativada com sucesso! Você pode reativá-la fazendo login novamente.');
+      success('Conta desativada com sucesso! Você pode reativá-la fazendo login novamente.');
       logout();
       onClose();
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao desativar conta');
+      setError(err.response?.data.message || 'Erro ao desativar conta');
     } finally {
       setLoading(false);
     }
@@ -43,20 +45,15 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    if (!window.confirm('⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL! Todos os seus dados serão perdidos permanentemente. Deseja continuar?')) {
-      setLoading(false);
-      return;
-    }
-
     try {
       await api.delete('/users/delete-account', { 
         data: { password, confirmation } 
       });
-      alert('✅ Conta deletada permanentemente.');
+      success('Conta deletada permanentemente.');
       logout();
       onClose();
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao deletar conta');
+      setError(err.response?.data.message || 'Erro ao deletar conta');
     } finally {
       setLoading(false);
     }
@@ -75,9 +72,7 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
               setConfirmation('');
             }}
             className={`px-4 py-2 font-medium transition-colors border-b-2 min-h-[44px] ${
-              activeTab === 'deactivate'
-                ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+              activeTab === 'deactivate' ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             Desativar Conta
@@ -90,9 +85,7 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
               setConfirmation('');
             }}
             className={`px-4 py-2 font-medium transition-colors border-b-2 min-h-[44px] ${
-              activeTab === 'delete'
-                ? 'border-red-500 text-red-600 dark:text-red-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+              activeTab === 'delete' ? 'border-red-500 text-red-600 dark:text-red-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             Deletar Permanentemente
@@ -112,7 +105,7 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
               <div className="flex gap-3">
                 <UserX className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-yellow-800 dark:text-yellow-200">
-                  <p className="font-medium mb-2">O que acontece ao desativar?</p>
+                  <p className="font-medium mb-2">O que acontece ao desativar</p>
                   <ul className="space-y-1 ml-4 list-disc">
                     <li>Seu perfil ficará invisível para outros usuários</li>
                     <li>Você não receberá novas solicitações</li>
@@ -185,8 +178,7 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Digite: <span className="font-mono text-red-600">DELETAR PERMANENTEMENTE</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"> ? Digite : <span className="font-mono text-red-600">DELETAR PERMANENTEMENTE</span>
               </label>
               <input
                 type="text"

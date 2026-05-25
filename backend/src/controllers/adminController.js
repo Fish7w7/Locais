@@ -21,14 +21,12 @@ export const createAdmin = asyncHandler(async (req, res) => {
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return res.status(400).json({
-      success: false,
+    return res.status(400).json({ success: false,
       message: 'Usuário já existe'
     });
   }
 
-  const admin = await User.create({
-    name: name || 'Admin Master',
+  const admin = await User.create({ name: name || 'Admin Master',
     email,
     password,
     phone: '(00) 00000-0000',
@@ -91,8 +89,7 @@ export const getUserById = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id).select('-password');
 
   if (!user) {
-    return res.status(404).json({
-      success: false,
+    return res.status(404).json({ success: false,
       message: 'Usuário não encontrado'
     });
   }
@@ -171,7 +168,7 @@ export const getReviewStats = asyncHandler(async (req, res) => {
     stats: {
       flagged,
       underReview,
-      totalReports: reportTotals[0]?.totalReports || 0
+      totalReports: reportTotals[0].totalReports || 0
     }
   });
 });
@@ -183,15 +180,13 @@ export const deleteUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
 
   if (!user) {
-    return res.status(404).json({
-      success: false,
+    return res.status(404).json({ success: false,
       message: 'Usuário não encontrado'
     });
   }
 
   if (user.role === 'admin' && user._id.toString() !== req.user.id) {
-    return res.status(403).json({
-      success: false,
+    return res.status(403).json({ success: false,
       message: 'Não é possível deletar outro administrador'
     });
   }
@@ -211,16 +206,14 @@ export const updateUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
 
   if (!user) {
-    return res.status(404).json({
-      success: false,
+    return res.status(404).json({ success: false,
       message: 'Usuário não encontrado'
     });
   }
 
   // Previne que um admin remova o próprio status de admin
   if (user.role === 'admin' && req.user.id === req.params.id && req.body.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
+    return res.status(403).json({ success: false,
       message: 'Você não pode remover seu próprio status de administrador'
     });
   }
@@ -254,8 +247,7 @@ export const getContent = asyncHandler(async (req, res) => {
   } else if (type === 'jobs') {
     Model = JobVacancy;
   } else {
-    return res.status(400).json({ 
-      success: false, 
+    return res.status(400).json({ success: false, 
       message: 'Tipo de conteúdo inválido. Use "services" ou "jobs"' 
     });
   }
@@ -306,8 +298,7 @@ export const deleteContent = asyncHandler(async (req, res) => {
   console.log('🗑️ Deletando conteúdo:', { id, type });
 
   if (!type || (type !== 'services' && type !== 'jobs')) {
-    return res.status(400).json({ 
-      success: false, 
+    return res.status(400).json({ success: false, 
       message: 'Tipo de conteúdo inválido. Use "services" ou "jobs"' 
     });
   }
@@ -322,8 +313,7 @@ export const deleteContent = asyncHandler(async (req, res) => {
   const item = await Model.findByIdAndDelete(id);
 
   if (!item) {
-    return res.status(404).json({ 
-      success: false, 
+    return res.status(404).json({ success: false, 
       message: 'Conteúdo não encontrado' 
     });
   }
@@ -345,8 +335,7 @@ export const getSettings = asyncHandler(async (req, res) => {
     
     // Se não existir, cria com valores padrão
     if (!settings) {
-      settings = await Settings.create({
-        maxUploadSize: 5,
+      settings = await Settings.create({ maxUploadSize: 5,
         allowedCategories: 'Eletricista, Limpeza, Encanador, TI',
         maintenanceMode: false,
       });

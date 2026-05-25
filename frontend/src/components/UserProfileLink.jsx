@@ -33,7 +33,7 @@ const UserProfileLink = ({
       className={`flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg p-2 -m-2 transition-colors text-left w-full min-h-[44px] touch-manipulation ${className}`}
     >
       <img
-        src={userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`}
+        src={userAvatar || `https://ui-avatars.com/api/name=${encodeURIComponent(userName)}&background=random`}
         alt={userName}
         className="w-10 h-10 rounded-full object-cover flex-shrink-0"
       />

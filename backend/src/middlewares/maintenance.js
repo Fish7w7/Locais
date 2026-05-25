@@ -2,8 +2,7 @@
 import Settings from '../models/Settings.js';
 
 // Cache do modo de manutenção
-let maintenanceCache = {
-  isActive: false,
+let maintenanceCache = { isActive: false,
   lastCheck: 0
 };
 
@@ -29,7 +28,7 @@ export const checkMaintenance = async (req, res, next) => {
     }
 
     // Bypass para admins - verifica o token
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = req.headers.authorization.split(' ')[1];
     
     if (token) {
       try {
@@ -53,15 +52,13 @@ export const checkMaintenance = async (req, res, next) => {
     if (now - maintenanceCache.lastCheck > CACHE_DURATION) {
       try {
         const settings = await Settings.findOne();
-        maintenanceCache = {
-          isActive: settings?.maintenanceMode || false,
+        maintenanceCache = { isActive: settings.maintenanceMode || false,
           lastCheck: now
         };
         console.log('🔧 Cache de manutenção atualizado:', maintenanceCache.isActive ? 'ATIVO' : 'INATIVO');
       } catch (error) {
         console.error('❌ Erro ao verificar modo manutenção:', error);
-        maintenanceCache = {
-          isActive: false,
+        maintenanceCache = { isActive: false,
           lastCheck: now
         };
       }
@@ -70,8 +67,7 @@ export const checkMaintenance = async (req, res, next) => {
     // Se modo manutenção estiver ativo, bloqueia
     if (maintenanceCache.isActive) {
       console.log(`🔧 BLOQUEADO - Modo manutenção ativo: ${req.method} ${req.path}`);
-      return res.status(503).json({
-        success: false,
+      return res.status(503).json({ success: false,
         maintenance: true,
         message: '🔧 Sistema em manutenção. Tente novamente em alguns minutos.',
         timestamp: new Date().toISOString()
@@ -91,8 +87,7 @@ export const checkMaintenance = async (req, res, next) => {
 export const refreshMaintenanceCache = async () => {
   try {
     const settings = await Settings.findOne();
-    maintenanceCache = {
-      isActive: settings?.maintenanceMode || false,
+    maintenanceCache = { isActive: settings.maintenanceMode || false,
       lastCheck: Date.now()
     };
     console.log('🔄 Cache de manutenção forçado:', maintenanceCache);

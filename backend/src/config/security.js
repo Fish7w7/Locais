@@ -7,8 +7,7 @@ import rateLimit from 'express-rate-limit';
 import cors from 'cors';
 
 export const securityMiddlewares = (app) => {
-  const limiter = rateLimit({
-    max: 100,
+  const limiter = rateLimit({ max: 100,
     windowMs: 15 * 60 * 1000, 
     message: 'Muitas requisições a partir deste IP, tente novamente após 15 minutos.',
     standardHeaders: true, 

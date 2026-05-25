@@ -4,11 +4,12 @@ import Modal from './Modal';
 import Input from './Input';
 import Button from './Button';
 import { jobAPI } from '../api/services';
+import { useNotification } from '../contexts/NotificationContext';
 
 const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
+  const { success, error: showError } = useNotification();
+  const [formData, setFormData] = useState({ title: '',
     description: '',
     category: '',
     type: 'temporary',
@@ -69,7 +70,7 @@ const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
         endDate: formData.endDate || null
       });
 
-      alert('Vaga criada com sucesso!');
+      success('Vaga criada com sucesso!');
       onClose();
       if (onSuccess) onSuccess();
       
@@ -90,7 +91,7 @@ const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
         vacancies: '1'
       });
     } catch (error) {
-      alert(error.response?.data?.message || 'Erro ao criar vaga');
+      showError(error.response?.data.message || 'Erro ao criar vaga');
     } finally {
       setLoading(false);
     }

@@ -3,9 +3,11 @@ import { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import ChatList from '../components/ChatList';
 import ChatWindow from '../components/ChatWindow';
+import { useChatNotifications } from '../contexts/ChatNotificationContext';
 
 const Chat = () => {
   const [selectedConversation, setSelectedConversation] = useState(null);
+  const { refreshUnreadCount } = useChatNotifications();
 
   return (
     <div className="space-y-4">
@@ -29,6 +31,7 @@ const Chat = () => {
           <ChatWindow
             conversation={selectedConversation}
             onBack={() => setSelectedConversation(null)}
+            onMessagesRead={refreshUnreadCount}
           />
         </div>
       )}

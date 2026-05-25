@@ -42,8 +42,7 @@ const PublicProfile = () => {
   };
 
   const getUserTypeLabel = (type) => {
-    const labels = {
-      client: 'Cliente',
+    const labels = { client: 'Cliente',
       provider: 'Prestador de Serviços',
       company: 'Empresa',
       admin: 'Administrador'
@@ -51,7 +50,7 @@ const PublicProfile = () => {
     return labels[type] || type;
   };
 
-  const isOwnProfile = currentUser?.id === userId;
+  const isOwnProfile = currentUser.id === userId;
 
   // Redirecionar para perfil próprio se for o próprio usuário
   useEffect(() => {
@@ -108,7 +107,7 @@ const PublicProfile = () => {
         <Card>
           <div className="flex flex-col items-center text-center mb-6">
             <img
-              src={profileUser.avatar || `https://ui-avatars.com/api/?name=${profileUser.name}&size=200&background=random`}
+              src={profileUser.avatar || `https://ui-avatars.com/api/name=${profileUser.name}&size=200&background=random`}
               alt={profileUser.name}
               className="w-24 h-24 rounded-full object-cover mb-4"
             />
@@ -253,10 +252,9 @@ const PublicProfile = () => {
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-bold text-gray-900 dark:text-white">
-                        {profileUser.clientRating?.toFixed(1) || '0.0'}
+                        {profileUser.clientRating.toFixed(1) || '0.0'}
                       </span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        ({profileUser.clientReviewCount || 0} avaliações)
+                      <span className="text-sm text-gray-500 dark:text-gray-400"> ? ({profileUser.clientReviewCount || 0} avaliações)
                       </span>
                     </div>
                   </div>
@@ -277,10 +275,9 @@ const PublicProfile = () => {
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-bold text-gray-900 dark:text-white">
-                        {profileUser.providerRating?.toFixed(1) || '0.0'}
+                        {profileUser.providerRating.toFixed(1) || '0.0'}
                       </span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        ({profileUser.providerReviewCount || 0} avaliações)
+                      <span className="text-sm text-gray-500 dark:text-gray-400"> ? ({profileUser.providerReviewCount || 0} avaliações)
                       </span>
                     </div>
                   </div>
@@ -305,7 +302,6 @@ const PublicProfile = () => {
           provider={profileUser}
           onSuccess={() => {
             setShowServiceModal(false);
-            alert('Solicitação enviada com sucesso!');
           }}
         />
       )}

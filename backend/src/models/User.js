@@ -4,24 +4,24 @@ import bcrypt from 'bcryptjs';
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Nome é obrigatório'],
+    required: [true, 'Nome e obrigatorio'],
     trim: true
   },
   email: {
     type: String,
-    required: [true, 'Email é obrigatório'],
+    required: [true, 'Email e obrigatorio'],
     unique: true,
     lowercase: true,
     trim: true
   },
   phone: {
     type: String,
-    required: [true, 'Telefone é obrigatório'],
+    required: [true, 'Telefone e obrigatorio'],
     trim: true
   },
   password: {
     type: String,
-    required: [true, 'Senha é obrigatória'],
+    required: [true, 'Senha e obrigatoria'],
     minlength: 6,
     select: false
   },
@@ -40,10 +40,6 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-
-  // ======================
-  // Avaliações
-  // ======================
   providerRating: {
     type: Number,
     default: 0,
@@ -54,7 +50,6 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-
   clientRating: {
     type: Number,
     default: 0,
@@ -65,10 +60,6 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-
-  // ======================
-  // Campos de PRESTADOR
-  // ======================
   category: {
     type: String,
     default: null
@@ -88,10 +79,6 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-
-  // ======================
-  // Empresa
-  // ======================
   cnpj: {
     type: String
   },
@@ -99,10 +86,6 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-
-  // ======================
-  // Localização
-  // ======================
   city: {
     type: String,
     default: null
@@ -111,10 +94,6 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-
-  // ======================
-  // Reset de senha
-  // ======================
   resetPasswordToken: {
     type: String,
     default: null
@@ -123,10 +102,6 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-
-  // ======================
-  // Ativação / Desativação
-  // ======================
   isActive: {
     type: Boolean,
     default: true
@@ -135,17 +110,12 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null
   }
-
-}, { 
-  timestamps: true 
+}, {
+  timestamps: true
 });
 
-// ======================
-// Índices
-// ======================
 UserSchema.index({ cnpj: 1 }, { unique: true, sparse: true });
 
-// TTL → remove documentos APENAS quando resetPasswordExpire existir
 UserSchema.index(
   { resetPasswordExpire: 1 },
   {
@@ -156,9 +126,6 @@ UserSchema.index(
   }
 );
 
-// ======================
-// Hooks
-// ======================
 UserSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
 
@@ -167,16 +134,13 @@ UserSchema.pre('save', async function(next) {
   next();
 });
 
-// ======================
-// Métodos
-// ======================
 UserSchema.methods.comparePassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
 UserSchema.methods.upgradeToProvider = function(providerData) {
   if (this.type === 'company') {
-    throw new Error('Empresas não podem ser prestadores');
+    throw new Error('Empresas nao podem ser prestadores');
   }
 
   this.type = 'provider';
@@ -188,7 +152,4 @@ UserSchema.methods.upgradeToProvider = function(providerData) {
   return this.save();
 };
 
-// ======================
-// Export
-// ======================
 export default mongoose.models.User || mongoose.model('User', UserSchema);

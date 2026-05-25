@@ -39,6 +39,7 @@ export const jobAPI = {
   updateApplicationStatus: (id, data) => api.put(`/jobs/applications/${id}`, data),
   proposeToProvider: (id, data) => api.post(`/jobs/${id}/propose`, data),
   getMyProposals: () => api.get('/jobs/my-proposals'),
+  getSentProposals: () => api.get('/jobs/sent-proposals'),
   respondToProposal: (id, data) => api.put(`/jobs/proposals/${id}`, data)
 };
 
@@ -46,8 +47,13 @@ export const jobAPI = {
 export const chatAPI = {
   createOrGetConversation: (data) => api.post('/chat/conversation', data),
   getMyConversations: () => api.get('/chat/conversations'),
-  getMessages: (conversationId, params) => 
+  getMessages: (conversationId, params) =>
     api.get(`/chat/conversations/${conversationId}/messages`, { params }),
-  sendMessage: (conversationId, data) => 
+  sendMessage: (conversationId, data) =>
     api.post(`/chat/conversations/${conversationId}/messages`, data)
+};
+
+// NOTIFICATIONS
+export const notificationAPI = {
+  getSummary: () => api.get('/notifications/summary')
 };

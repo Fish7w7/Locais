@@ -23,8 +23,7 @@ export const createJob = async (req, res) => {
       vacancies
     } = req.body;
 
-    const job = await JobVacancy.create({
-      companyId: req.user.id,
+    const job = await JobVacancy.create({ companyId: req.user.id,
       title,
       description,
       category,
@@ -97,8 +96,7 @@ export const getJobById = async (req, res) => {
       .populate('companyId', 'name email phone avatar companyDescription');
 
     if (!job) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Vaga não encontrada'
       });
     }
@@ -125,8 +123,7 @@ export const updateJob = async (req, res) => {
     const job = await JobVacancy.findById(req.params.id);
 
     if (!job) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Vaga não encontrada'
       });
     }
@@ -135,8 +132,7 @@ export const updateJob = async (req, res) => {
     const isOwner = job.companyId.toString() === req.user.id;
 
     if (!isAdmin && !isOwner) {
-      return res.status(403).json({
-        success: false,
+      return res.status(403).json({ success: false,
         message: 'Sem permissão para editar esta vaga'
       });
     }
@@ -169,8 +165,7 @@ export const deleteJob = async (req, res) => {
     const job = await JobVacancy.findById(req.params.id);
 
     if (!job) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Vaga não encontrada'
       });
     }
@@ -179,8 +174,7 @@ export const deleteJob = async (req, res) => {
     const isOwner = job.companyId.toString() === req.user.id;
 
     if (!isAdmin && !isOwner) {
-      return res.status(403).json({
-        success: false,
+      return res.status(403).json({ success: false,
         message: 'Sem permissão para deletar esta vaga'
       });
     }
@@ -212,15 +206,13 @@ export const applyToJob = async (req, res) => {
     const job = await JobVacancy.findById(jobId);
 
     if (!job) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Vaga não encontrada'
       });
     }
 
     if (!job.isActive) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Esta vaga não está mais ativa'
       });
     }
@@ -231,8 +223,7 @@ export const applyToJob = async (req, res) => {
     });
 
     if (existingApplication) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Você já se candidatou a esta vaga'
       });
     }
@@ -300,8 +291,7 @@ export const getJobApplications = async (req, res) => {
     const job = await JobVacancy.findById(req.params.id);
 
     if (!job) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Vaga não encontrada'
       });
     }
@@ -314,13 +304,12 @@ export const getJobApplications = async (req, res) => {
     console.log('   User Type:', req.user.type);
     console.log('   User Role:', req.user.role);
     console.log('   Job Company ID:', job.companyId.toString());
-    console.log('   Is Admin?', isAdmin);
-    console.log('   Is Owner?', isOwner);
+    console.log('   Is Admin', isAdmin);
+    console.log('   Is Owner', isOwner);
 
     if (!isAdmin && !isOwner) {
       console.log('❌ Acesso negado - Nem admin nem dono');
-      return res.status(403).json({
-        success: false,
+      return res.status(403).json({ success: false,
         message: 'Sem permissão para ver candidaturas desta vaga'
       });
     }
@@ -358,8 +347,7 @@ export const updateApplicationStatus = async (req, res) => {
     const application = await Application.findById(req.params.id).populate('jobId');
 
     if (!application) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Candidatura não encontrada'
       });
     }
@@ -368,8 +356,7 @@ export const updateApplicationStatus = async (req, res) => {
     const isOwner = application.jobId.companyId.toString() === req.user.id;
 
     if (!isAdmin && !isOwner) {
-      return res.status(403).json({
-        success: false,
+      return res.status(403).json({ success: false,
         message: 'Sem permissão para atualizar esta candidatura'
       });
     }
@@ -409,8 +396,7 @@ export const proposeToProvider = async (req, res) => {
     const job = await JobVacancy.findById(jobId);
 
     if (!job) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Vaga não encontrada'
       });
     }
@@ -419,8 +405,7 @@ export const proposeToProvider = async (req, res) => {
     const isOwner = job.companyId.toString() === req.user.id;
 
     if (!isAdmin && !isOwner) {
-      return res.status(403).json({
-        success: false,
+      return res.status(403).json({ success: false,
         message: 'Sem permissão para enviar proposta por esta vaga'
       });
     }
@@ -432,8 +417,7 @@ export const proposeToProvider = async (req, res) => {
     });
 
     if (existingProposal) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Proposta já enviada para este prestador'
       });
     }
@@ -493,6 +477,35 @@ export const getMyProposals = async (req, res) => {
   }
 };
 
+// @desc    Obter propostas enviadas (empresa)
+// @route   GET /api/jobs/sent-proposals
+// @access  Private (empresas)
+export const getSentProposals = async (req, res) => {
+  try {
+    const isAdmin = req.user.type === 'admin' || req.user.role === 'admin';
+    const query = isAdmin ? {} : { companyId: req.user.id };
+
+    const proposals = await JobProposal.find(query)
+      .populate('jobId', 'title type salary location')
+      .populate('providerId', 'name avatar category pricePerHour providerRating providerReviewCount')
+      .populate('companyId', 'name avatar')
+      .sort('-createdAt');
+
+    res.json({
+      success: true,
+      count: proposals.length,
+      proposals
+    });
+  } catch (error) {
+    console.error('Erro ao buscar propostas enviadas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar propostas enviadas',
+      error: error.message
+    });
+  }
+};
+
 // @desc    Responder proposta
 // @route   PUT /api/jobs/proposals/:id
 // @access  Private (prestador)
@@ -503,15 +516,13 @@ export const respondToProposal = async (req, res) => {
     const proposal = await JobProposal.findById(req.params.id);
 
     if (!proposal) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Proposta não encontrada'
       });
     }
 
     if (proposal.providerId.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
+      return res.status(403).json({ success: false,
         message: 'Sem permissão para responder esta proposta'
       });
     }

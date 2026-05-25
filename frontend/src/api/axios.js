@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   // Em produção usa a env var com /api, em dev usa proxy local
-  baseURL: import.meta.env.VITE_API_URL 
+  baseURL: import.meta.env.VITE_API_URL
     ? `${import.meta.env.VITE_API_URL}/api`
     : '/api',
   headers: {

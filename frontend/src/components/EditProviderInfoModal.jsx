@@ -5,11 +5,12 @@ import Modal from './Modal';
 import Input from './Input';
 import Button from './Button';
 import { userAPI } from '../api/services';
+import { useNotification } from '../contexts/NotificationContext';
 
 const EditProviderInfoModal = ({ isOpen, onClose, user, onSuccess }) => {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    category: '',
+  const { success, error: showError } = useNotification();
+  const [formData, setFormData] = useState({ category: '',
     pricePerHour: '',
     description: '',
     isAvailableAsProvider: true
@@ -43,7 +44,7 @@ const EditProviderInfoModal = ({ isOpen, onClose, user, onSuccess }) => {
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked: value
     });
   };
 
@@ -57,11 +58,11 @@ const EditProviderInfoModal = ({ isOpen, onClose, user, onSuccess }) => {
         pricePerHour: parseFloat(formData.pricePerHour)
       });
 
-      alert('Informações atualizadas com sucesso!');
+      success('Informações atualizadas com sucesso!');
       onClose();
       if (onSuccess) onSuccess();
     } catch (error) {
-      alert(error.response?.data?.message || 'Erro ao atualizar informações');
+      showError(error.response?.data.message || 'Erro ao atualizar informações');
     } finally {
       setLoading(false);
     }
@@ -139,9 +140,7 @@ const EditProviderInfoModal = ({ isOpen, onClose, user, onSuccess }) => {
                 Status de Disponibilidade
               </label>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {formData.isAvailableAsProvider 
-                  ? 'Você aparecerá nas buscas e poderá receber solicitações'
-                  : 'Você não aparecerá nas buscas'}
+                {formData.isAvailableAsProvider ? 'Você aparecerá nas buscas e poderá receber solicitações' : 'Você não aparecerá nas buscas'}
               </p>
             </div>
             <button
@@ -151,9 +150,7 @@ const EditProviderInfoModal = ({ isOpen, onClose, user, onSuccess }) => {
                 isAvailableAsProvider: !formData.isAvailableAsProvider
               })}
               className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                formData.isAvailableAsProvider
-                  ? 'bg-primary-600'
-                  : 'bg-gray-300 dark:bg-gray-600'
+                formData.isAvailableAsProvider ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
               }`}
             >
               <span
@@ -174,8 +171,7 @@ const EditProviderInfoModal = ({ isOpen, onClose, user, onSuccess }) => {
             <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               R$ {parseFloat(formData.pricePerHour).toFixed(2)}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Exemplo: 4 horas = R$ {(parseFloat(formData.pricePerHour) * 4).toFixed(2)}
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1"> ? Exemplo : 4 horas = R$ {(parseFloat(formData.pricePerHour) * 4).toFixed(2)}
             </p>
           </div>
         )}

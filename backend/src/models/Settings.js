@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 
-const SettingsSchema = new mongoose.Schema({
-  maxUploadSize: {
+const SettingsSchema = new mongoose.Schema({ maxUploadSize: {
     type: Number,
     default: 5,
     min: 1,

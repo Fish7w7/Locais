@@ -9,8 +9,7 @@ import api from '../api/axios';
 const ResetPassword = () => {
   const { token } = useParams();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    password: '',
+  const [formData, setFormData] = useState({ password: '',
     confirmPassword: ''
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -40,8 +39,7 @@ const ResetPassword = () => {
     setError('');
 
     try {
-      const response = await api.post(`/auth/reset-password/${token}`, {
-        password: formData.password
+      const response = await api.post(`/auth/reset-password/${token}`, { password: formData.password
       });
 
       // Salvar token e redirecionar
@@ -55,7 +53,7 @@ const ResetPassword = () => {
         navigate('/');
       }, 2000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao redefinir senha');
+      setError(err.response?.data.message || 'Erro ao redefinir senha');
     } finally {
       setLoading(false);
     }

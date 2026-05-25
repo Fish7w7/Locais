@@ -2,49 +2,46 @@ import { useState } from 'react';
 import { Briefcase, FileText, Send } from 'lucide-react';
 import Modal from './Modal';
 import Button from './Button';
+import { jobAPI } from '../api/services';
+import { useNotification } from '../contexts/NotificationContext';
 
 const ApplyToJobModal = ({ isOpen, onClose, job, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const { success, error: showError } = useNotification();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!job?._id) {
+      showError('Vaga não encontrada');
+      return;
+    }
+
     if (!message.trim() || message.length < 20) {
-      alert('Por favor, escreva uma mensagem com no mínimo 20 caracteres');
+      showError('Por favor, escreva uma mensagem com no mínimo 20 caracteres');
       return;
     }
 
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/jobs/${job._id}/apply`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ message: message.trim() })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        alert('✅ Candidatura enviada com sucesso!');
-        setMessage('');
-        onClose();
-        if (onSuccess) onSuccess();
-      } else {
-        alert(data.message || 'Erro ao enviar candidatura');
-      }
+      await jobAPI.applyToJob(job._id, { message: message.trim() });
+      success('Candidatura enviada com sucesso!');
+      setMessage('');
+      onClose();
+      if (onSuccess) onSuccess();
     } catch (error) {
-      alert('Erro ao enviar candidatura');
       console.error(error);
+      showError(error.response?.data.message || 'Erro ao enviar candidatura');
     } finally {
       setLoading(false);
     }
   };
+
+  if (!job) return null;
+
+  const companyName = job.companyId?.name || 'Empresa não identificada';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Candidatar-se à Vaga" size="lg">
@@ -58,10 +55,10 @@ const ApplyToJobModal = ({ isOpen, onClose, job, onSuccess }) => {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                {job?.title}
+                {job.title || 'Vaga não encontrada'}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {job?.companyId?.name || 'Empresa não identificada'}
+                {companyName}
               </p>
             </div>
           </div>
@@ -91,11 +88,7 @@ const ApplyToJobModal = ({ isOpen, onClose, job, onSuccess }) => {
               Mínimo 20 caracteres
             </p>
             <p className={`text-xs ${
-              message.length > 1000 
-                ? 'text-red-500' 
-                : message.length < 20
-                ? 'text-yellow-600 dark:text-yellow-400'
-                : 'text-green-600 dark:text-green-400'
+              message.length > 1000 ? 'text-red-500' : message.length < 20 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'
             }`}>
               {message.length}/1000
             </p>

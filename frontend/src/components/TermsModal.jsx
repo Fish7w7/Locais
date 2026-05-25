@@ -79,7 +79,7 @@ const TermsModal = ({ isOpen, onClose }) => {
                     <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
                       3. Responsabilidades do Usuário
                     </h4>
-                    <p className="text-sm mb-2">Você se compromete a:</p>
+                    <p className="text-sm mb-2">Você se compromete ? a :</p>
                     <ul className="text-sm space-y-1 ml-4 list-disc">
                       <li>Fornecer informações verdadeiras e atualizadas</li>
                       <li>Manter a confidencialidade de sua senha</li>

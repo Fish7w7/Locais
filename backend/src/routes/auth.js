@@ -17,14 +17,11 @@ import {
 
 const router = express.Router();
 
-// Aplicar rate limiting
-router.use(authLimiter);
-
 // Rotas públicas
-router.post('/register', validateRegister, register);
-router.post('/login', validateLogin, login);
-router.post('/forgot-password', forgotPassword);
-router.post('/reset-password/:token', resetPassword);
+router.post('/register', authLimiter, validateRegister, register);
+router.post('/login', authLimiter, validateLogin, login);
+router.post('/forgot-password', authLimiter, forgotPassword);
+router.post('/reset-password/:token', authLimiter, resetPassword);
 
 // Rotas protegidas
 router.get('/me', protect, getMe);

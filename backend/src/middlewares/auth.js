@@ -10,8 +10,7 @@ export const protect = async (req, res, next) => {
     }
 
     if (!token) {
-      return res.status(401).json({
-        success: false,
+      return res.status(401).json({ success: false,
         message: 'Não autorizado - Token não fornecido'
       });
     }
@@ -20,16 +19,14 @@ export const protect = async (req, res, next) => {
     req.user = await User.findById(decoded.id).select('-password');
 
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
+      return res.status(401).json({ success: false,
         message: 'Usuário não encontrado'
       });
     }
 
     next();
   } catch (error) {
-    return res.status(401).json({
-      success: false,
+    return res.status(401).json({ success: false,
       message: 'Não autorizado - Token inválido'
     });
   }
@@ -48,8 +45,7 @@ export const authorize = (...types) => {
     // Se não for admin, verifica o tipo normalmente
     if (!types.includes(req.user.type)) {
       console.log(`❌ Acesso negado: usuário ${req.user.type} tentou acessar rota [${types.join(', ')}]`); // Debug
-      return res.status(403).json({
-        success: false,
+      return res.status(403).json({ success: false,
         message: `Tipo de usuário ${req.user.type} não tem permissão para acessar esta rota`
       });
     }
@@ -62,8 +58,7 @@ export const authorize = (...types) => {
 // Middleware específico para admin
 export const adminOnly = (req, res, next) => {
   if (req.user.role !== 'admin' && req.user.type !== 'admin') {
-    return res.status(403).json({
-      success: false,
+    return res.status(403).json({ success: false,
       message: 'Apenas administradores podem acessar esta rota'
     });
   }

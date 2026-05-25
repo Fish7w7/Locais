@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import { useNotification } from '../contexts/NotificationContext';
 
 const ModerateReviewsPage = () => {
   const [reviews, setReviews] = useState([]);
@@ -22,6 +23,7 @@ const ModerateReviewsPage = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [expandedReviews, setExpandedReviews] = useState(new Set());
   const [filter, setFilter] = useState('all'); // all, flagged, auto_detected
+  const { success, error: showError } = useNotification();
 
   useEffect(() => {
     loadFlaggedReviews();
@@ -31,38 +33,27 @@ const ModerateReviewsPage = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/reviews/flagged', {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const response = await fetch('/api/reviews/flagged', { headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
       setReviews(data.reviews || []);
     } catch (error) {
       console.error('Erro ao carregar avaliações:', error);
-      alert('Erro ao carregar avaliações');
+      showError('Erro ao carregar avaliações');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleModerate = async (reviewId, action) => {
-    if (action === 'reject' && !rejectionReason) {
-      alert('Informe o motivo da rejeição');
-      return;
-    }
-
-    if (!confirm(`Tem certeza que deseja ${
-      action === 'approve' ? 'aprovar' : 
-      action === 'reject' ? 'rejeitar' : 
-      'manter em revisão'
-    } esta avaliação?`)) {
+  const handleModerate = async (reviewId, action) => {if (action === 'reject' && !rejectionReason) {
+      showError('Informe o motivo da rejeição');
       return;
     }
 
     try {
       setModerating(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/reviews/${reviewId}/moderate`, {
-        method: 'PUT',
+      const response = await fetch(`/api/reviews/${reviewId}/moderate`, { method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -76,16 +67,16 @@ const ModerateReviewsPage = () => {
       const data = await response.json();
 
       if (data.success) {
-        alert(`✅ ${data.message}`);
+        success(data.message);
         setSelectedReview(null);
         setRejectionReason('');
         loadFlaggedReviews();
       } else {
-        alert(`❌ ${data.message || 'Erro ao moderar'}`);
+        showError(data.message || 'Erro ao moderar');
       }
     } catch (error) {
-      alert('Erro ao moderar avaliação');
       console.error(error);
+      showError('Erro ao moderar avaliação');
     } finally {
       setModerating(false);
     }
@@ -104,8 +95,7 @@ const ModerateReviewsPage = () => {
   };
 
   const getReasonLabel = (reason) => {
-    const labels = {
-      offensive_language: 'Linguagem ofensiva',
+    const labels = { offensive_language: 'Linguagem ofensiva',
       spam: 'Spam',
       false_information: 'Informação falsa',
       harassment: 'Assédio',
@@ -115,20 +105,16 @@ const ModerateReviewsPage = () => {
     return labels[reason] || reason;
   };
 
-  const filteredReviews = reviews.filter(review => {
-    if (filter === 'flagged') return review.status === 'flagged';
+  const filteredReviews = reviews.filter(review => {if (filter === 'flagged') return review.status === 'flagged';
     if (filter === 'auto_detected') return review.status === 'under_review';
     return true;
   });
 
-  const stats = {
-    total: reviews.length,
-    flagged: reviews.filter(r => r.status === 'flagged').length,
-    autoDetected: reviews.filter(r => r.status === 'under_review').length
+  const stats = { total: reviews.length,
+    flagged: reviews.filter(r => r.status === 'flagged').length, autoDetected: reviews.filter(r => r.status === 'under_review').length
   };
 
-  if (loading) {
-    return (
+  if (loading) {return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -188,7 +174,7 @@ const ModerateReviewsPage = () => {
         <div className="flex gap-3">
           <AlertTriangle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-800 dark:text-blue-200">
-            <p className="font-medium mb-1">Como funciona o sistema híbrido?</p>
+            <p className="font-medium mb-1">Como funciona o sistema híbrido</p>
             <ul className="space-y-1 text-xs">
               <li>• <strong>Publicação Automática:</strong> Avaliações são publicadas imediatamente</li>
               <li>• <strong>Auto-Detecção:</strong> IA detecta linguagem potencialmente ofensiva</li>
@@ -204,9 +190,7 @@ const ModerateReviewsPage = () => {
         <button
           onClick={() => setFilter('all')}
           className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-            filter === 'all'
-              ? 'bg-primary-600 text-white'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+            filter === 'all' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
           }`}
         >
           Todas ({stats.total})
@@ -214,9 +198,7 @@ const ModerateReviewsPage = () => {
         <button
           onClick={() => setFilter('flagged')}
           className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-            filter === 'flagged'
-              ? 'bg-red-600 text-white'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+            filter === 'flagged' ? 'bg-red-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
           }`}
         >
           Denunciadas ({stats.flagged})
@@ -224,9 +206,7 @@ const ModerateReviewsPage = () => {
         <button
           onClick={() => setFilter('auto_detected')}
           className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-            filter === 'auto_detected'
-              ? 'bg-yellow-600 text-white'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+            filter === 'auto_detected' ? 'bg-yellow-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
           }`}
         >
           Auto-detectadas ({stats.autoDetected})
@@ -279,14 +259,14 @@ const ModerateReviewsPage = () => {
                 {/* Quick Preview */}
                 <div className="flex items-start gap-3 mb-3">
                   <img
-                    src={review.reviewerId?.avatar || `https://ui-avatars.com/api/?name=${review.reviewerId?.name}`}
-                    alt={review.reviewerId?.name}
+                    src={review.reviewerId.avatar || `https://ui-avatars.com/api/name=${review.reviewerId.name}`}
+                    alt={review.reviewerId.name}
                     className="w-10 h-10 rounded-full"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {review.reviewerId?.name}
+                        {review.reviewerId.name}
                       </p>
                       <div className="flex items-center gap-1">
                         {[1, 2, 3, 4, 5].map(star => (
@@ -327,17 +307,17 @@ const ModerateReviewsPage = () => {
 
                     {/* Avaliado */}
                     <div>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-                        Avaliado:
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+                          Avaliado:
                       </p>
                       <div className="flex items-center gap-2">
                         <img
-                          src={review.reviewedUserId?.avatar || `https://ui-avatars.com/api/?name=${review.reviewedUserId?.name}`}
-                          alt={review.reviewedUserId?.name}
+                          src={review.reviewedUserId.avatar || `https://ui-avatars.com/api/name=${review.reviewedUserId.name}`}
+                          alt={review.reviewedUserId.name}
                           className="w-8 h-8 rounded-full"
                         />
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {review.reviewedUserId?.name}
+                          {review.reviewedUserId.name}
                         </span>
                       </div>
                     </div>

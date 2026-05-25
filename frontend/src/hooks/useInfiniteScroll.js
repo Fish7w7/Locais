@@ -12,8 +12,7 @@ export const useInfiniteScroll = (loadMore, hasMore) => {
   const loadingRef = useRef(null);
 
   useEffect(() => {
-    const options = {
-      root: null,
+    const options = { root: null,
       rootMargin: '100px',
       threshold: 0.1
     };
@@ -32,7 +31,7 @@ export const useInfiniteScroll = (loadMore, hasMore) => {
 
     return () => {
       if (currentRef) {
-        observerRef.current?.unobserve(currentRef);
+        observerRef.current.unobserve(currentRef);
       }
     };
   }, [hasMore, loading, loadMore]);

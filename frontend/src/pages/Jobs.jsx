@@ -1,11 +1,12 @@
 // frontend/src/pages/Jobs.jsx
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Briefcase, MapPin, DollarSign, Users, Plus, Calendar, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { jobAPI } from '../api/services';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLoading } from '../contexts/LoadingContext';
+import { useActivityNotifications } from '../contexts/ActivityNotificationContext';
 import { useDebounce } from '../hooks/useDebounce';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { useConfirm } from '../hooks/useConfirm';
@@ -24,6 +25,7 @@ import {
   EmptyStateNoJobs,
   EmptyStateNoApplications,
   EmptyStateNoProposals,
+  EmptyStateNoSentProposals,
   EmptyStateNoMyJobs,
   EmptyStateError
 } from '../components/EmptyState';
@@ -32,8 +34,10 @@ import { StatusBadge, JobTypeBadge } from '../components/Badge';
 const Jobs = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const { success, error: showError } = useNotification();
   const { showLoading, hideLoading } = useLoading();
+  const { counts: activityCounts, refreshActivityNotifications } = useActivityNotifications();
   const { confirmState, confirm, cancel } = useConfirm();
 
   const tabsScrollRef = useDragScroll();
@@ -42,6 +46,7 @@ const Jobs = () => {
   const [jobs, setJobs] = useState([]);
   const [myApplications, setMyApplications] = useState([]);
   const [myProposals, setMyProposals] = useState([]);
+  const [sentProposals, setSentProposals] = useState([]);
   const [myCompanyJobs, setMyCompanyJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -63,8 +68,7 @@ const Jobs = () => {
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const jobTypes = {
-    temporary: 'Temporária',
+  const jobTypes = { temporary: 'Temporária',
     trial: 'Experiência',
     permanent: 'Efetiva'
   };
@@ -103,15 +107,18 @@ const Jobs = () => {
       } else if (activeTab === 'my-applications') {
         const res = await jobAPI.getMyApplications();
         setMyApplications(res.data.applications || []);
-      } else if (activeTab === 'my-proposals' && (user?.type === 'provider' || user?.type === 'admin')) {
+      } else if (activeTab === 'my-proposals' && (user.type === 'provider' || user.type === 'admin')) {
         const res = await jobAPI.getMyProposals();
         setMyProposals(res.data.proposals || []);
-      } else if (activeTab === 'my-jobs' && (user?.type === 'company' || user?.type === 'admin')) {
+      } else if (activeTab === 'sent-proposals' && (user.type === 'company' || user.type === 'admin')) {
+        const res = await jobAPI.getSentProposals();
+        setSentProposals(res.data.proposals || []);
+      } else if (activeTab === 'my-jobs' && (user.type === 'company' || user.type === 'admin')) {
         const res = await jobAPI.getJobs();
         const allJobs = res.data.jobs || [];
         
         const companyJobs = allJobs.filter(job => {
-          const jobCompanyId = job.companyId?._id || job.companyId;
+          const jobCompanyId = job.companyId._id || job.companyId;
           return jobCompanyId === user.id || String(jobCompanyId) === String(user.id);
         });
         
@@ -119,7 +126,7 @@ const Jobs = () => {
       }
     } catch (err) {
       console.error('Erro ao carregar vagas:', err);
-      setError(err.response?.data?.message || 'Erro ao carregar dados');
+      setError(err.response?.data.message || 'Erro ao carregar dados');
       showError('Erro ao carregar vagas');
     } finally {
       setLoading(false);
@@ -134,7 +141,7 @@ const Jobs = () => {
   const handleAcceptProposal = async (proposalId) => {
     await confirm({
       title: 'Aceitar Proposta',
-      message: 'Deseja aceitar esta proposta de trabalho?',
+      message: 'Deseja aceitar esta proposta de trabalho',
       variant: 'info',
       onConfirm: async () => {
         try {
@@ -144,9 +151,10 @@ const Jobs = () => {
             providerResponse: 'Aceito a proposta!'
           });
           success('Proposta aceita!');
-          loadData();
+          await loadData();
+          refreshActivityNotifications();
         } catch (err) {
-          showError(err.response?.data?.message || 'Erro ao aceitar proposta');
+          showError(err.response?.data.message || 'Erro ao aceitar proposta');
         } finally {
           hideLoading();
         }
@@ -157,7 +165,7 @@ const Jobs = () => {
   const handleRejectProposal = async (proposalId) => {
     await confirm({
       title: 'Rejeitar Proposta',
-      message: 'Tem certeza que deseja rejeitar esta proposta?',
+      message: 'Tem certeza que deseja rejeitar esta proposta',
       variant: 'danger',
       onConfirm: async () => {
         try {
@@ -167,9 +175,10 @@ const Jobs = () => {
             providerResponse: 'Não posso aceitar no momento.'
           });
           success('Proposta rejeitada');
-          loadData();
+          await loadData();
+          refreshActivityNotifications();
         } catch (err) {
-          showError(err.response?.data?.message || 'Erro ao rejeitar proposta');
+          showError(err.response?.data.message || 'Erro ao rejeitar proposta');
         } finally {
           hideLoading();
         }
@@ -187,22 +196,38 @@ const Jobs = () => {
     setShowEditJobModal(true);
   };
 
-  const filteredJobs = jobs.filter(job =>
-    job?.title?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-    job?.category?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-  );
+  const filteredJobs = jobs.filter(job => {
+    const query = debouncedSearchTerm.toLowerCase();
+    return (
+      (job.title || '').toLowerCase().includes(query) ||
+      (job.category || '').toLowerCase().includes(query)
+    );
+  });
 
   const visibleMyProposals = proposalStatusFilter
     ? myProposals.filter(proposal => proposal.status === proposalStatusFilter)
     : myProposals;
 
+  const visibleSentProposals = proposalStatusFilter
+    ? sentProposals.filter(proposal => proposal.status === proposalStatusFilter)
+    : sentProposals;
+
+  const renderTabBadge = (count) => {
+    if (!count) return null;
+    return (
+      <span className="ml-2 inline-flex min-w-[18px] h-[18px] px-1 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+        {count > 99 ? '99+' : count}
+      </span>
+    );
+  };
+
   const getCompanyName = (job) => {
-    return job?.companyId?.name || 'Empresa não identificada';
+    return job.companyId?.name || 'Empresa não identificada';
   };
 
   const getCompanyAvatar = (job) => {
     const companyName = getCompanyName(job);
-    return job?.companyId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}&background=random`;
+    return job.companyId?.avatar || `https://ui-avatars.com/api/name=${encodeURIComponent(companyName)}&background=random`;
   };
 
   const renderContent = () => {
@@ -232,7 +257,7 @@ const Jobs = () => {
                 />
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900 dark:text-white">
-                    {job.title}
+                    {job.title || 'Vaga sem título'}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     {getCompanyName(job)}
@@ -248,7 +273,7 @@ const Jobs = () => {
               <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400 mb-3">
                 <div className="flex items-center gap-1">
                   <MapPin className="w-4 h-4" />
-                  {job.location}
+                  {job.location || 'Local não informado'}
                 </div>
                 {job.salary && (
                   <div className="flex items-center gap-1">
@@ -262,7 +287,7 @@ const Jobs = () => {
                 </div>
               </div>
 
-              {(user?.type === 'client' || user?.type === 'admin') && (
+              {(user.type === 'client' || user.type === 'admin') && (
                 <Button 
                   variant="primary" 
                   fullWidth 
@@ -333,7 +358,7 @@ const Jobs = () => {
                 </div>
               )}
 
-              {/* ✅ BOTÃO CONVERSAR - Quando aceito */}
+              {/* Botão conversar - Quando aceito */}
               {application.status === 'accepted' && (
                 <StartChatButton
                   otherUserId={application.jobId?.companyId?._id || application.jobId?.companyId}
@@ -381,17 +406,17 @@ const Jobs = () => {
               </div>
 
               <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400 mb-3">
-                {proposal.jobId?.type && <JobTypeBadge type={proposal.jobId.type} />}
+                {proposal.jobId?.type && <JobTypeBadge type={proposal.jobId?.type} />}
                 {proposal.jobId?.location && (
                   <div className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
-                    {proposal.jobId.location}
+                    {proposal.jobId?.location}
                   </div>
                 )}
                 {proposal.jobId?.salary && (
                   <div className="flex items-center gap-1">
                     <DollarSign className="w-4 h-4" />
-                    Vaga: {formatCurrency(proposal.jobId.salary)}
+                    Vaga: {formatCurrency(proposal.jobId?.salary)}
                   </div>
                 )}
               </div>
@@ -445,7 +470,7 @@ const Jobs = () => {
                 </div>
               )}
 
-              {/* ✅ BOTÃO CONVERSAR - Quando aceito */}
+              {/* Botão conversar - Quando aceito */}
               {proposal.status === 'accepted' && (
                 <div className="mt-3">
                   <StartChatButton
@@ -460,6 +485,93 @@ const Jobs = () => {
               )}
             </Card>
           ))}
+        </div>
+      );
+    }
+
+    // Propostas Enviadas
+    if (activeTab === 'sent-proposals') {
+      if (sentProposals.length === 0) {
+        return <EmptyStateNoSentProposals onAction={() => navigate('/services')} />;
+      }
+
+      return (
+        <div className="space-y-3">
+          {visibleSentProposals.length === 0 && (
+            <Card>
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center py-6">
+                Nenhuma proposta enviada encontrada para este status.
+              </p>
+            </Card>
+          )}
+
+          {visibleSentProposals.map((proposal) => {
+            const provider = proposal.providerId;
+            const canStartChat =
+              proposal.status === 'accepted' &&
+              provider?._id &&
+              String(proposal.companyId?._id || proposal.companyId) === String(user.id);
+
+            return (
+              <Card key={proposal._id}>
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                      {proposal.jobId?.title || 'Vaga não encontrada'}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Para {provider?.name || 'Prestador não encontrado'}
+                    </p>
+                  </div>
+                  <StatusBadge status={proposal.status} />
+                </div>
+
+                <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  {proposal.jobId?.type && <JobTypeBadge type={proposal.jobId.type} />}
+                  {proposal.jobId?.location && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-4 h-4" />
+                      {proposal.jobId.location}
+                    </div>
+                  )}
+                  {proposal.offeredSalary && (
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="w-4 h-4" />
+                      Oferta: {formatCurrency(proposal.offeredSalary)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mb-3">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    {proposal.message}
+                  </p>
+                </div>
+
+                {proposal.providerResponse && (
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-3">
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Resposta do prestador:
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {proposal.providerResponse}
+                    </p>
+                  </div>
+                )}
+
+                {canStartChat && (
+                  <StartChatButton
+                    otherUserId={provider._id}
+                    type="job_proposal"
+                    relatedId={proposal._id}
+                    variant="primary"
+                    size="sm"
+                    fullWidth
+                  />
+                )}
+              </Card>
+            );
+          })}
         </div>
       );
     }
@@ -481,16 +593,14 @@ const Jobs = () => {
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 dark:text-white">
-                    {job.title}
+                    {job.title || 'Vaga sem título'}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     {job.category} • <JobTypeBadge type={job.type} />
                   </p>
                 </div>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  job.isActive 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                  job.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
                 }`}>
                   {job.isActive ? 'Ativa' : 'Inativa'}
                 </span>
@@ -541,14 +651,14 @@ const Jobs = () => {
               Vagas
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              {user?.type === 'company' && 'Gerencie suas vagas e candidatos'}
-              {user?.type === 'provider' && 'Veja propostas de empresas'}
-              {user?.type === 'client' && 'Encontre oportunidades de trabalho'}
-              {user?.type === 'admin' && 'Gerencie todas as vagas'}
+              {user.type === 'company' && 'Gerencie suas vagas e candidatos'}
+              {user.type === 'provider' && 'Veja propostas de empresas'}
+              {user.type === 'client' && 'Encontre oportunidades de trabalho'}
+              {user.type === 'admin' && 'Gerencie todas as vagas'}
             </p>
           </div>
           
-          {(user?.type === 'company' || user?.type === 'admin') && (
+          {(user.type === 'company' || user.type === 'admin') && (
             <Button 
               icon={Plus} 
               size="sm"
@@ -567,64 +677,67 @@ const Jobs = () => {
           <button
             onClick={() => setActiveTab('available')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
-              activeTab === 'available'
-                ? 'bg-primary-600 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              activeTab === 'available' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
             }`}
           >
             Vagas Disponíveis
           </button>
           
-          {(user?.type === 'client' || user?.type === 'admin') && (
+          {(user.type === 'client' || user.type === 'admin') && (
             <button
               onClick={() => setActiveTab('my-applications')}
               className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
-                activeTab === 'my-applications'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                activeTab === 'my-applications' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >
               Minhas Candidaturas
             </button>
           )}
           
-          {(user?.type === 'provider' || user?.type === 'admin') && (
+          {(user.type === 'provider' || user.type === 'admin') && (
             <button
               onClick={() => setActiveTab('my-proposals')}
               className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
-                activeTab === 'my-proposals'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                activeTab === 'my-proposals' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >
               Propostas Recebidas
+              {renderTabBadge(activityCounts.jobProposals)}
             </button>
           )}
           
-          {(user?.type === 'company' || user?.type === 'admin') && (
+          {(user.type === 'company' || user.type === 'admin') && (
+            <button
+              onClick={() => setActiveTab('sent-proposals')}
+              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
+                activeTab === 'sent-proposals' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Propostas Enviadas
+            </button>
+          )}
+
+          {(user.type === 'company' || user.type === 'admin') && (
             <button
               onClick={() => setActiveTab('my-jobs')}
               className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
-                activeTab === 'my-jobs'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                activeTab === 'my-jobs' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >
               Minhas Vagas
+              {renderTabBadge(activityCounts.jobApplications)}
             </button>
           )}
         </div>
 
-        {activeTab === 'my-proposals' && (
+        {(activeTab === 'my-proposals' || activeTab === 'sent-proposals') && (
           <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
             {proposalStatusOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => setProposalStatusFilter(option.value)}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[36px] ${
-                  proposalStatusFilter === option.value
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  proposalStatusFilter === option.value ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                 }`}
               >
                 {option.label}
@@ -651,9 +764,7 @@ const Jobs = () => {
               <button
                 onClick={() => setSelectedType('')}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[36px] ${
-                  selectedType === ''
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  selectedType === '' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                 }`}
               >
                 Todas
@@ -663,9 +774,7 @@ const Jobs = () => {
                   key={key}
                   onClick={() => setSelectedType(key)}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[36px] ${
-                    selectedType === key
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    selectedType === key ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   {label}

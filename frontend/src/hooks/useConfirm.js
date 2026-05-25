@@ -2,8 +2,7 @@
 import { useState } from 'react';
 
 export const useConfirm = () => {
-  const [confirmState, setConfirmState] = useState({
-    isOpen: false,
+  const [confirmState, setConfirmState] = useState({ isOpen: false,
     title: '',
     message: '',
     variant: 'info',

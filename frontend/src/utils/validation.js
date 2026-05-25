@@ -7,7 +7,7 @@ export const validateEmail = (email) => {
 };
 
 export const validatePhone = (phone) => {
-  const regex = /^\(\d{2}\)\s?\d{4,5}-?\d{4}$/;
+  const regex = /^\(\d{2}\)\s\d{4,5}-\d{4}$/;
   return regex.test(phone);
 };
 
@@ -43,7 +43,7 @@ export const sanitizeInput = (input) => {
   
   return String(input)
     .trim()
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<script\b[^<]*(:(!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/javascript:/gi, '')
     .replace(/on\w+\s*=/gi, '');
 };
@@ -71,7 +71,7 @@ export const validateRegisterForm = (data) => {
 
   // Telefone
   if (!data.phone || !validatePhone(data.phone)) {
-    errors.phone = 'Telefone inválido. Use formato: (21) 99999-9999';
+    errors.phone = 'Telefone inválido. Use ? formato : (21) 99999-9999';
   }
 
   // Senha
@@ -104,8 +104,7 @@ export const validateRegisterForm = (data) => {
     }
   }
 
-  return {
-    valid: Object.keys(errors).length === 0,
+  return { valid: Object.keys(errors).length === 0,
     errors
   };
 };
@@ -140,8 +139,7 @@ export const validateServiceForm = (data) => {
     errors.estimatedHours = 'Horas estimadas devem ser no mínimo 0.5';
   }
 
-  return {
-    valid: Object.keys(errors).length === 0,
+  return { valid: Object.keys(errors).length === 0,
     errors
   };
 };
@@ -173,8 +171,7 @@ export const validateJobForm = (data) => {
     errors.vacancies = 'Número de vagas deve ser no mínimo 1';
   }
 
-  return {
-    valid: Object.keys(errors).length === 0,
+  return { valid: Object.keys(errors).length === 0,
     errors
   };
 };

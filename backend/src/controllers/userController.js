@@ -40,8 +40,7 @@ export const upgradeToProvider = async (req, res) => {
     const { category, pricePerHour, description } = req.body;
 
     if (!category || !pricePerHour || !description) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Categoria, preço e descrição são obrigatórios'
       });
     }
@@ -49,15 +48,13 @@ export const upgradeToProvider = async (req, res) => {
     const user = await User.findById(req.user.id);
 
     if (user.type === 'company') {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Empresas não podem ser prestadores'
       });
     }
 
     if (user.type === 'provider') {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Usuário já é prestador'
       });
     }
@@ -89,8 +86,7 @@ export const updateProviderInfo = async (req, res) => {
     const user = await User.findById(req.user.id);
 
     if (user.type !== 'provider') {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Apenas prestadores podem atualizar essas informações'
       });
     }
@@ -126,8 +122,7 @@ export const getProviders = async (req, res) => {
   try {
     const { category, city, minRating } = req.query;
 
-    const query = {
-      type: 'provider',
+    const query = { type: 'provider',
       isAvailableAsProvider: true,
       category: { $nin: [null, ''] },
       pricePerHour: { $gt: 0 },
@@ -165,8 +160,7 @@ export const getUserById = async (req, res) => {
     const user = await User.findById(req.params.id).select('-password');
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Usuário não encontrado'
       });
     }
@@ -193,8 +187,7 @@ export const deactivateAccount = async (req, res) => {
     const { password } = req.body;
 
     if (!password) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Senha é obrigatória para desativar a conta'
       });
     }
@@ -203,8 +196,7 @@ export const deactivateAccount = async (req, res) => {
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
+      return res.status(401).json({ success: false,
         message: 'Senha incorreta'
       });
     }
@@ -237,16 +229,14 @@ export const reactivateAccount = async (req, res) => {
     const user = await User.findOne({ email }).select('+password');
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Usuário não encontrado'
       });
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
+      return res.status(401).json({ success: false,
         message: 'Credenciais inválidas'
       });
     }
@@ -290,8 +280,7 @@ export const deleteAccount = async (req, res) => {
     const { password, confirmation } = req.body;
 
     if (!password || confirmation !== 'DELETAR PERMANENTEMENTE') {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Confirmação inválida. Digite exatamente: DELETAR PERMANENTEMENTE'
       });
     }
@@ -300,8 +289,7 @@ export const deleteAccount = async (req, res) => {
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
+      return res.status(401).json({ success: false,
         message: 'Senha incorreta'
       });
     }

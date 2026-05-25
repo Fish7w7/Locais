@@ -5,6 +5,7 @@ import Card from './Card';
 import Button from './Button';
 import axios from 'axios';
 import CreateReviewModal from './CreateReviewModal';
+import { useNotification } from '../contexts/NotificationContext';
 
 const ReviewsSection = ({ userId, userType }) => {
   const [reviews, setReviews] = useState([]);
@@ -12,14 +13,14 @@ const ReviewsSection = ({ userId, userType }) => {
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState('provider');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { error: showError } = useNotification();
 
   if (!userId) {
     console.warn('⚠️ ReviewsSection: userId não fornecido');
     return null;
   }
 
-  useEffect(() => {
-    if (!userId) {
+  useEffect(() => {if (!userId) {
       console.warn('⚠️ useEffect: userId não disponível');
       return;
     }
@@ -28,8 +29,7 @@ const ReviewsSection = ({ userId, userType }) => {
     loadReviews();
   }, [userId, selectedType]);
 
-  const loadReviews = async () => {
-    if (!userId) {
+  const loadReviews = async () => {if (!userId) {
       console.error('❌ loadReviews chamado sem userId');
       return;
     }
@@ -38,21 +38,20 @@ const ReviewsSection = ({ userId, userType }) => {
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      const response = await axios.get(`/api/reviews/user/${userId}`, {
-        params: { 
+      const response = await axios.get(`/api/reviews/user/${userId}`, { params: { 
           type: selectedType,
           status: 'approved'
         },
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      console.log(`✅ ${response.data.reviews?.length || 0} avaliações carregadas (${selectedType})`);
+      console.log(`✅ ${response.data.reviews.length || 0} avaliações carregadas (${selectedType})`);
       
       setReviews(response.data.reviews || []);
       setStats(response.data.stats || null);
     } catch (error) {
-      console.error('❌ Erro ao carregar avaliações:', error.response?.status, error.message);
-      if (error.response?.status === 429) {
+      console.error('❌ Erro ao carregar avaliações:', error.response.status, error.message);
+      if (error.response.status === 429) {
         console.error('⚠️ RATE LIMIT: Muitas requisições. Aguarde alguns segundos.');
       }
     } finally {
@@ -70,20 +69,17 @@ const ReviewsSection = ({ userId, userType }) => {
       await loadReviews();
     } catch (error) {
       console.error('Erro ao marcar avaliação:', error);
-      alert('Erro ao marcar avaliação como útil');
+      showError('Erro ao marcar avaliação como útil');
     }
   };
 
-  const renderStars = (rating) => {
-    return (
+  const renderStars = (rating) => {return (
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
             className={`w-4 h-4 ${
-              star <= rating
-                ? 'fill-yellow-500 text-yellow-500'
-                : 'text-gray-300 dark:text-gray-600'
+              star <= rating ? 'fill-yellow-500 text-yellow-500' : 'text-gray-300 dark:text-gray-600'
             }`}
           />
         ))}
@@ -113,9 +109,7 @@ const ReviewsSection = ({ userId, userType }) => {
           <button
             onClick={() => setSelectedType('provider')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors min-h-[44px] ${
-              selectedType === 'provider'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+              selectedType === 'provider' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
             }`}
           >
             Como Prestador
@@ -123,9 +117,7 @@ const ReviewsSection = ({ userId, userType }) => {
           <button
             onClick={() => setSelectedType('client')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors min-h-[44px] ${
-              selectedType === 'client'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+              selectedType === 'client' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
             }`}
           >
             Como Cliente
@@ -159,8 +151,7 @@ const ReviewsSection = ({ userId, userType }) => {
                   <div className="w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-yellow-500"
-                      style={{
-                        width: `${stats.total > 0 ? (stats.distribution[star] / stats.total) * 100 : 0}%`
+                      style={{ width: `${stats.total > 0 ? (stats.distribution[star] / stats.total) * 100 : 0}%`
                       }}
                     />
                   </div>
@@ -199,13 +190,13 @@ const ReviewsSection = ({ userId, userType }) => {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <img
-                      src={review.reviewerId?.avatar || `https://ui-avatars.com/api/?name=${review.reviewerId?.name}&background=random`}
-                      alt={review.reviewerId?.name}
+                      src={review.reviewerId.avatar || `https://ui-avatars.com/api/name=${review.reviewerId.name}&background=random`}
+                      alt={review.reviewerId.name}
                       className="w-10 h-10 rounded-full"
                     />
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {review.reviewerId?.name}
+                        {review.reviewerId.name}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {new Date(review.createdAt).toLocaleDateString('pt-BR')}
@@ -268,8 +259,8 @@ const ReviewsSection = ({ userId, userType }) => {
 const ReportReviewButton = ({ reviewId, onSuccess }) => {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    reason: '',
+  const { success, error: showError } = useNotification();
+  const [formData, setFormData] = useState({ reason: '',
     description: ''
   });
 
@@ -286,15 +277,14 @@ const ReportReviewButton = ({ reviewId, onSuccess }) => {
     e.preventDefault();
     
     if (!formData.reason) {
-      alert('Selecione um motivo');
+      showError('Selecione um motivo');
       return;
     }
 
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/reviews/${reviewId}/report`, {
-        method: 'POST',
+      const response = await fetch(`/api/reviews/${reviewId}/report`, { method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -305,16 +295,16 @@ const ReportReviewButton = ({ reviewId, onSuccess }) => {
       const data = await response.json();
 
       if (data.success) {
-        alert('Denúncia registrada com sucesso. Obrigado por ajudar a manter a comunidade segura!');
+        success('Denúncia registrada com sucesso. Obrigado por ajudar a manter a comunidade segura!');
         setShowModal(false);
         setFormData({ reason: '', description: '' });
         if (onSuccess) onSuccess();
       } else {
-        alert(data.message || 'Erro ao registrar denúncia');
+        showError(data.message || 'Erro ao registrar denúncia');
       }
     } catch (error) {
-      alert('Erro ao registrar denúncia');
       console.error(error);
+      showError('Erro ao registrar denúncia');
     } finally {
       setLoading(false);
     }

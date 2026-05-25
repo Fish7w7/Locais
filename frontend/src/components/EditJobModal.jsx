@@ -4,12 +4,14 @@ import Modal from './Modal';
 import Input from './Input';
 import Button from './Button';
 import { jobAPI } from '../api/services';
+import { useNotification } from '../contexts/NotificationContext';
 
 const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { success, error: showError } = useNotification();
+  const [formData, setFormData] = useState({ title: '',
     description: '',
     category: '',
     type: 'temporary',
@@ -56,6 +58,7 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
         vacancies: job.vacancies || '1',
         isActive: job.isActive !== false
       });
+      setShowDeleteConfirm(false);
     }
   }, [job, isOpen]);
 
@@ -63,12 +66,16 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked: value
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!job?._id) {
+      showError('Vaga não encontrada');
+      return;
+    }
     setLoading(true);
 
     try {
@@ -92,33 +99,37 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
         endDate: formData.endDate || null
       });
 
-      alert('Vaga atualizada com sucesso!');
+      success('Vaga atualizada com sucesso!');
       onClose();
       if (onSuccess) onSuccess();
     } catch (error) {
-      alert(error.response?.data?.message || 'Erro ao atualizar vaga');
+      showError(error.response?.data.message || 'Erro ao atualizar vaga');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm('Tem certeza que deseja excluir esta vaga? Esta ação não pode ser desfeita.')) {
+    if (!job?._id) {
+      showError('Vaga não encontrada');
       return;
     }
 
     try {
       setDeleting(true);
       await jobAPI.deleteJob(job._id);
-      alert('Vaga excluída com sucesso!');
+      success('Vaga excluída com sucesso!');
       onClose();
       if (onSuccess) onSuccess();
     } catch (error) {
-      alert(error.response?.data?.message || 'Erro ao excluir vaga');
+      showError(error.response?.data.message || 'Erro ao excluir vaga');
     } finally {
       setDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
+
+  if (!job) return null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Editar Vaga" size="xl">
@@ -360,18 +371,49 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
             </Button>
           </div>
 
-          <Button
-            type="button"
-            variant="danger"
-            fullWidth
-            icon={Trash2}
-            onClick={handleDelete}
-            loading={deleting}
-            disabled={loading}
-            className="min-h-[44px]"
-          >
-            Excluir Vaga
-          </Button>
+          {showDeleteConfirm ? (
+            <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 space-y-3">
+              <p className="text-sm text-red-800 dark:text-red-200">
+                Tem certeza que deseja excluir esta vagaEsta ação não pode ser desfeita.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="danger"
+                  fullWidth
+                  icon={Trash2}
+                  onClick={handleDelete}
+                  loading={deleting}
+                  disabled={loading}
+                  className="min-h-[44px]"
+                >
+                  Confirmar Exclusão
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="min-h-[44px]"
+                >
+                  Manter Vaga
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="danger"
+              fullWidth
+              icon={Trash2}
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={loading || deleting}
+              className="min-h-[44px]"
+            >
+              Excluir Vaga
+            </Button>
+          )}
         </div>
       </form>
     </Modal>

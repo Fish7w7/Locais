@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 
-const ServiceRequestSchema = new mongoose.Schema({
-  requesterId: {
+const ServiceRequestSchema = new mongoose.Schema({ requesterId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true

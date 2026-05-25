@@ -3,10 +3,12 @@ import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Send } from 'lucide-react';
 import { chatAPI } from '../api/services';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 import Button from './Button';
 
-const ChatWindow = ({ conversation, onBack }) => {
+const ChatWindow = ({ conversation, onBack, onMessagesRead }) => {
   const { user } = useAuth();
+  const { error: showError } = useNotification();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -28,6 +30,7 @@ const ChatWindow = ({ conversation, onBack }) => {
       setLoading(true);
       const res = await chatAPI.getMessages(conversation._id);
       setMessages(res.data.messages || []);
+      onMessagesRead?.();
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
     } finally {
@@ -49,14 +52,13 @@ const ChatWindow = ({ conversation, onBack }) => {
     setSending(true);
 
     try {
-      const res = await chatAPI.sendMessage(conversation._id, {
-        content: messageContent
+      const res = await chatAPI.sendMessage(conversation._id, { content: messageContent
       });
 
       setMessages(prev => [...prev, res.data.message]);
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
-      alert(error.response?.data?.message || 'Erro ao enviar mensagem');
+      showError(error.response?.data.message || 'Erro ao enviar mensagem');
       setNewMessage(messageContent); // Restaura mensagem
     } finally {
       setSending(false);
@@ -81,19 +83,19 @@ const ChatWindow = ({ conversation, onBack }) => {
         </button>
 
         <img
-          src={conversation.otherUser?.avatar || `https://ui-avatars.com/api/?name=${conversation.otherUser?.name}&background=random`}
-          alt={conversation.otherUser?.name}
+          src={conversation.otherUser.avatar || `https://ui-avatars.com/api/name=${conversation.otherUser.name}&background=random`}
+          alt={conversation.otherUser.name}
           className="w-10 h-10 rounded-full object-cover"
         />
 
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-            {conversation.otherUser?.name}
+            {conversation.otherUser.name}
           </h3>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {conversation.otherUser?.type === 'provider' && 'Prestador'}
-            {conversation.otherUser?.type === 'client' && 'Cliente'}
-            {conversation.otherUser?.type === 'company' && 'Empresa'}
+            {conversation.otherUser.type === 'provider' && 'Prestador'}
+            {conversation.otherUser.type === 'client' && 'Cliente'}
+            {conversation.otherUser.type === 'company' && 'Empresa'}
           </p>
         </div>
       </div>
@@ -133,7 +135,7 @@ const ChatWindow = ({ conversation, onBack }) => {
                 <div className={`flex gap-2 max-w-[75%] ${isMe ? 'flex-row-reverse' : ''}`}>
                   {!isMe && (
                     <img
-                      src={message.sender.avatar || `https://ui-avatars.com/api/?name=${message.sender.name}&background=random`}
+                      src={message.sender.avatar || `https://ui-avatars.com/api/name=${message.sender.name}&background=random`}
                       alt={message.sender.name}
                       className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                     />
@@ -142,9 +144,7 @@ const ChatWindow = ({ conversation, onBack }) => {
                   <div>
                     <div
                       className={`px-4 py-2 rounded-2xl ${
-                        isMe
-                          ? 'bg-primary-600 text-white rounded-br-sm'
-                          : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-sm'
+                        isMe ? 'bg-primary-600 text-white rounded-br-sm' : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-sm'
                       }`}
                     >
                       <p className="text-sm break-words">{message.content}</p>

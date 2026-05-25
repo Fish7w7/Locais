@@ -5,6 +5,9 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import EditUserModal from '../components/EditUserModal';
+import ConfirmModal from '../components/ConfirmModal';
+import { useNotification } from '../contexts/NotificationContext';
+import { useConfirm } from '../hooks/useConfirm';
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
@@ -14,6 +17,8 @@ const ManageUsers = () => {
   const [selectedType, setSelectedType] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const { success, error: showError } = useNotification();
+  const { confirmState, confirm, cancel } = useConfirm();
 
   useEffect(() => {
     loadUsers();
@@ -38,43 +43,45 @@ const ManageUsers = () => {
       setFilteredUsers(response.data.users || []);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
-      alert('Erro ao carregar usuários');
+      showError('Erro ao carregar usuários');
     } finally {
       setLoading(false);
     }
   };
 
-  const filterUsers = () => {
-    if (!searchTerm) {
+  const filterUsers = () => {if (!searchTerm) {
       setFilteredUsers(users);
       return;
     }
 
     const filtered = users.filter(user =>
-      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phone?.includes(searchTerm)
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.phone.includes(searchTerm)
     );
     
     setFilteredUsers(filtered);
   };
 
   const handleDeleteUser = async (userId, userName) => {
-    if (!confirm(`Tem certeza que deseja excluir o usuário "${userName}"? Esta ação não pode ser desfeita.`)) {
-      return;
-    }
+    await confirm({
+      title: 'Excluir usuário',
+      message: `Tem certeza que deseja excluir o usuário "${userName}"Esta ação não pode ser desfeita.`,
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const token = localStorage.getItem('token');
+          await axios.delete(`/api/admin/users/${userId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
 
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`/api/admin/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      alert('Usuário excluído com sucesso!');
-      loadUsers();
-    } catch (error) {
-      alert(error.response?.data?.message || 'Erro ao excluir usuário');
-    }
+          success('Usuário excluído com sucesso!');
+          loadUsers();
+        } catch (error) {
+          showError(error.response?.data.message || 'Erro ao excluir usuário');
+        }
+      }
+    });
   };
 
   const handleEditUser = (user) => {
@@ -83,8 +90,7 @@ const ManageUsers = () => {
   };
 
   const getUserTypeIcon = (type) => {
-    const icons = {
-      client: Users,
+    const icons = { client: Users,
       provider: Briefcase,
       company: Building2,
       admin: Shield
@@ -93,8 +99,7 @@ const ManageUsers = () => {
   };
 
   const getUserTypeLabel = (type) => {
-    const labels = {
-      client: 'Cliente',
+    const labels = { client: 'Cliente',
       provider: 'Prestador',
       company: 'Empresa',
       admin: 'Administrador'
@@ -103,8 +108,7 @@ const ManageUsers = () => {
   };
 
   const getUserTypeColor = (type) => {
-    const colors = {
-      client: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    const colors = { client: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
       provider: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
       company: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
       admin: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
@@ -142,9 +146,7 @@ const ManageUsers = () => {
         <button
           onClick={() => setSelectedType('')}
           className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-            selectedType === ''
-              ? 'bg-primary-600 text-white'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+            selectedType === '' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
           }`}
         >
           Todos
@@ -152,9 +154,7 @@ const ManageUsers = () => {
         <button
           onClick={() => setSelectedType('client')}
           className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-            selectedType === 'client'
-              ? 'bg-primary-600 text-white'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+            selectedType === 'client' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
           }`}
         >
           Clientes
@@ -162,9 +162,7 @@ const ManageUsers = () => {
         <button
           onClick={() => setSelectedType('provider')}
           className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-            selectedType === 'provider'
-              ? 'bg-primary-600 text-white'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+            selectedType === 'provider' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
           }`}
         >
           Prestadores
@@ -172,9 +170,7 @@ const ManageUsers = () => {
         <button
           onClick={() => setSelectedType('company')}
           className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-            selectedType === 'company'
-              ? 'bg-primary-600 text-white'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+            selectedType === 'company' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
           }`}
         >
           Empresas
@@ -182,9 +178,7 @@ const ManageUsers = () => {
         <button
           onClick={() => setSelectedType('admin')}
           className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-            selectedType === 'admin'
-              ? 'bg-primary-600 text-white'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+            selectedType === 'admin' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
           }`}
         >
           Admins
@@ -217,7 +211,7 @@ const ManageUsers = () => {
                   {/* User Header */}
                   <div className="flex items-start gap-3">
                     <img
-                      src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`}
+                      src={user.avatar || `https://ui-avatars.com/api/name=${encodeURIComponent(user.name)}&background=random`}
                       alt={user.name}
                       className="w-12 h-12 rounded-full object-cover flex-shrink-0"
                     />
@@ -272,7 +266,7 @@ const ManageUsers = () => {
                         <div className="flex items-center gap-1">
                           <Star className="w-4 h-4 text-yellow-500 fill-current" />
                           <span className="font-medium text-gray-900 dark:text-white">
-                            {user.providerRating?.toFixed(1) || '0.0'}
+                            {user.providerRating.toFixed(1) || '0.0'}
                           </span>
                           <span className="text-xs text-gray-500">
                             ({user.providerReviewCount || 0})
@@ -331,6 +325,15 @@ const ManageUsers = () => {
         }}
         user={selectedUser}
         onSuccess={loadUsers}
+      />
+
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={cancel}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        variant={confirmState.variant}
       />
     </div>
   );

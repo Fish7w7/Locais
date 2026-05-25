@@ -20,13 +20,11 @@ const Login = () => {
   const [formErrors, setFormErrors] = useState({});
   const [showTerms, setShowTerms] = useState(false);
 
-  const [loginData, setLoginData] = useState({
-    email: '',
+  const [loginData, setLoginData] = useState({ email: '',
     password: ''
   });
 
-  const [registerData, setRegisterData] = useState({
-    name: '',
+  const [registerData, setRegisterData] = useState({ name: '',
     email: '',
     phone: '',
     password: '',
@@ -118,7 +116,7 @@ const Login = () => {
       await login(loginData.email, loginData.password);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao fazer login');
+      setError(err.response?.data.message || 'Erro ao fazer login');
     } finally {
       setLoading(false);
     }
@@ -162,7 +160,7 @@ const Login = () => {
       success('Conta criada com sucesso!');
       navigate('/');
     } catch (err) {
-      const msg = err.response?.data?.message || 'Erro ao criar conta';
+      const msg = err.response?.data.message || 'Erro ao criar conta';
       setError(msg);
       notifyError(msg);
     } finally {
@@ -197,9 +195,7 @@ const Login = () => {
                 setFormErrors({});
               }}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                isLogin
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                isLogin ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
               }`}
             >
               Login
@@ -211,9 +207,7 @@ const Login = () => {
                 setFormErrors({});
               }}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                !isLogin
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                !isLogin ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
               }`}
             >
               Cadastro

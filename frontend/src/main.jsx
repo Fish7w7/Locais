@@ -6,6 +6,8 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { LoadingProvider } from './contexts/LoadingContext';
+import { ChatNotificationProvider } from './contexts/ChatNotificationContext';
+import { ActivityNotificationProvider } from './contexts/ActivityNotificationContext';
 import ErrorBoundary from './components/ErrorBoundary';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -13,11 +15,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <ThemeProvider>
         <AuthProvider>
-          <NotificationProvider>
-            <LoadingProvider>
-              <App />
-            </LoadingProvider>
-          </NotificationProvider>
+          <ChatNotificationProvider>
+            <ActivityNotificationProvider>
+              <NotificationProvider>
+                <LoadingProvider>
+                  <App />
+                </LoadingProvider>
+              </NotificationProvider>
+            </ActivityNotificationProvider>
+          </ChatNotificationProvider>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>

@@ -2,8 +2,7 @@
 
 export const StatusBadge = ({ status }) => {
   const getStatusConfig = (status) => {
-    const configs = {
-      pending: { 
+    const configs = { pending: { 
         label: 'Pendente', 
         color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' 
       },
@@ -46,8 +45,7 @@ export const StatusBadge = ({ status }) => {
 
 export const JobTypeBadge = ({ type }) => {
   const getTypeConfig = (type) => {
-    const configs = {
-      temporary: { 
+    const configs = { temporary: { 
         label: 'Temporária', 
         color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' 
       },

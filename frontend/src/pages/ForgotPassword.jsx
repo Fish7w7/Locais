@@ -29,7 +29,7 @@ const ForgotPassword = () => {
         setResetUrl(response.data.resetUrl);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao enviar email');
+      setError(err.response?.data.message || 'Erro ao enviar email');
     } finally {
       setLoading(false);
     }

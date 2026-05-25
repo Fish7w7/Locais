@@ -60,7 +60,7 @@ const AdminRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
   
-  if (user?.type !== 'admin' && user?.role !== 'admin') {
+  if (user.type !== 'admin' && user.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
   
@@ -84,10 +84,10 @@ function App() {
       }
 
       const response = await api.get('/status');
-      setMaintenanceMode(response.data?.maintenance === true);
+      setMaintenanceMode(response.data.maintenance === true);
     } catch (error) {
       // Se retornar 503, está em manutenção
-      if (error.response?.status === 503 || error.response?.data?.maintenance) {
+      if (error.response.status === 503 || error.response?.data.maintenance) {
         setMaintenanceMode(true);
       } else {
         setMaintenanceMode(false);
@@ -106,7 +106,7 @@ function App() {
     const interceptor = api.interceptors.response.use(
       response => response,
       error => {
-        if (error.response?.status === 503 || error.response?.data?.maintenance) {
+        if (error.response.status === 503 || error.response?.data.maintenance) {
           // Se não for admin, ativa modo manutenção
           if (!user || (user.type !== 'admin' && user.role !== 'admin')) {
             setMaintenanceMode(true);

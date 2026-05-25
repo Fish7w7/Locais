@@ -6,11 +6,9 @@ export const validate = (req, res, next) => {
   const errors = validationResult(req);
   
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
+    return res.status(400).json({ success: false,
       message: 'Erro de validação',
-      errors: errors.array().map(err => ({
-        field: err.path,
+      errors: errors.array().map(err => ({ field: err.path,
         message: err.msg
       }))
     });
@@ -35,7 +33,7 @@ export const validateRegister = [
   
   body('phone')
     .trim()
-    .matches(/^\(\d{2}\)\s?\d{4,5}-?\d{4}$/)
+    .matches(/^\(\d{2}\)\s\d{4,5}-\d{4}$/)
     .withMessage('Telefone inválido. Use formato: (21) 99999-9999'),
   
   body('password')

@@ -1,11 +1,12 @@
 // frontend/src/pages/Services.jsx - COM LINKS PARA PERFIL
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, MapPin, Star, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { Briefcase, Search, MapPin, Star, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { userAPI, serviceAPI } from '../api/services';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLoading } from '../contexts/LoadingContext';
+import { useActivityNotifications } from '../contexts/ActivityNotificationContext';
 import { useDebounce } from '../hooks/useDebounce';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { useLocalStorage } from '../hooks/useLocalStorage';
@@ -15,6 +16,7 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import UserProfileLink from '../components/UserProfileLink';
 import CreateServiceModal from '../components/CreateServiceModal';
+import SendJobProposalModal from '../components/SendJobProposalModal';
 import ConfirmModal from '../components/ConfirmModal';
 import PullToRefresh from '../components/PullToRefresh';
 import { SkeletonList, SkeletonProviderCard, SkeletonServiceCard } from '../components/Skeleton';
@@ -34,6 +36,7 @@ const Services = () => {
   const navigate = useNavigate();
   const { success, error: showError } = useNotification();
   const { showLoading, hideLoading } = useLoading();
+  const { counts: activityCounts, refreshActivityNotifications } = useActivityNotifications();
   const { confirmState, confirm, cancel } = useConfirm();
 
   const tabsScrollRef = useDragScroll();
@@ -53,6 +56,7 @@ const Services = () => {
   });
   
   const [showServiceModal, setShowServiceModal] = useState(false);
+  const [showProposalModal, setShowProposalModal] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -80,8 +84,7 @@ const Services = () => {
   ];
 
   const formatDate = (date) => new Date(date).toLocaleDateString('pt-BR');
-  const formatCurrency = (value) => `R$ ${Number(value).toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
+  const formatCurrency = (value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}`;
 
@@ -112,7 +115,7 @@ const Services = () => {
       }
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
-      setError(err.response?.data?.message || 'Erro ao carregar dados');
+      setError(err.response?.data.message || 'Erro ao carregar dados');
       showError('Erro ao carregar dados');
     } finally {
       setLoading(false);
@@ -124,19 +127,25 @@ const Services = () => {
     setShowServiceModal(true);
   };
 
+  const handleSendProposal = (provider) => {
+    setSelectedProvider(provider);
+    setShowProposalModal(true);
+  };
+
   const handleAcceptService = async (serviceId) => {
     await confirm({
       title: 'Aceitar Serviço',
-      message: 'Deseja aceitar esta solicitação de serviço?',
+      message: 'Deseja aceitar esta solicitação de serviço',
       variant: 'info',
       onConfirm: async () => {
         try {
           showLoading('Aceitando serviço...');
           await serviceAPI.updateStatus(serviceId, { status: 'accepted' });
           success('Serviço aceito com sucesso!');
-          loadData();
+          await loadData();
+          refreshActivityNotifications();
         } catch (err) {
-          showError(err.response?.data?.message || 'Erro ao aceitar serviço');
+          showError(err.response?.data.message || 'Erro ao aceitar serviço');
         } finally {
           hideLoading();
         }
@@ -147,16 +156,17 @@ const Services = () => {
   const handleRejectService = async (serviceId) => {
     await confirm({
       title: 'Rejeitar Serviço',
-      message: 'Tem certeza que deseja rejeitar esta solicitação?',
+      message: 'Tem certeza que deseja rejeitar esta solicitação',
       variant: 'danger',
       onConfirm: async () => {
         try {
           showLoading('Rejeitando serviço...');
           await serviceAPI.updateStatus(serviceId, { status: 'rejected' });
           success('Serviço rejeitado');
-          loadData();
+          await loadData();
+          refreshActivityNotifications();
         } catch (err) {
-          showError(err.response?.data?.message || 'Erro ao rejeitar serviço');
+          showError(err.response?.data.message || 'Erro ao rejeitar serviço');
         } finally {
           hideLoading();
         }
@@ -167,16 +177,17 @@ const Services = () => {
   const handleCompleteService = async (serviceId) => {
     await confirm({
       title: 'Concluir Serviço',
-      message: 'Marcar este serviço como concluído?',
+      message: 'Marcar este serviço como concluído',
       variant: 'info',
       onConfirm: async () => {
         try {
           showLoading('Concluindo serviço...');
           await serviceAPI.updateStatus(serviceId, { status: 'completed' });
           success('Serviço marcado como concluído!');
-          loadData();
+          await loadData();
+          refreshActivityNotifications();
         } catch (err) {
-          showError(err.response?.data?.message || 'Erro ao concluir serviço');
+          showError(err.response?.data.message || 'Erro ao concluir serviço');
         } finally {
           hideLoading();
         }
@@ -187,16 +198,17 @@ const Services = () => {
   const handleCancelService = async (serviceId) => {
     await confirm({
       title: 'Cancelar Solicitação',
-      message: 'Deseja cancelar esta solicitação de serviço?',
+      message: 'Deseja cancelar esta solicitação de serviço',
       variant: 'warning',
       onConfirm: async () => {
         try {
           showLoading('Cancelando solicitação...');
           await serviceAPI.updateStatus(serviceId, { status: 'cancelled' });
           success('Solicitação cancelada');
-          loadData();
+          await loadData();
+          refreshActivityNotifications();
         } catch (err) {
-          showError(err.response?.data?.message || 'Erro ao cancelar solicitação');
+          showError(err.response?.data.message || 'Erro ao cancelar solicitação');
         } finally {
           hideLoading();
         }
@@ -206,7 +218,7 @@ const Services = () => {
 
   const filteredProviders = providers.filter(provider =>
     provider.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-    provider.category?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    provider.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   );
 
   const visibleMyRequests = statusFilter
@@ -216,6 +228,15 @@ const Services = () => {
   const visibleReceivedServices = statusFilter
     ? receivedServices.filter(service => service.status === statusFilter)
     : receivedServices;
+
+  const renderTabBadge = (count) => {
+    if (!count) return null;
+    return (
+      <span className="ml-2 inline-flex min-w-[18px] h-[18px] px-1 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+        {count > 99 ? '99+' : count}
+      </span>
+    );
+  };
 
   const renderContent = () => {
     if (loading) {
@@ -279,7 +300,7 @@ const Services = () => {
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 text-yellow-500 fill-current" />
                   <span className="text-sm font-medium">
-                    {provider.providerRating?.toFixed(1) || '0.0'}
+                    {provider.providerRating.toFixed(1) || '0.0'}
                   </span>
                   <span className="text-xs text-gray-500">
                     ({provider.providerReviewCount || 0})
@@ -298,15 +319,27 @@ const Services = () => {
               )}
 
               {/* Botão Solicitar */}
+              <div className={`mt-3 grid gap-2 ${(user.type === 'company' || user.type === 'admin') ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
               <Button 
-                variant="primary" 
+                variant={(user.type === 'company' || user.type === 'admin') ? 'secondary' : 'primary'} 
                 fullWidth 
-                className="mt-3" 
                 size="sm"
                 onClick={() => handleRequestService(provider)}
               >
                 Solicitar Serviço
               </Button>
+              {(user.type === 'company' || user.type === 'admin') && (
+                <Button
+                  variant="primary"
+                  fullWidth
+                  size="sm"
+                  icon={Briefcase}
+                  onClick={() => handleSendProposal(provider)}
+                >
+                  Enviar Proposta
+                </Button>
+              )}
+              </div>
             </Card>
           ))}
         </div>
@@ -523,9 +556,7 @@ const Services = () => {
             Serviços
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {user.type === 'provider' 
-              ? 'Gerencie seus serviços e solicitações'
-              : 'Encontre e contrate prestadores de serviço'}
+            {user.type === 'provider' ? 'Gerencie seus serviços e solicitações' : 'Encontre e contrate prestadores de serviço'}
           </p>
         </div>
 
@@ -537,9 +568,7 @@ const Services = () => {
           <button
             onClick={() => setActiveTab('providers')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
-              activeTab === 'providers'
-                ? 'bg-primary-600 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              activeTab === 'providers' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
             }`}
           >
             Buscar Prestadores
@@ -547,9 +576,7 @@ const Services = () => {
           <button
             onClick={() => setActiveTab('my-requests')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
-              activeTab === 'my-requests'
-                ? 'bg-primary-600 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              activeTab === 'my-requests' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
             }`}
           >
             Minhas Solicitações
@@ -558,12 +585,11 @@ const Services = () => {
             <button
               onClick={() => setActiveTab('received')}
               className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
-                activeTab === 'received'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                activeTab === 'received' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >
               Serviços Recebidos
+              {renderTabBadge(activityCounts.receivedServices)}
             </button>
           )}
         </div>
@@ -575,9 +601,7 @@ const Services = () => {
                 key={option.value}
                 onClick={() => setStatusFilter(option.value)}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[36px] ${
-                  statusFilter === option.value
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  statusFilter === option.value ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                 }`}
               >
                 {option.label}
@@ -603,9 +627,7 @@ const Services = () => {
               <button
                 onClick={() => setSelectedCategory('')}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[36px] ${
-                  selectedCategory === ''
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  selectedCategory === '' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                 }`}
               >
                 Todos
@@ -615,9 +637,7 @@ const Services = () => {
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[36px] ${
-                    selectedCategory === cat
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    selectedCategory === cat ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   {cat}
@@ -640,6 +660,17 @@ const Services = () => {
             }}
             provider={selectedProvider}
             onSuccess={loadData}
+          />
+        )}
+
+        {selectedProvider && (
+          <SendJobProposalModal
+            isOpen={showProposalModal}
+            onClose={() => {
+              setShowProposalModal(false);
+              setSelectedProvider(null);
+            }}
+            provider={selectedProvider}
           />
         )}
 

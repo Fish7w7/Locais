@@ -5,8 +5,7 @@ import crypto from 'crypto';
 
 // Gerar JWT Token
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '7d'
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || '7d'
   });
 };
 
@@ -32,16 +31,14 @@ export const register = async (req, res) => {
     // Verificar se usuário já existe
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Email já cadastrado'
       });
     }
 
     // Validações específicas por tipo
     if (type === 'company' && !cnpj) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'CNPJ é obrigatório para empresas'
       });
     }
@@ -50,8 +47,7 @@ export const register = async (req, res) => {
       const normalizedPrice = Number(pricePerHour);
 
       if (!category || !description || !Number.isFinite(normalizedPrice) || normalizedPrice <= 0) {
-        return res.status(400).json({
-          success: false,
+        return res.status(400).json({ success: false,
           message: 'Categoria, preço e descrição são obrigatórios para prestadores'
         });
       }
@@ -118,8 +114,7 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Por favor, forneça email e senha'
       });
     }
@@ -128,8 +123,7 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email }).select('+password');
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
+      return res.status(401).json({ success: false,
         message: 'Credenciais inválidas'
       });
     }
@@ -138,8 +132,7 @@ export const login = async (req, res) => {
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
+      return res.status(401).json({ success: false,
         message: 'Credenciais inválidas'
       });
     }
@@ -214,8 +207,7 @@ export const updatePassword = async (req, res) => {
     const isMatch = await user.comparePassword(currentPassword);
 
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
+      return res.status(401).json({ success: false,
         message: 'Senha atual incorreta'
       });
     }
@@ -250,8 +242,7 @@ export const forgotPassword = async (req, res) => {
 
     if (!user) {
       // Por segurança, não revelar se o email existe
-      return res.json({
-        success: true,
+      return res.json({ success: true,
         message: 'Se o email existir, você receberá instruções de redefinição de senha.'
       });
     }
@@ -277,7 +268,7 @@ export const forgotPassword = async (req, res) => {
     // await sendEmail({
     //   to: user.email,
     //   subject: 'Redefinição de Senha',
-    //   html: `<p>Clique no link para redefinir sua senha: <a href="${resetUrl}">${resetUrl}</a></p>`
+    //   html: `<p>Clique no link para redefinir sua ? senha : <a href="${resetUrl}">${resetUrl}</a></p>`
     // });
 
     res.json({
@@ -305,8 +296,7 @@ export const resetPassword = async (req, res) => {
     const { password } = req.body;
 
     if (!password || password.length < 6) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Senha deve ter no mínimo 6 caracteres'
       });
     }
@@ -318,14 +308,12 @@ export const resetPassword = async (req, res) => {
       .digest('hex');
 
     // Buscar usuário com token válido
-    const user = await User.findOne({
-      resetPasswordToken: resetTokenHash,
+    const user = await User.findOne({ resetPasswordToken: resetTokenHash,
       resetPasswordExpire: { $gt: Date.now() }
     });
 
     if (!user) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Token inválido ou expirado'
       });
     }

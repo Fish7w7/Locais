@@ -4,11 +4,12 @@ import Modal from './Modal';
 import Input from './Input';
 import Button from './Button';
 import axios from 'axios';
+import { useNotification } from '../contexts/NotificationContext';
 
 const EditUserModal = ({ isOpen, onClose, user, onSuccess }) => {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
+  const { success, error: showError } = useNotification();
+  const [formData, setFormData] = useState({ name: '',
     email: '',
     phone: '',
     city: '',
@@ -54,7 +55,7 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess }) => {
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked: value
     });
   };
 
@@ -68,11 +69,11 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      alert('Usuário atualizado com sucesso!');
+      success('Usuário atualizado com sucesso!');
       onClose();
       if (onSuccess) onSuccess();
     } catch (error) {
-      alert(error.response?.data?.message || 'Erro ao atualizar usuário');
+      showError(error.response?.data.message || 'Erro ao atualizar usuário');
     } finally {
       setLoading(false);
     }
@@ -86,7 +87,7 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess }) => {
         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <Shield className="w-4 h-4" />
-            <span>ID: {user?._id}</span>
+            <span>ID: {user._id}</span>
           </div>
         </div>
 

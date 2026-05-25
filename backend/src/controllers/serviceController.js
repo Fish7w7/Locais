@@ -20,22 +20,19 @@ export const createServiceRequest = async (req, res) => {
     // Verificar se o prestador existe
     const provider = await User.findById(providerId);
     if (!provider || provider.type !== 'provider') {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Prestador não encontrado'
       });
     }
 
     // Verificar se o prestador está disponível
     if (!provider.isAvailableAsProvider) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Prestador não está disponível no momento'
       });
     }
 
-    const serviceRequest = await ServiceRequest.create({
-      requesterId: req.user.id,
+    const serviceRequest = await ServiceRequest.create({ requesterId: req.user.id,
       requesterType: req.user.type,
       providerId,
       category,
@@ -132,8 +129,7 @@ export const updateServiceStatus = async (req, res) => {
     const serviceRequest = await ServiceRequest.findById(req.params.id);
 
     if (!serviceRequest) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Serviço não encontrado'
       });
     }
@@ -143,8 +139,7 @@ export const updateServiceStatus = async (req, res) => {
     const isRequester = serviceRequest.requesterId.toString() === req.user.id;
 
     if (!isProvider && !isRequester) {
-      return res.status(403).json({
-        success: false,
+      return res.status(403).json({ success: false,
         message: 'Sem permissão para atualizar este serviço'
       });
     }
@@ -152,8 +147,7 @@ export const updateServiceStatus = async (req, res) => {
     // Regras de transição de status
     if (status === 'accepted' || status === 'rejected') {
       if (!isProvider) {
-        return res.status(403).json({
-          success: false,
+        return res.status(403).json({ success: false,
           message: 'Apenas o prestador pode aceitar ou rejeitar'
         });
       }
@@ -161,8 +155,7 @@ export const updateServiceStatus = async (req, res) => {
 
     if (status === 'cancelled') {
       if (!isRequester && serviceRequest.status === 'pending') {
-        return res.status(403).json({
-          success: false,
+        return res.status(403).json({ success: false,
           message: 'Apenas o solicitante pode cancelar solicitações pendentes'
         });
       }
@@ -203,8 +196,7 @@ export const reviewService = async (req, res) => {
     const { rating, review, type } = req.body; // type: 'provider' ou 'client'
     
     if (!rating || rating < 1 || rating > 5) {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Avaliação deve ser entre 1 e 5'
       });
     }
@@ -212,15 +204,13 @@ export const reviewService = async (req, res) => {
     const serviceRequest = await ServiceRequest.findById(req.params.id);
 
     if (!serviceRequest) {
-      return res.status(404).json({
-        success: false,
+      return res.status(404).json({ success: false,
         message: 'Serviço não encontrado'
       });
     }
 
     if (serviceRequest.status !== 'completed') {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ success: false,
         message: 'Apenas serviços concluídos podem ser avaliados'
       });
     }
@@ -231,8 +221,7 @@ export const reviewService = async (req, res) => {
     // Prestador avalia o cliente
     if (type === 'client' && isProvider) {
       if (serviceRequest.clientRating) {
-        return res.status(400).json({
-          success: false,
+        return res.status(400).json({ success: false,
           message: 'Cliente já foi avaliado'
         });
       }
@@ -250,8 +239,7 @@ export const reviewService = async (req, res) => {
     // Cliente avalia o prestador
     else if (type === 'provider' && isRequester) {
       if (serviceRequest.providerRating) {
-        return res.status(400).json({
-          success: false,
+        return res.status(400).json({ success: false,
           message: 'Prestador já foi avaliado'
         });
       }
@@ -266,8 +254,7 @@ export const reviewService = async (req, res) => {
       provider.providerRating = totalRating / provider.providerReviewCount;
       await provider.save();
     } else {
-      return res.status(403).json({
-        success: false,
+      return res.status(403).json({ success: false,
         message: 'Sem permissão para avaliar'
       });
     }

@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 
-const JobProposalSchema = new mongoose.Schema({
-  jobId: {
+const JobProposalSchema = new mongoose.Schema({ jobId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'JobVacancy',
     required: true

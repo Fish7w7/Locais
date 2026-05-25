@@ -11,8 +11,7 @@ import {
 import Button from './Button';
 import Card from './Card';
 
-const EmptyState = ({ 
-  icon: Icon,
+const EmptyState = ({ icon: Icon,
   title,
   description,
   actionLabel,
@@ -20,8 +19,7 @@ const EmptyState = ({
   variant = 'default' // default, search, error, success
 }) => {
   const getIconColor = () => {
-    const colors = {
-      default: 'text-gray-400 dark:text-gray-600',
+    const colors = { default: 'text-gray-400 dark:text-gray-600',
       search: 'text-blue-400 dark:text-blue-600',
       error: 'text-red-400 dark:text-red-600',
       success: 'text-green-400 dark:text-green-600'
@@ -109,6 +107,17 @@ export const EmptyStateNoProposals = () => (
     icon={FileText}
     title="Nenhuma proposta recebida"
     description="Você ainda não recebeu propostas de empresas. Continue prestando serviços de qualidade para ser notado!"
+    variant="default"
+  />
+);
+
+export const EmptyStateNoSentProposals = ({ onAction }) => (
+  <EmptyState
+    icon={FileText}
+    title="Nenhuma proposta enviada"
+    description="Você ainda não enviou propostas para prestadores. Busque prestadores e envie uma proposta vinculada a uma vaga."
+    actionLabel="Buscar Prestadores"
+    onAction={onAction}
     variant="default"
   />
 );

@@ -6,8 +6,7 @@ const SetupAdmin = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [adminData, setAdminData] = useState({
-    name: 'Admin Master',
+  const [adminData, setAdminData] = useState({ name: 'Admin Master',
     email: 'admin@servicos.com',
     password: 'admin123'
   });
@@ -28,12 +27,11 @@ const SetupAdmin = () => {
       
       if (response.data.success) {
         setSuccess(true);
-        alert(' Admin criado com sucesso!\n\nEmail: ' + adminData.email + '\nSenha: ' + adminData.password);
       } else {
         setError(response.data.message || 'Erro ao criar admin');
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Erro ao criar admin');
+      setError(err.response?.data.message || err.message || 'Erro ao criar admin');
     } finally {
       setLoading(false);
     }
@@ -153,7 +151,7 @@ const SetupAdmin = () => {
                   href="/login" 
                   className="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600"
                 >
-                  Já tem conta? Fazer login
+                  Já tem contaFazer login
                 </a>
               </div>
             </div>

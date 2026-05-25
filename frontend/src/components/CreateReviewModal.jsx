@@ -4,6 +4,7 @@ import { Star, AlertTriangle, CheckCircle } from 'lucide-react';
 import Modal from './Modal';
 import Button from './Button';
 import axios from 'axios';
+import { useNotification } from '../contexts/NotificationContext';
 
 const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -11,17 +12,18 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
   const [needsReview, setNeedsReview] = useState(false);
+  const { success, error: showError } = useNotification();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (rating === 0) {
-      alert('Por favor, selecione uma avaliação');
+      showError('Por favor, selecione uma avaliação');
       return;
     }
 
     if (comment.length < 10) {
-      alert('O comentário deve ter no mínimo 10 caracteres');
+      showError('O comentário deve ter no mínimo 10 caracteres');
       return;
     }
 
@@ -29,8 +31,7 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('/api/reviews', {
-        reviewedUserId: userId,
+      const response = await axios.post('/api/reviews', { reviewedUserId: userId,
         type: userType,
         rating,
         comment
@@ -43,14 +44,14 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
         setNeedsReview(true);
         // Não fecha o modal, mostra aviso
       } else {
-        alert('✅ Avaliação publicada com sucesso!');
+        success('Avaliação publicada com sucesso!');
         setRating(0);
         setComment('');
         onClose();
         if (onSuccess) onSuccess();
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Erro ao enviar avaliação');
+      showError(error.response?.data.message || 'Erro ao enviar avaliação');
     } finally {
       setLoading(false);
     }
@@ -83,7 +84,7 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
 
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Por que isso acontece?</strong><br/>
+              <strong>Por que isso acontece</strong><br/>
               Nosso sistema automático detectou palavras ou frases que podem violar nossas diretrizes de comunidade. Um moderador humano irá revisar sua avaliação em breve.
             </p>
           </div>
@@ -167,9 +168,7 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
               >
                 <Star
                   className={`w-10 h-10 ${
-                    star <= (hoverRating || rating)
-                      ? 'fill-yellow-500 text-yellow-500'
-                      : 'text-gray-300 dark:text-gray-600'
+                    star <= (hoverRating || rating) ? 'fill-yellow-500 text-yellow-500' : 'text-gray-300 dark:text-gray-600'
                   }`}
                 />
               </button>
@@ -207,9 +206,7 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
               Mínimo 10 caracteres
             </p>
             <p className={`text-xs ${
-              comment.length > 500 
-                ? 'text-red-500' 
-                : 'text-gray-500 dark:text-gray-400'
+              comment.length > 500 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
             }`}>
               {comment.length}/500
             </p>

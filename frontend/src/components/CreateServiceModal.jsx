@@ -4,11 +4,12 @@ import Modal from './Modal';
 import Input from './Input';
 import Button from './Button';
 import { serviceAPI } from '../api/services';
+import { useNotification } from '../contexts/NotificationContext';
 
 const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
+  const { success, error: showError } = useNotification();
+  const [formData, setFormData] = useState({ title: '',
     description: '',
     location: '',
     requestedDate: '',
@@ -34,7 +35,7 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
         estimatedHours: parseFloat(formData.estimatedHours)
       });
 
-      alert('Solicitação enviada com sucesso!');
+      success('Solicitação enviada com sucesso!');
       onClose();
       if (onSuccess) onSuccess();
       
@@ -47,7 +48,7 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
         estimatedHours: ''
       });
     } catch (error) {
-      alert(error.response?.data?.message || 'Erro ao solicitar serviço');
+      showError(error.response?.data.message || 'Erro ao solicitar serviço');
     } finally {
       setLoading(false);
     }
@@ -64,16 +65,16 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4">
           <div className="flex items-center gap-3">
             <img
-              src={provider?.avatar || `https://ui-avatars.com/api/?name=${provider?.name}&background=random`}
-              alt={provider?.name}
+              src={provider.avatar || `https://ui-avatars.com/api/name=${provider.name}&background=random`}
+              alt={provider.name}
               className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex-shrink-0"
             />
             <div className="min-w-0">
               <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                {provider?.name}
+                {provider.name}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {provider?.category} • R$ {provider?.pricePerHour}/hora
+                {provider.category} • R$ {provider.pricePerHour}/hora
               </p>
             </div>
           </div>
@@ -163,7 +164,7 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
               R$ {estimatedPrice}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              {formData.estimatedHours}h × R$ {provider?.pricePerHour}/h
+              {formData.estimatedHours}h × R$ {provider.pricePerHour}/h
             </p>
           </div>
         )}

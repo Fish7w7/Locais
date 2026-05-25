@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { chatAPI } from '../api/services';
+import { useNotification } from '../contexts/NotificationContext';
 import Button from './Button';
 
 /**
@@ -25,6 +26,7 @@ const StartChatButton = ({
 }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const { error: showError } = useNotification();
 
   const handleStartChat = async () => {
     try {
@@ -45,7 +47,7 @@ const StartChatButton = ({
       });
     } catch (error) {
       console.error('Erro ao iniciar conversa:', error);
-      alert(error.response?.data?.message || 'Erro ao iniciar conversa');
+      showError(error.response?.data.message || 'Erro ao iniciar conversa');
     } finally {
       setLoading(false);
     }

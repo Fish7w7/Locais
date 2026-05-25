@@ -5,15 +5,18 @@ import Button from './Button';
 import Card from './Card';
 import StartChatButton from './StartChatButton';
 import { jobAPI } from '../api/services';
+import { useNotification } from '../contexts/NotificationContext';
+import { useActivityNotifications } from '../contexts/ActivityNotificationContext';
 
 const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [responseText, setResponseText] = useState('');
+  const { success, error: showError } = useNotification();
+  const { refreshActivityNotifications } = useActivityNotifications();
 
-  useEffect(() => {
-    if (isOpen && job?._id) {
+  useEffect(() => {if (isOpen && job?._id) {
       loadApplications();
     }
   }, [isOpen, job]);
@@ -25,7 +28,7 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
       setApplications(res.data.applications || []);
     } catch (error) {
       console.error('Erro ao carregar candidatos:', error);
-      alert('Erro ao carregar candidatos');
+      showError('Erro ao carregar candidatos');
     } finally {
       setLoading(false);
     }
@@ -38,18 +41,18 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
         companyResponse: responseText || undefined
       });
       
-      alert(`Candidatura ${status === 'accepted' ? 'aceita' : 'rejeitada'} com sucesso!`);
+      success(`Candidatura ${status === 'accepted' ? 'aceita' : 'rejeitada'} com sucesso!`);
       setSelectedApplication(null);
       setResponseText('');
-      loadApplications();
+      await loadApplications();
+      refreshActivityNotifications();
     } catch (error) {
-      alert(error.response?.data?.message || 'Erro ao atualizar candidatura');
+      showError(error.response?.data.message || 'Erro ao atualizar candidatura');
     }
   };
 
   const getStatusColor = (status) => {
-    const colors = {
-      pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    const colors = { pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
       reviewing: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
       accepted: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
       rejected: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
@@ -59,8 +62,7 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
   };
 
   const getStatusText = (status) => {
-    const texts = {
-      pending: 'Pendente',
+    const texts = { pending: 'Pendente',
       reviewing: 'Em Análise',
       accepted: 'Aceita',
       rejected: 'Rejeitada',
@@ -69,8 +71,10 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
     return texts[status] || status;
   };
 
+  if (!job) return null;
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Candidatos - ${job?.title}`} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={`Candidatos - ${job.title || 'Vaga'}`} size="xl">
       <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
         {/* Header Info */}
         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
@@ -106,8 +110,8 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
                 <div className="flex items-start gap-4">
                   {/* Avatar */}
                   <img
-                    src={application.applicantId?.avatar || `https://ui-avatars.com/api/?name=${application.applicantId?.name}&background=random`}
-                    alt={application.applicantId?.name}
+                    src={application.applicantId.avatar || `https://ui-avatars.com/api/name=${application.applicantId.name}&background=random`}
+                    alt={application.applicantId.name}
                     className="w-16 h-16 rounded-full object-cover"
                   />
 
@@ -116,7 +120,7 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <h3 className="font-semibold text-gray-900 dark:text-white">
-                          {application.applicantId?.name || 'Nome não disponível'}
+                          {application.applicantId.name || 'Nome não disponível'}
                         </h3>
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mt-1">
                           <Clock className="w-4 h-4" />
@@ -132,13 +136,13 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
                     <div className="space-y-1 mb-3">
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                         <Mail className="w-4 h-4" />
-                        {application.applicantId?.email || 'Email não disponível'}
+                        {application.applicantId.email || 'Email não disponível'}
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                         <Phone className="w-4 h-4" />
-                        {application.applicantId?.phone || 'Telefone não disponível'}
+                        {application.applicantId.phone || 'Telefone não disponível'}
                       </div>
-                      {application.applicantId?.city && (
+                      {application.applicantId.city && (
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                           <MapPin className="w-4 h-4" />
                           {application.applicantId.city}, {application.applicantId.state}
@@ -147,7 +151,7 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
                     </div>
 
                     {/* Rating */}
-                    {application.applicantId?.clientRating > 0 && (
+                    {application.applicantId.clientRating > 0 && (
                       <div className="flex items-center gap-2 mb-3">
                         <Star className="w-4 h-4 text-yellow-500 fill-current" />
                         <span className="text-sm font-medium">

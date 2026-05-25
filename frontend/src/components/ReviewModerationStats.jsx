@@ -14,8 +14,7 @@ const ReviewModerationStats = () => {
   const loadStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/review-stats', {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const response = await fetch('/api/admin/review-stats', { headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
       setStats(data.stats);

@@ -1,8 +1,7 @@
 
 import mongoose from 'mongoose';
 
-const ApplicationSchema = new mongoose.Schema({
-  jobId: {
+const ApplicationSchema = new mongoose.Schema({ jobId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'JobVacancy',
     required: true

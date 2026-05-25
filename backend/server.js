@@ -10,7 +10,7 @@ import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
 import hpp from 'hpp';
-import rateLimit from 'express-rate-limit';
+import { generalLimiter } from './src/middlewares/rateLimiter.js';
 
 // Middleware de manutenção
 import { checkMaintenance } from './src/middlewares/maintenance.js';
@@ -23,6 +23,7 @@ import jobRoutes from './src/routes/job.js';
 import adminRoutes from './src/routes/adminRoutes.js';
 import reviewRoutes from './src/routes/review.js';
 import chatRoutes from './src/routes/chat.js';
+import notificationRoutes from './src/routes/notification.js';
 import Settings from './src/models/Settings.js';
 
 dotenv.config();
@@ -81,14 +82,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // 1. Rate Limiting
-const limiter = rateLimit({
-  max: 100,
-  windowMs: 15 * 60 * 1000,
-  message: 'Muitas requisições a partir deste IP, tente novamente após 15 minutos.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use(limiter);
+app.use(generalLimiter);
 
 // 2. Helmet
 app.use(helmet({
@@ -151,8 +145,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  const health = {
-    uptime: process.uptime(),
+  const health = { uptime: process.uptime(),
     message: 'OK',
     timestamp: Date.now(),
     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
@@ -169,7 +162,7 @@ app.get('/api/status', async (req, res) => {
 
     res.json({
       success: true,
-      maintenance: settings?.maintenanceMode || false,
+      maintenance: settings.maintenanceMode || false,
       mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
       timestamp: new Date().toISOString()
     });
@@ -195,6 +188,7 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ERROR HANDLERS
 
@@ -214,8 +208,7 @@ app.use((err, req, res, next) => {
   // Mongoose validation error
   if (err.name === 'ValidationError') {
     const errors = Object.values(err.errors).map(e => e.message);
-    return res.status(400).json({
-      success: false,
+    return res.status(400).json({ success: false,
       message: 'Erro de validação',
       errors
     });
@@ -224,23 +217,20 @@ app.use((err, req, res, next) => {
   // Mongoose duplicate key error
   if (err.code === 11000) {
     const field = Object.keys(err.keyPattern)[0];
-    return res.status(400).json({
-      success: false,
+    return res.status(400).json({ success: false,
       message: `Este ${field} já está cadastrado`
     });
   }
 
   // JWT error
   if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({
-      success: false,
+    return res.status(401).json({ success: false,
       message: 'Token inválido'
     });
   }
 
   if (err.name === 'TokenExpiredError') {
-    return res.status(401).json({
-      success: false,
+    return res.status(401).json({ success: false,
       message: 'Token expirado'
     });
   }
@@ -250,8 +240,7 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({ 
     success: false,
     message: err.message || 'Erro interno do servidor',
-    ...(process.env.NODE_ENV === 'development' && { 
-      stack: err.stack,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack,
       error: err 
     })
   });
