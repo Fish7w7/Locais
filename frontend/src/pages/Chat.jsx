@@ -1,13 +1,22 @@
 // frontend/src/pages/Chat.jsx
-import { useState } from 'react';
-import { MessageCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import ChatList from '../components/ChatList';
 import ChatWindow from '../components/ChatWindow';
 import { useChatNotifications } from '../contexts/ChatNotificationContext';
 
 const Chat = () => {
-  const [selectedConversation, setSelectedConversation] = useState(null);
-  const { refreshUnreadCount } = useChatNotifications();
+  const location = useLocation();
+  const [selectedConversation, setSelectedConversation] = useState(
+    location.state?.selectedConversation || null
+  );
+  const { totalUnread, refreshUnreadCount } = useChatNotifications();
+
+  useEffect(() => {
+    if (location.state?.selectedConversation) {
+      setSelectedConversation(location.state.selectedConversation);
+    }
+  }, [location.state?.selectedConversation]);
 
   return (
     <div className="space-y-4">
@@ -19,7 +28,9 @@ const Chat = () => {
               Mensagens
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Suas conversas com prestadores, clientes e empresas
+              {totalUnread > 0
+                ? `${totalUnread} ${totalUnread === 1 ? 'mensagem nova' : 'mensagens novas'} para acompanhar`
+                : 'Suas conversas com prestadores, clientes e empresas'}
             </p>
           </div>
 

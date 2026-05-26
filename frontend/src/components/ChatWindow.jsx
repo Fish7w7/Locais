@@ -6,6 +6,18 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import Button from './Button';
 
+const USER_TYPE_LABELS = {
+  provider: 'Prestador',
+  client: 'Cliente',
+  company: 'Empresa',
+  admin: 'Admin'
+};
+
+const getUserId = (value) => value?._id || value?.id || value;
+
+const getAvatarUrl = (name, avatar) =>
+  avatar || `https://ui-avatars.com/api/name=${encodeURIComponent(name)}&background=random`;
+
 const ChatWindow = ({ conversation, onBack, onMessagesRead }) => {
   const { user } = useAuth();
   const { error: showError } = useNotification();
@@ -16,10 +28,16 @@ const ChatWindow = ({ conversation, onBack, onMessagesRead }) => {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
+  const conversationId = conversation?._id;
+  const otherUser = conversation?.otherUser || {};
+  const otherUserName = otherUser.name || 'Usuário removido';
+
   useEffect(() => {
-    loadMessages();
-    inputRef.current?.focus();
-  }, [conversation._id]);
+    if (conversationId) {
+      loadMessages();
+      inputRef.current?.focus();
+    }
+  }, [conversationId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -28,7 +46,7 @@ const ChatWindow = ({ conversation, onBack, onMessagesRead }) => {
   const loadMessages = async () => {
     try {
       setLoading(true);
-      const res = await chatAPI.getMessages(conversation._id);
+      const res = await chatAPI.getMessages(conversationId);
       setMessages(res.data.messages || []);
       onMessagesRead?.();
     } catch (error) {
@@ -52,7 +70,7 @@ const ChatWindow = ({ conversation, onBack, onMessagesRead }) => {
     setSending(true);
 
     try {
-      const res = await chatAPI.sendMessage(conversation._id, { content: messageContent
+      const res = await chatAPI.sendMessage(conversationId, { content: messageContent
       });
 
       setMessages(prev => [...prev, res.data.message]);
@@ -67,9 +85,34 @@ const ChatWindow = ({ conversation, onBack, onMessagesRead }) => {
   };
 
   const formatMessageTime = (timestamp) => {
+    if (!timestamp) return '';
     const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return '';
     return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
+
+  if (!conversationId) {
+    return (
+      <div className="flex h-full flex-col bg-gray-50 dark:bg-gray-900">
+        <div className="flex items-center gap-3 border-b border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+          <button
+            onClick={onBack}
+            className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          </button>
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white">
+              Conversa indisponível
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Volte para a lista e tente abrir novamente.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -83,19 +126,17 @@ const ChatWindow = ({ conversation, onBack, onMessagesRead }) => {
         </button>
 
         <img
-          src={conversation.otherUser.avatar || `https://ui-avatars.com/api/name=${conversation.otherUser.name}&background=random`}
-          alt={conversation.otherUser.name}
+          src={getAvatarUrl(otherUserName, otherUser.avatar)}
+          alt={otherUserName}
           className="w-10 h-10 rounded-full object-cover"
         />
 
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-            {conversation.otherUser.name}
+            {otherUserName}
           </h3>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {conversation.otherUser.type === 'provider' && 'Prestador'}
-            {conversation.otherUser.type === 'client' && 'Cliente'}
-            {conversation.otherUser.type === 'company' && 'Empresa'}
+            {USER_TYPE_LABELS[otherUser.type] || 'Contato'}
           </p>
         </div>
       </div>
@@ -114,7 +155,9 @@ const ChatWindow = ({ conversation, onBack, onMessagesRead }) => {
           </div>
         ) : (
           messages.map((message) => {
-            const isMe = message.sender._id === user.id;
+            const sender = message.sender || {};
+            const senderName = sender.name || 'Usuário removido';
+            const isMe = String(getUserId(sender)) === String(user?.id);
             const isSystem = message.messageType === 'system';
 
             if (isSystem) {
@@ -135,8 +178,8 @@ const ChatWindow = ({ conversation, onBack, onMessagesRead }) => {
                 <div className={`flex gap-2 max-w-[75%] ${isMe ? 'flex-row-reverse' : ''}`}>
                   {!isMe && (
                     <img
-                      src={message.sender.avatar || `https://ui-avatars.com/api/name=${message.sender.name}&background=random`}
-                      alt={message.sender.name}
+                      src={getAvatarUrl(senderName, sender.avatar)}
+                      alt={senderName}
                       className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                     />
                   )}

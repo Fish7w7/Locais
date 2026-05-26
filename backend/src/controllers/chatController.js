@@ -6,6 +6,46 @@ import Application from '../models/Application.js';
 import JobProposal from '../models/JobProposal.js';
 import mongoose from 'mongoose';
 
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+const idsMatch = (left, right) => String(left || '') === String(right || '');
+
+const isParticipant = (conversation, userId) =>
+  conversation.participants.some((participantId) => idsMatch(participantId, userId));
+
+const getUnreadCount = (unreadCount, userId) => {
+  if (!unreadCount) return 0;
+  if (typeof unreadCount.get === 'function') {
+    return Number(unreadCount.get(String(userId)) || 0);
+  }
+  return Number(unreadCount[String(userId)] || 0);
+};
+
+const formatConversationForUser = (conversation, userId) => {
+  const conv = typeof conversation.toObject === 'function'
+    ? conversation.toObject()
+    : conversation;
+
+  const otherUser = conv.participants?.find((participant) =>
+    !idsMatch(participant?._id || participant, userId)
+  ) || null;
+
+  const hasLastMessage = conv.lastMessage?.content || conv.lastMessage?.timestamp;
+
+  return {
+    ...conv,
+    otherUser,
+    lastMessage: hasLastMessage
+      ? conv.lastMessage
+      : {
+          content: 'Conversa iniciada',
+          sender: null,
+          timestamp: conv.updatedAt || conv.createdAt || null
+        },
+    unreadCount: getUnreadCount(conv.unreadCount, userId)
+  };
+};
+
 // @desc    Criar ou obter conversa
 // @route   POST /api/chat/conversation
 // @access  Private
@@ -13,7 +53,36 @@ export const createOrGetConversation = async (req, res) => {
   try {
     const { otherUserId, type, relatedId } = req.body;
     const currentUserId = req.user.id;
-    const relatedObjectId = relatedId ? new mongoose.Types.ObjectId(relatedId) : null; 
+
+    if (!isValidObjectId(otherUserId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Usuário da conversa inválido'
+      });
+    }
+
+    if (!['service', 'job_application', 'job_proposal'].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tipo de conversa inválido'
+      });
+    }
+
+    if (!isValidObjectId(relatedId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Referência da conversa inválida'
+      });
+    }
+
+    if (idsMatch(currentUserId, otherUserId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Não é possível iniciar conversa consigo mesmo'
+      });
+    }
+
+    const relatedObjectId = new mongoose.Types.ObjectId(relatedId);
 
     // Verificar permissões baseado no tipo
     const hasPermission = await checkConversationPermission(
@@ -71,7 +140,7 @@ export const createOrGetConversation = async (req, res) => {
 
     res.json({
       success: true,
-      conversation
+      conversation: formatConversationForUser(conversation, currentUserId)
     });
   } catch (error) {
     console.error('Erro ao criar/obter conversa:', error);
@@ -96,19 +165,9 @@ export const getMyConversations = async (req, res) => {
       .sort('-lastMessage.timestamp')
       .lean();
 
-    // Formatar dados
-    const formattedConversations = conversations.map(conv => {
-      const otherUser = conv.participants.find(
-        p => p._id.toString() !== req.user.id
-      );
-
-      return {
-        ...conv,
-        otherUser,
-        lastMessage: conv.lastMessage || null,
-        unreadCount: conv.unreadCount?.[req.user.id] || 0
-      };
-    });
+    const formattedConversations = conversations.map((conversation) =>
+      formatConversationForUser(conversation, req.user.id)
+    );
 
     res.json({
       success: true,
@@ -132,7 +191,13 @@ export const getConversationMessages = async (req, res) => {
     const { id } = req.params;
     const { limit = 50, before } = req.query;
 
-    // Verificar se é participante
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Conversa inválida'
+      });
+    }
+
     const conversation = await Conversation.findById(id);
     if (!conversation) {
       return res.status(404).json({ success: false,
@@ -140,7 +205,7 @@ export const getConversationMessages = async (req, res) => {
       });
     }
 
-    if (!conversation.participants.includes(req.user.id)) {
+    if (!isParticipant(conversation, req.user.id)) {
       return res.status(403).json({ success: false,
         message: 'Você não tem acesso a esta conversa'
       });
@@ -202,6 +267,20 @@ export const sendMessage = async (req, res) => {
       });
     }
 
+    if (content.trim().length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mensagem deve ter no máximo 1000 caracteres'
+      });
+    }
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Conversa inválida'
+      });
+    }
+
     // Verificar se é participante
     const conversation = await Conversation.findById(id);
     if (!conversation) {
@@ -210,7 +289,7 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    if (!conversation.participants.includes(req.user.id)) {
+    if (!isParticipant(conversation, req.user.id)) {
       return res.status(403).json({ success: false,
         message: 'Você não tem acesso a esta conversa'
       });
@@ -237,7 +316,7 @@ export const sendMessage = async (req, res) => {
 
     conversation.participants.forEach(participantId => {
       if (participantId.toString() !== req.user.id) {
-        const currentCount = conversation.unreadCount.get(participantId.toString()) || 0;
+        const currentCount = getUnreadCount(conversation.unreadCount, participantId);
         updateData[`unreadCount.${participantId}`] = currentCount + 1;
       }
     });
@@ -266,14 +345,19 @@ async function checkConversationPermission(currentUserId, otherUserId, type, rel
         return { allowed: false, reason: 'Serviço não encontrado' };
       }
 
-      const isRequester = service.requesterId.toString() === currentUserId;
-      const isProvider = service.providerId.toString() === currentUserId;
+      const isRequester = idsMatch(service.requesterId, currentUserId);
+      const isProvider = idsMatch(service.providerId, currentUserId);
+      const isOtherRequester = idsMatch(service.requesterId, otherUserId);
+      const isOtherProvider = idsMatch(service.providerId, otherUserId);
 
-      if (!isRequester && !isProvider) {
+      if ((!isRequester && !isProvider) || (!isOtherRequester && !isOtherProvider)) {
         return { allowed: false, reason: 'Você não está envolvido neste serviço' };
       }
 
-      // Só pode conversar se o serviço foi aceito
+      if ((isRequester && !isOtherProvider) || (isProvider && !isOtherRequester)) {
+        return { allowed: false, reason: 'Usuário não faz parte deste serviço' };
+      }
+
       if (service.status === 'pending' || service.status === 'rejected') {
         return { allowed: false, reason: 'Serviço precisa ser aceito primeiro' };
       }
@@ -289,14 +373,19 @@ async function checkConversationPermission(currentUserId, otherUserId, type, rel
         return { allowed: false, reason: 'Candidatura não encontrada' };
       }
 
-      const isCompany = application.jobId.companyId.toString() === currentUserId;
-      const isApplicant = application.applicantId.toString() === currentUserId;
+      const isCompany = idsMatch(application.jobId?.companyId, currentUserId);
+      const isApplicant = idsMatch(application.applicantId, currentUserId);
+      const isOtherCompany = idsMatch(application.jobId?.companyId, otherUserId);
+      const isOtherApplicant = idsMatch(application.applicantId, otherUserId);
 
-      if (!isCompany && !isApplicant) {
+      if ((!isCompany && !isApplicant) || (!isOtherCompany && !isOtherApplicant)) {
         return { allowed: false, reason: 'Você não está envolvido nesta candidatura' };
       }
 
-      // Empresa sempre pode iniciar, candidato só depois que empresa responder
+      if ((isCompany && !isOtherApplicant) || (isApplicant && !isOtherCompany)) {
+        return { allowed: false, reason: 'Usuário não faz parte desta candidatura' };
+      }
+
       if (!isCompany && application.status === 'pending') {
         return { allowed: false, reason: 'Aguarde resposta da empresa' };
       }
@@ -310,11 +399,17 @@ async function checkConversationPermission(currentUserId, otherUserId, type, rel
         return { allowed: false, reason: 'Proposta não encontrada' };
       }
 
-      const isCompany = proposal.companyId.toString() === currentUserId;
-      const isProvider = proposal.providerId.toString() === currentUserId;
+      const isCompany = idsMatch(proposal.companyId, currentUserId);
+      const isProvider = idsMatch(proposal.providerId, currentUserId);
+      const isOtherCompany = idsMatch(proposal.companyId, otherUserId);
+      const isOtherProvider = idsMatch(proposal.providerId, otherUserId);
 
-      if (!isCompany && !isProvider) {
+      if ((!isCompany && !isProvider) || (!isOtherCompany && !isOtherProvider)) {
         return { allowed: false, reason: 'Você não está envolvido nesta proposta' };
+      }
+
+      if ((isCompany && !isOtherProvider) || (isProvider && !isOtherCompany)) {
+        return { allowed: false, reason: 'Usuário não faz parte desta proposta' };
       }
 
       return { allowed: true };

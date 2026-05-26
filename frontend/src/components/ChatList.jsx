@@ -1,9 +1,30 @@
 // frontend/src/components/ChatList.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MessageCircle, Search } from 'lucide-react';
 import { useChatNotifications } from '../contexts/ChatNotificationContext';
 import Card from './Card';
 import Input from './Input';
+
+const getLastMessage = (conversation) =>
+  conversation.lastMessage || {
+    content: 'Conversa iniciada',
+    timestamp: conversation.updatedAt || conversation.createdAt
+  };
+
+const getConversationTime = (conversation) => {
+  const timestamp = getLastMessage(conversation).timestamp || conversation.updatedAt || conversation.createdAt;
+  const date = timestamp ? new Date(timestamp) : null;
+  return date && !Number.isNaN(date.getTime()) ? date.getTime() : 0;
+};
+
+const getConversationType = (type) => {
+  const types = {
+    service: 'Serviço',
+    job_application: 'Candidatura',
+    job_proposal: 'Proposta'
+  };
+  return types[type] || type;
+};
 
 const ChatList = ({ onSelectConversation }) => {
   const { conversations, syncFromConversations, loadConversations } = useChatNotifications();
@@ -25,10 +46,20 @@ const ChatList = ({ onSelectConversation }) => {
     }
   };
 
-  const filteredConversations = conversations.filter((conversation) => {
-    const otherUserName = conversation.otherUser?.name || '';
-    return otherUserName.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  const filteredConversations = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return conversations
+      .filter((conversation) => {
+        const otherUserName = conversation.otherUser?.name || '';
+        const typeLabel = getConversationType(conversation.type);
+        const lastMessage = getLastMessage(conversation).content || '';
+        const searchableText = `${otherUserName} ${typeLabel} ${lastMessage}`.toLowerCase();
+
+        return !normalizedSearch || searchableText.includes(normalizedSearch);
+      })
+      .sort((a, b) => getConversationTime(b) - getConversationTime(a));
+  }, [conversations, searchTerm]);
 
   const handleSelectConversation = (conversation) => {
     const updatedConversations = conversations.map((item) =>
@@ -39,19 +70,12 @@ const ChatList = ({ onSelectConversation }) => {
     onSelectConversation({ ...conversation, unreadCount: 0 });
   };
 
-  const getConversationType = (type) => {
-    const types = {
-      service: 'Serviço',
-      job_application: 'Candidatura',
-      job_proposal: 'Proposta'
-    };
-    return types[type] || type;
-  };
-
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
 
     const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return '';
+
     const now = new Date();
     const diff = now - date;
 
@@ -84,8 +108,13 @@ const ChatList = ({ onSelectConversation }) => {
         <Card>
           <div className="text-center py-8">
             <MessageCircle className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-600 dark:text-gray-400">
-              Nenhuma conversa ainda
+            <p className="font-semibold text-gray-900 dark:text-white">
+              {searchTerm.trim() ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa ainda'}
+            </p>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              {searchTerm.trim()
+                ? 'Tente buscar por nome, tipo de conversa ou última mensagem.'
+                : 'Quando uma solicitação ou candidatura permitir conversa, ela aparecerá aqui.'}
             </p>
           </div>
         </Card>
@@ -97,12 +126,20 @@ const ChatList = ({ onSelectConversation }) => {
             const avatarUrl =
               otherUser.avatar ||
               `https://ui-avatars.com/api/name=${encodeURIComponent(otherUserName)}&background=random`;
-            const lastMessage = conversation.lastMessage || {};
+            const lastMessage = getLastMessage(conversation);
 
             return (
               <Card
                 key={conversation._id}
                 onClick={() => handleSelectConversation(conversation)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleSelectConversation(conversation);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
                 className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 <div className="flex items-start gap-3">

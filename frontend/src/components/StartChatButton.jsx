@@ -29,6 +29,11 @@ const StartChatButton = ({
   const { error: showError } = useNotification();
 
   const handleStartChat = async () => {
+    if (!otherUserId || !type || !relatedId) {
+      showError('Não foi possível abrir o chat desta conversa.');
+      return;
+    }
+
     try {
       setLoading(true);
       
@@ -61,6 +66,7 @@ const StartChatButton = ({
       icon={MessageCircle}
       onClick={handleStartChat}
       loading={loading}
+      disabled={!otherUserId || !type || !relatedId}
     >
       Conversar
     </Button>
