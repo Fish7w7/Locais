@@ -104,6 +104,7 @@ export const getUserReviews = async (req, res) => {
     }
 
     const reviews = await Review.find(query)
+      .select('-helpfulVotes')
       .populate('reviewerId', 'name avatar')
       .populate('reviewedUserId', 'name')
       .sort('-createdAt');
@@ -183,7 +184,9 @@ export const reportReview = async (req, res) => {
     // AUTO-FLAG: 3+ denúncias = flagged
     if (review.reportsCount >= 1 && review.status === 'approved') {
       review.status = 'flagged';
-      console.log(`🚩 Avaliação ${review._id} auto-flagged: ${review.reportsCount} denúncias`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Avaliacao ${review._id} sinalizada: ${review.reportsCount} denuncias`);
+      }
     }
 
     await review.save();
@@ -344,12 +347,51 @@ export const moderateReview = async (req, res) => {
 // @access  Private
 export const markHelpful = async (req, res) => {
   try {
+    if (typeof req.body.helpful !== 'boolean') {
+      return res.status(400).json({ success: false,
+        message: 'Voto invalido'
+      });
+    }
+
     const { helpful } = req.body;
     const review = await Review.findById(req.params.id);
 
     if (!review) {
       return res.status(404).json({ success: false,
         message: 'Avaliação não encontrada'
+      });
+    }
+
+    if (review.reviewerId.toString() === req.user.id) {
+      return res.status(400).json({ success: false,
+        message: 'Voce nao pode votar na propria avaliacao'
+      });
+    }
+
+    const existingVote = review.helpfulVotes.find(
+      vote => vote.userId.toString() === req.user.id
+    );
+
+    if (existingVote && existingVote.helpful === helpful) {
+      return res.status(400).json({ success: false,
+        message: 'Voce ja registrou esse voto nesta avaliacao',
+        helpful: review.helpful,
+        notHelpful: review.notHelpful
+      });
+    }
+
+    if (existingVote) {
+      if (existingVote.helpful) {
+        review.helpful = Math.max(0, review.helpful - 1);
+      } else {
+        review.notHelpful = Math.max(0, review.notHelpful - 1);
+      }
+      existingVote.helpful = helpful;
+      existingVote.votedAt = new Date();
+    } else {
+      review.helpfulVotes.push({
+        userId: req.user.id,
+        helpful
       });
     }
 

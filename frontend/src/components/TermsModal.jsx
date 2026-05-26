@@ -34,10 +34,10 @@ const TermsModal = ({ isOpen, onClose }) => {
               <TermSection
                 icon={AlertCircle}
                 iconClassName="text-blue-600 dark:text-blue-400"
-                title="1. Aceitação dos Termos"
+                title="1. Aceitacao dos Termos"
               >
                 <p>
-                  Ao acessar ou usar a plataforma Serviços Locais, você concorda com estes Termos de Uso e com a Política de Privacidade. Se não concordar com qualquer parte destes termos, não deverá usar a plataforma.
+                  Ao acessar ou usar a plataforma Servicos Locais, voce concorda com estes Termos de Uso e com a Politica de Privacidade. Se nao concordar com qualquer parte destes termos, nao devera usar a plataforma.
                 </p>
               </TermSection>
 
@@ -48,85 +48,85 @@ const TermsModal = ({ isOpen, onClose }) => {
               >
                 <p>Nossa plataforma conecta clientes, prestadores, empresas e visitantes:</p>
                 <ul className="ml-4 mt-2 list-disc space-y-1">
-                  <li><strong>Visitantes:</strong> podem explorar informações públicas, buscas, filtros, prestadores e vagas.</li>
-                  <li><strong>Clientes:</strong> podem solicitar serviços, acompanhar respostas e conversar com prestadores.</li>
-                  <li><strong>Prestadores:</strong> podem oferecer serviços, receber solicitações e se candidatar a vagas.</li>
+                  <li><strong>Visitantes:</strong> podem explorar informacoes publicas, buscas, filtros, prestadores e vagas.</li>
+                  <li><strong>Clientes:</strong> podem solicitar servicos, acompanhar respostas e conversar com prestadores.</li>
+                  <li><strong>Prestadores:</strong> podem oferecer servicos, receber solicitacoes e se candidatar a vagas.</li>
                   <li><strong>Empresas:</strong> podem publicar vagas, acompanhar candidatos e enviar propostas.</li>
                 </ul>
                 <p className="mt-2">
-                  Ações como solicitar serviço, candidatar-se, publicar vaga, enviar mensagem, editar perfil ou acessar áreas privadas exigem login.
+                  Acoes como solicitar servico, candidatar-se, publicar vaga, enviar mensagem, editar perfil ou acessar areas privadas exigem login.
                 </p>
               </TermSection>
 
               <TermSection
                 icon={Shield}
                 iconClassName="text-purple-600 dark:text-purple-400"
-                title="3. Responsabilidades do Usuário"
+                title="3. Responsabilidades do Usuario"
               >
-                <p>Você se compromete a:</p>
+                <p>Voce se compromete a:</p>
                 <ul className="ml-4 mt-2 list-disc space-y-1">
-                  <li>fornecer informações verdadeiras, atualizadas e compatíveis com sua atividade;</li>
-                  <li>manter sua senha em segurança e não compartilhar sua conta;</li>
-                  <li>usar a plataforma de forma ética, legal e respeitosa;</li>
-                  <li>não publicar conteúdo falso, ofensivo, discriminatório, ilegal, spam ou golpe;</li>
-                  <li>não tentar burlar regras, limites, sistemas de segurança ou áreas administrativas.</li>
+                  <li>fornecer informacoes verdadeiras, atualizadas e compativeis com sua atividade;</li>
+                  <li>manter sua senha em seguranca e nao compartilhar sua conta;</li>
+                  <li>usar a plataforma de forma etica, legal e respeitosa;</li>
+                  <li>nao publicar conteudo falso, ofensivo, discriminatorio, ilegal, spam ou golpe;</li>
+                  <li>nao tentar burlar regras, limites, sistemas de seguranca ou areas administrativas.</li>
                 </ul>
               </TermSection>
 
-              <TermSection title="4. Serviços, Vagas, Propostas e Acordos">
+              <TermSection title="4. Servicos, Vagas, Propostas e Acordos">
                 <p>
-                  O Serviços Locais atua como intermediador para aproximar pessoas e empresas. A plataforma não executa os serviços, não contrata profissionais em nome próprio e não garante que uma proposta, candidatura ou conversa resulte em contratação.
+                  O Servicos Locais atua como intermediador para aproximar pessoas e empresas. A plataforma ajuda no contato e na organizacao inicial, mas nao executa servicos, nao contrata profissionais em nome proprio e nao garante que uma proposta, candidatura ou conversa resulte em contratacao.
                 </p>
                 <p className="mt-2">
-                  Prazos, valores, forma de pagamento, escopo do serviço, deslocamento, materiais e demais condições devem ser combinados diretamente entre os envolvidos.
+                  Prazos, valores, forma de pagamento, escopo do servico, deslocamento, materiais e demais condicoes devem ser combinados diretamente entre os envolvidos.
                 </p>
               </TermSection>
 
-              <TermSection title="5. Sistema de Comunicação (Chat)">
+              <TermSection title="5. Sistema de Comunicacao (Chat)">
                 <p>
-                  O chat deve ser usado para assuntos relacionados à plataforma, como solicitações, candidaturas, propostas e alinhamento de serviços. É proibido usar o chat para assédio, ameaças, spam, fraudes ou conteúdo ilegal.
+                  O chat deve ser usado para assuntos relacionados a plataforma, como solicitacoes, candidaturas, propostas e alinhamento de servicos. E proibido usar o chat para assedio, ameacas, spam, fraudes ou conteudo ilegal.
                 </p>
                 <p className="mt-2">
-                  Em caso de denúncia, disputa, abuso ou necessidade de segurança, a plataforma poderá analisar informações relacionadas à conversa dentro dos limites legais e da Política de Privacidade.
+                  Em caso de denuncia, disputa, abuso ou necessidade de seguranca, a plataforma podera analisar informacoes relacionadas a conversa dentro dos limites legais e da Politica de Privacidade.
                 </p>
               </TermSection>
 
-              <TermSection title="6. Perfis Públicos, Avaliações e Moderação">
+              <TermSection title="6. Perfis Publicos, Avaliacoes e Moderacao">
                 <p>
-                  Algumas informações podem aparecer publicamente, como nome, tipo de conta, categoria, cidade, avaliação, preço por hora e descrição profissional. Dados sensíveis, como email e telefone, não devem ser exibidos para visitantes.
+                  Algumas informacoes podem aparecer publicamente, como nome, tipo de conta, categoria, cidade, avaliacao, preco por hora e descricao profissional. Dados sensiveis, como email e telefone, nao devem ser exibidos para visitantes.
                 </p>
                 <p className="mt-2">
-                  Avaliações devem ser reais, honestas e respeitosas. Conteúdos falsos, ofensivos ou abusivos podem ser removidos, revisados por administradores ou gerar restrições na conta.
+                  Avaliacoes devem ser reais, honestas e respeitosas. Conteudos falsos, ofensivos ou abusivos podem ser removidos, revisados por administradores ou gerar restricoes na conta. A plataforma pode usar filtro automatico e revisao manual para apoiar a moderacao.
                 </p>
               </TermSection>
 
               <TermSection title="7. Pagamentos e Responsabilidade">
                 <p>
-                  Nesta versão do MVP, pagamentos e contratos formais não são processados pela plataforma. Qualquer pagamento, reembolso, garantia, nota fiscal, material, visita técnica ou acordo financeiro é responsabilidade direta das partes envolvidas.
+                  Nesta etapa, pagamentos, contratos formais, reembolsos, garantias, notas fiscais e acordos financeiros nao sao processados pela plataforma. A execucao do servico, a combinacao final e o pagamento sao responsabilidade das partes envolvidas.
                 </p>
                 <p className="mt-2">
-                  A plataforma não se responsabiliza pela qualidade do serviço prestado, cumprimento de acordos externos, danos, atrasos, perdas financeiras ou disputas entre usuários.
+                  A plataforma nao substitui contratos, comprovantes, orcamentos formais ou verificacoes diretas entre as partes. Ainda assim, quando houver denuncias, indicios de abuso, fraude ou risco a usuarios, a plataforma podera analisar registros necessarios, aplicar restricoes ou sancoes e preservar informacoes essenciais para seguranca, moderacao e cumprimento legal.
                 </p>
               </TermSection>
 
-              <TermSection title="8. Segurança, Suspensão e Encerramento">
+              <TermSection title="8. Seguranca, Suspensao e Encerramento">
                 <p>
-                  Podemos restringir, suspender ou encerrar contas que violem estes termos, coloquem outros usuários em risco, tentem acessar áreas indevidas ou usem a plataforma de forma fraudulenta.
+                  Podemos restringir, suspender ou encerrar contas que violem estes termos, coloquem outros usuarios em risco, tentem acessar areas indevidas ou usem a plataforma de forma fraudulenta.
                 </p>
                 <p className="mt-2">
-                  Usuários logados podem solicitar desativação ou exclusão da conta pela área de configurações.
+                  Usuarios logados podem solicitar desativacao ou exclusao da conta pela area de configuracoes. Em caso de exclusao, dados pessoais podem ser anonimizados, enquanto registros minimos necessarios para seguranca, auditoria, denuncias e cumprimento legal podem ser preservados pelo periodo aplicavel.
                 </p>
               </TermSection>
 
-              <TermSection title="9. Alterações nos Termos">
+              <TermSection title="9. Alteracoes nos Termos">
                 <p>
-                  Estes termos podem ser atualizados conforme o produto evoluir. Quando houver mudanças relevantes, elas serão refletidas nesta tela e poderão ser comunicadas dentro da plataforma.
+                  Estes termos podem ser atualizados conforme o produto evoluir. Quando houver mudancas relevantes, elas serao refletidas nesta tela e poderao ser comunicadas dentro da plataforma.
                 </p>
               </TermSection>
 
               <TermSection title="10. Contato">
                 <p>
-                  Para dúvidas sobre estes termos, suporte ou solicitações relacionadas à conta, entre em contato pelo email{' '}
+                  Para duvidas sobre estes termos, suporte ou solicitacoes relacionadas a conta, entre em contato pelo email{' '}
                   <a href="mailto:contato@servicoslocais.com" className="text-primary-600 hover:underline dark:text-primary-400">
                     contato@servicoslocais.com
                   </a>.
@@ -135,7 +135,7 @@ const TermsModal = ({ isOpen, onClose }) => {
 
               <div className="border-t border-gray-200 pt-4 dark:border-gray-700">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Última atualização: 26/05/2026
+                  Ultima atualizacao: 26/05/2026
                 </p>
               </div>
             </div>

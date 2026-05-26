@@ -79,13 +79,13 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
           </h3>
           
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Sua avaliação foi detectada como potencialmente inadequada e será revisada por nossa equipe antes de ser publicada.
+            Sua avaliacao foi sinalizada como potencialmente inadequada e sera revisada por nossa equipe antes de ser publicada.
           </p>
 
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
             <p className="text-sm text-blue-800 dark:text-blue-200">
               <strong>Por que isso acontece</strong><br/>
-              Nosso sistema automático detectou palavras ou frases que podem violar nossas diretrizes de comunidade. Um moderador humano irá revisar sua avaliação em breve.
+              Nosso filtro automatico sinalizou palavras ou frases que podem violar nossas diretrizes de comunidade. Um moderador humano ira revisar sua avaliacao em breve.
             </p>
           </div>
 
@@ -126,13 +126,13 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
     <Modal isOpen={isOpen} onClose={onClose} title="Avaliar Usuário" size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
         
-        {/* Aviso sobre sistema híbrido */}
+        {/* Aviso sobre moderacao */}
         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
           <div className="flex gap-2">
             <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-blue-800 dark:text-blue-200">
               <p className="font-medium mb-1">Avaliação Instantânea</p>
-              <p>Sua avaliação será publicada imediatamente, a menos que nosso sistema detecte conteúdo inadequado.</p>
+              <p>Sua avaliacao sera publicada imediatamente, a menos que nosso filtro automatico sinalize conteudo inadequado.</p>
             </div>
           </div>
         </div>

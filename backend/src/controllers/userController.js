@@ -1,10 +1,9 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
-import JobVacancy from '../models/JobVacancy.js';
+import { anonymizeUserAccount } from '../utils/accountAnonymization.js';
+import { normalizeAssetUrl, normalizePortfolioUrls } from '../utils/assetValidation.js';
 
-// @desc    Atualizar perfil do usuário
+// @desc    Atualizar perfil do usuario
 // @route   PUT /api/users/profile
 // @access  Private
 export const updateProfile = async (req, res) => {
@@ -15,7 +14,9 @@ export const updateProfile = async (req, res) => {
 
     if (name) user.name = name;
     if (phone) user.phone = phone;
-    if (avatar) user.avatar = avatar;
+    if (Object.prototype.hasOwnProperty.call(req.body, 'avatar')) {
+      user.avatar = normalizeAssetUrl(avatar, 'Avatar');
+    }
     if (city) user.city = city;
     if (state) user.state = state;
 
@@ -29,8 +30,7 @@ export const updateProfile = async (req, res) => {
     console.error('Erro ao atualizar perfil:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro ao atualizar perfil',
-      error: error.message
+      message: error.message || 'Erro ao atualizar perfil'
     });
   }
 };
@@ -41,10 +41,11 @@ export const updateProfile = async (req, res) => {
 export const upgradeToProvider = async (req, res) => {
   try {
     const { category, pricePerHour, description } = req.body;
+    const normalizedPrice = Number(pricePerHour);
 
-    if (!category || !pricePerHour || !description) {
+    if (!category || !description || !Number.isFinite(normalizedPrice) || normalizedPrice <= 0) {
       return res.status(400).json({ success: false,
-        message: 'Categoria, preço e descrição são obrigatórios'
+        message: 'Categoria, preco e descricao sao obrigatorios'
       });
     }
 
@@ -52,34 +53,33 @@ export const upgradeToProvider = async (req, res) => {
 
     if (user.type === 'company') {
       return res.status(400).json({ success: false,
-        message: 'Empresas não podem ser prestadores'
+        message: 'Empresas nao podem ser prestadores'
       });
     }
 
     if (user.type === 'provider') {
       return res.status(400).json({ success: false,
-        message: 'Usuário já é prestador'
+        message: 'Usuario ja e prestador'
       });
     }
 
-    await user.upgradeToProvider({ category, pricePerHour, description });
+    await user.upgradeToProvider({ category, pricePerHour: normalizedPrice, description });
 
     res.json({
       success: true,
-      message: 'Agora você é um prestador!',
+      message: 'Agora voce e um prestador!',
       user
     });
   } catch (error) {
     console.error('Erro ao converter para prestador:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro ao converter para prestador',
-      error: error.message
+      message: 'Erro ao converter para prestador'
     });
   }
 };
 
-// @desc    Atualizar informações de prestador
+// @desc    Atualizar informacoes de prestador
 // @route   PUT /api/users/provider-info
 // @access  Private
 export const updateProviderInfo = async (req, res) => {
@@ -90,14 +90,22 @@ export const updateProviderInfo = async (req, res) => {
 
     if (user.type !== 'provider') {
       return res.status(400).json({ success: false,
-        message: 'Apenas prestadores podem atualizar essas informações'
+        message: 'Apenas prestadores podem atualizar essas informacoes'
       });
     }
 
     if (category) user.category = category;
-    if (pricePerHour) user.pricePerHour = pricePerHour;
+    if (pricePerHour !== undefined) {
+      const normalizedPrice = Number(pricePerHour);
+      if (!Number.isFinite(normalizedPrice) || normalizedPrice < 0) {
+        return res.status(400).json({ success: false, message: 'Preco por hora invalido' });
+      }
+      user.pricePerHour = normalizedPrice;
+    }
     if (description) user.description = description;
-    if (portfolio) user.portfolio = portfolio;
+    if (Object.prototype.hasOwnProperty.call(req.body, 'portfolio')) {
+      user.portfolio = normalizePortfolioUrls(portfolio);
+    }
     if (typeof isAvailableAsProvider !== 'undefined') {
       user.isAvailableAsProvider = isAvailableAsProvider;
     }
@@ -109,11 +117,10 @@ export const updateProviderInfo = async (req, res) => {
       user
     });
   } catch (error) {
-    console.error('Erro ao atualizar informações:', error);
+    console.error('Erro ao atualizar informacoes:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro ao atualizar informações',
-      error: error.message
+      message: error.message || 'Erro ao atualizar informacoes'
     });
   }
 };
@@ -151,13 +158,12 @@ export const getProviders = async (req, res) => {
     console.error('Erro ao buscar prestadores:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro ao buscar prestadores',
-      error: error.message
+      message: 'Erro ao buscar prestadores'
     });
   }
 };
 
-// @desc    Obter perfil de um usuário
+// @desc    Obter perfil de um usuario
 // @route   GET /api/users/:id
 // @access  Public
 export const getUserById = async (req, res) => {
@@ -167,7 +173,7 @@ export const getUserById = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ success: false,
-        message: 'Usuário não encontrado'
+        message: 'Usuario nao encontrado'
       });
     }
 
@@ -176,16 +182,15 @@ export const getUserById = async (req, res) => {
       user
     });
   } catch (error) {
-    console.error('Erro ao buscar usuário:', error);
+    console.error('Erro ao buscar usuario:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro ao buscar usuário',
-      error: error.message
+      message: 'Erro ao buscar usuario'
     });
   }
 };
 
-// @desc    Desativar conta do usuário
+// @desc    Desativar conta do usuario
 // @route   PUT /api/users/deactivate
 // @access  Private
 export const deactivateAccount = async (req, res) => {
@@ -194,7 +199,7 @@ export const deactivateAccount = async (req, res) => {
 
     if (!password) {
       return res.status(400).json({ success: false,
-        message: 'Senha é obrigatória para desativar a conta'
+        message: 'Senha e obrigatoria para desativar a conta'
       });
     }
 
@@ -202,7 +207,7 @@ export const deactivateAccount = async (req, res) => {
 
     if (user.isDeleted) {
       return res.status(404).json({ success: false,
-        message: 'Usuário não encontrado'
+        message: 'Usuario nao encontrado'
       });
     }
 
@@ -219,19 +224,18 @@ export const deactivateAccount = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Conta desativada com sucesso. Seu perfil e publicações não aparecerão publicamente enquanto a conta estiver desativada.'
+      message: 'Conta desativada com sucesso. Seu perfil e publicacoes nao aparecerao publicamente enquanto a conta estiver desativada.'
     });
   } catch (error) {
     console.error('Erro ao desativar conta:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro ao desativar conta',
-      error: error.message
+      message: 'Erro ao desativar conta'
     });
   }
 };
 
-// @desc    Reativar conta do usuário
+// @desc    Reativar conta do usuario
 // @route   POST /api/users/reactivate
 // @access  Public
 export const reactivateAccount = async (req, res) => {
@@ -240,22 +244,16 @@ export const reactivateAccount = async (req, res) => {
 
     const user = await User.findOne({ email }).select('+password');
 
-    if (!user) {
+    if (!user || user.isDeleted) {
       return res.status(404).json({ success: false,
-        message: 'Usuário não encontrado'
-      });
-    }
-
-    if (user.isDeleted) {
-      return res.status(404).json({ success: false,
-        message: 'Usuário não encontrado'
+        message: 'Usuario nao encontrado'
       });
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ success: false,
-        message: 'Credenciais inválidas'
+        message: 'Credenciais invalidas'
       });
     }
 
@@ -284,13 +282,12 @@ export const reactivateAccount = async (req, res) => {
     console.error('Erro ao reativar conta:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro ao reativar conta',
-      error: error.message
+      message: 'Erro ao reativar conta'
     });
   }
 };
 
-// @desc    Deletar permanentemente a conta
+// @desc    Excluir conta com anonimimizacao e retencao de registros de seguranca
 // @route   DELETE /api/users/delete-account
 // @access  Private
 export const deleteAccount = async (req, res) => {
@@ -299,11 +296,17 @@ export const deleteAccount = async (req, res) => {
 
     if (!password || confirmation !== 'DELETAR PERMANENTEMENTE') {
       return res.status(400).json({ success: false,
-        message: 'Confirmação inválida. Digite exatamente: DELETAR PERMANENTEMENTE'
+        message: 'Confirmacao invalida. Digite exatamente: DELETAR PERMANENTEMENTE'
       });
     }
 
     const user = await User.findById(req.user.id).select('+password');
+
+    if (!user || user.isDeleted) {
+      return res.status(404).json({ success: false,
+        message: 'Usuario nao encontrado'
+      });
+    }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
@@ -312,68 +315,17 @@ export const deleteAccount = async (req, res) => {
       });
     }
 
-    const userId = user._id;
-    const deletedAt = new Date();
-    const hashSecret = process.env.JWT_SECRET || 'servicos-locais';
-    const deletedEmailHash = crypto
-      .createHmac('sha256', hashSecret)
-      .update(String(user.email || '').toLowerCase())
-      .digest('hex');
-    const anonymizedPassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
-
-    await Promise.all([
-      JobVacancy.updateMany(
-        { companyId: userId },
-        { $set: { isActive: false } }
-      ),
-      User.updateOne(
-        { _id: userId },
-        {
-          $set: {
-            name: 'Usuário excluído',
-            email: `deleted-${userId}@deleted.local`,
-            phone: 'Conta excluída',
-            password: anonymizedPassword,
-            avatar: null,
-            type: user.type,
-            role: user.role,
-            providerRating: 0,
-            providerReviewCount: 0,
-            clientRating: 0,
-            clientReviewCount: 0,
-            category: null,
-            pricePerHour: null,
-            portfolio: [],
-            isAvailableAsProvider: false,
-            description: null,
-            companyDescription: null,
-            city: null,
-            state: null,
-            resetPasswordToken: null,
-            resetPasswordExpire: null,
-            isActive: false,
-            deactivatedAt: deletedAt,
-            isDeleted: true,
-            deletedAt,
-            deletedEmailHash
-          },
-          $unset: {
-            cnpj: ''
-          }
-        }
-      )
-    ]);
+    await anonymizeUserAccount(user);
 
     res.json({
       success: true,
-      message: 'Conta excluída e dados pessoais anonimizados com sucesso'
+      message: 'Conta excluida e dados pessoais anonimizados com sucesso'
     });
   } catch (error) {
     console.error('Erro ao deletar conta:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro ao deletar conta',
-      error: error.message
+      message: 'Erro ao deletar conta'
     });
   }
 };

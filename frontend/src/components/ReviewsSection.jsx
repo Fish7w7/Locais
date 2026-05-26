@@ -29,7 +29,9 @@ const ReviewsSection = ({ userId, userType }) => {
       return;
     }
     
-    console.log(`📄 Carregando avaliações: userId=${userId}, type=${selectedType}`);
+    if (import.meta.env.DEV) {
+      console.log(`Carregando avaliacoes: userId=${userId}, type=${selectedType}`);
+    }
     loadReviews();
   }, [userId, selectedType]);
 
@@ -49,7 +51,9 @@ const ReviewsSection = ({ userId, userType }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      console.log(`✅ ${response.data.reviews.length || 0} avaliações carregadas (${selectedType})`);
+      if (import.meta.env.DEV) {
+        console.log(`${response.data.reviews.length || 0} avaliacoes carregadas (${selectedType})`);
+      }
       
       setReviews(response.data.reviews || []);
       setStats(response.data.stats || null);

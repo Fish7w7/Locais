@@ -1,4 +1,3 @@
-// backend/src/controllers/adminController.js
 import User from '../models/User.js';
 import ServiceRequest from '../models/ServiceRequest.js';
 import JobVacancy from '../models/JobVacancy.js';
@@ -7,26 +6,58 @@ import JobProposal from '../models/JobProposal.js';
 import Review from '../models/Review.js';
 import Settings from '../models/Settings.js';
 import { refreshMaintenanceCache } from '../middlewares/maintenance.js';
+import { anonymizeUserAccount } from '../utils/accountAnonymization.js';
+import { normalizeAssetUrl, normalizePortfolioUrls } from '../utils/assetValidation.js';
 
-// Função utilitária para lidar com erros assíncronos
 const asyncHandler = fn => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+const pickAdminUserUpdates = (body) => {
+  const allowedFields = [
+    'name',
+    'email',
+    'phone',
+    'type',
+    'role',
+    'avatar',
+    'city',
+    'state',
+    'category',
+    'pricePerHour',
+    'portfolio',
+    'description',
+    'isAvailableAsProvider',
+    'companyDescription',
+    'cnpj',
+    'isActive'
+  ];
+
+  return allowedFields.reduce((updates, field) => {
+    if (Object.prototype.hasOwnProperty.call(body, field)) {
+      updates[field] = body[field];
+    }
+    return updates;
+  }, {});
+};
+
 // @desc    Criar conta admin
 // @route   POST /api/admin/create-admin
-// @access  Public (apenas para desenvolvimento)
+// @access  Public (apenas desenvolvimento)
 export const createAdmin = asyncHandler(async (req, res) => {
   const { email, password, name } = req.body;
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return res.status(400).json({ success: false,
-      message: 'Usuário já existe'
+      message: 'Usuario ja existe'
     });
   }
 
-  const admin = await User.create({ name: name || 'Admin Master',
+  const admin = await User.create({
+    name: name || 'Admin Master',
     email,
     password,
     phone: '(00) 00000-0000',
@@ -36,7 +67,7 @@ export const createAdmin = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: '✅ Admin criado com sucesso!',
+    message: 'Admin criado com sucesso',
     admin: {
       id: admin._id,
       name: admin.name,
@@ -47,12 +78,14 @@ export const createAdmin = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Listar todos os usuários
+// @desc    Listar todos os usuarios
 // @route   GET /api/admin/users
 // @access  Private (apenas admin)
 export const getAllUsers = asyncHandler(async (req, res) => {
   const { type, role, page = 1, limit = 10, search = '' } = req.query;
-  const skip = (page - 1) * limit;
+  const pageNumber = Math.max(parseInt(page, 10) || 1, 1);
+  const pageLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 100);
+  const skip = (pageNumber - 1) * pageLimit;
 
   const query = {};
   if (type) query.type = type;
@@ -64,25 +97,25 @@ export const getAllUsers = asyncHandler(async (req, res) => {
     ];
   }
 
-  const users = await User.find(query)
-    .select('-password')
-    .sort('-createdAt')
-    .limit(parseInt(limit))
-    .skip(skip);
-
-  const totalItems = await User.countDocuments(query);
-  const totalPages = Math.ceil(totalItems / limit);
+  const [users, totalItems] = await Promise.all([
+    User.find(query)
+      .select('-password')
+      .sort('-createdAt')
+      .limit(pageLimit)
+      .skip(skip),
+    User.countDocuments(query)
+  ]);
 
   res.json({
     success: true,
     users,
-    totalPages,
-    currentPage: parseInt(page),
+    totalPages: Math.ceil(totalItems / pageLimit),
+    currentPage: pageNumber,
     totalItems
   });
 });
 
-// @desc    Obter detalhes de um usuário
+// @desc    Obter detalhes de um usuario
 // @route   GET /api/admin/users/:id
 // @access  Private (apenas admin)
 export const getUserById = asyncHandler(async (req, res) => {
@@ -90,14 +123,14 @@ export const getUserById = asyncHandler(async (req, res) => {
 
   if (!user) {
     return res.status(404).json({ success: false,
-      message: 'Usuário não encontrado'
+      message: 'Usuario nao encontrado'
     });
   }
 
   res.json({ success: true, user });
 });
 
-// @desc    Obter estatísticas gerais
+// @desc    Obter estatisticas gerais
 // @route   GET /api/admin/stats
 // @access  Private (apenas admin)
 export const getStats = asyncHandler(async (req, res) => {
@@ -117,7 +150,7 @@ export const getStats = asyncHandler(async (req, res) => {
     JobVacancy.countDocuments(),
     Application.countDocuments(),
     JobProposal.countDocuments(),
-    Review.countDocuments({ 
+    Review.countDocuments({
       $or: [
         { status: 'flagged' },
         { status: 'under_review' }
@@ -168,12 +201,12 @@ export const getReviewStats = asyncHandler(async (req, res) => {
     stats: {
       flagged,
       underReview,
-      totalReports: reportTotals[0].totalReports || 0
+      totalReports: reportTotals[0]?.totalReports || 0
     }
   });
 });
 
-// @desc    Deletar qualquer usuário
+// @desc    Anonimizar qualquer usuario
 // @route   DELETE /api/admin/users/:id
 // @access  Private (apenas admin)
 export const deleteUser = asyncHandler(async (req, res) => {
@@ -181,25 +214,31 @@ export const deleteUser = asyncHandler(async (req, res) => {
 
   if (!user) {
     return res.status(404).json({ success: false,
-      message: 'Usuário não encontrado'
+      message: 'Usuario nao encontrado'
+    });
+  }
+
+  if (user.isDeleted) {
+    return res.status(400).json({ success: false,
+      message: 'Usuario ja esta anonimizado'
     });
   }
 
   if (user.role === 'admin' && user._id.toString() !== req.user.id) {
     return res.status(403).json({ success: false,
-      message: 'Não é possível deletar outro administrador'
+      message: 'Nao e possivel excluir outro administrador'
     });
   }
 
-  await user.deleteOne();
+  await anonymizeUserAccount(user);
 
   res.json({
     success: true,
-    message: 'Usuário deletado com sucesso'
+    message: 'Usuario anonimizado com sucesso'
   });
 });
 
-// @desc    Atualizar qualquer usuário
+// @desc    Atualizar qualquer usuario
 // @route   PUT /api/admin/users/:id
 // @access  Private (apenas admin)
 export const updateUser = asyncHandler(async (req, res) => {
@@ -207,22 +246,61 @@ export const updateUser = asyncHandler(async (req, res) => {
 
   if (!user) {
     return res.status(404).json({ success: false,
-      message: 'Usuário não encontrado'
+      message: 'Usuario nao encontrado'
     });
   }
 
-  // Previne que um admin remova o próprio status de admin
-  if (user.role === 'admin' && req.user.id === req.params.id && req.body.role !== 'admin') {
+  if (user.isDeleted) {
+    return res.status(400).json({ success: false,
+      message: 'Usuario anonimizado nao pode ser editado'
+    });
+  }
+
+  const updates = pickAdminUserUpdates(req.body);
+
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ success: false,
+      message: 'Nenhum campo permitido foi enviado para atualizacao'
+    });
+  }
+
+  if (user.role === 'admin' && req.user.id === req.params.id && updates.role && updates.role !== 'admin') {
     return res.status(403).json({ success: false,
-      message: 'Você não pode remover seu próprio status de administrador'
+      message: 'Voce nao pode remover seu proprio status de administrador'
     });
   }
 
-  const updatedUser = await User.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    { new: true, runValidators: true }
-  ).select('-password');
+  if (updates.email && updates.email !== user.email) {
+    const emailExists = await User.exists({ email: updates.email, _id: { $ne: user._id } });
+    if (emailExists) {
+      return res.status(400).json({ success: false,
+        message: 'Email ja cadastrado por outro usuario'
+      });
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updates, 'avatar')) {
+    updates.avatar = normalizeAssetUrl(updates.avatar, 'Avatar');
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updates, 'pricePerHour')) {
+    const normalizedPrice = Number(updates.pricePerHour);
+    if (!Number.isFinite(normalizedPrice) || normalizedPrice < 0) {
+      return res.status(400).json({ success: false,
+        message: 'Preco por hora invalido'
+      });
+    }
+    updates.pricePerHour = normalizedPrice;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updates, 'portfolio')) {
+    updates.portfolio = normalizePortfolioUrls(updates.portfolio);
+  }
+
+  Object.assign(user, updates);
+  await user.save();
+
+  const updatedUser = await User.findById(user._id).select('-password');
 
   res.json({
     success: true,
@@ -230,25 +308,29 @@ export const updateUser = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Obter conteúdo (Serviços ou Vagas)
+// @desc    Obter conteudo (servicos ou vagas)
 // @route   GET /api/admin/content
 // @access  Private (apenas admin)
 export const getContent = asyncHandler(async (req, res) => {
   const { type, page = 1, limit = 10, search = '' } = req.query;
-  const skip = (page - 1) * limit;
+  const pageNumber = Math.max(parseInt(page, 10) || 1, 1);
+  const pageLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 100);
+  const skip = (pageNumber - 1) * pageLimit;
 
   let Model;
   let query = {};
 
-  console.log('🔍 Buscando conteúdo:', { type, page, limit, search });
+  if (isDevelopment) {
+    console.log('Buscando conteudo:', { type, page: pageNumber, limit: pageLimit, search });
+  }
 
   if (type === 'services') {
     Model = ServiceRequest;
   } else if (type === 'jobs') {
     Model = JobVacancy;
   } else {
-    return res.status(400).json({ success: false, 
-      message: 'Tipo de conteúdo inválido. Use "services" ou "jobs"' 
+    return res.status(400).json({ success: false,
+      message: 'Tipo de conteudo invalido. Use "services" ou "jobs"'
     });
   }
 
@@ -256,153 +338,108 @@ export const getContent = asyncHandler(async (req, res) => {
     query.title = { $regex: search, $options: 'i' };
   }
 
-  try {
-    // Popula os relacionamentos corretos
-    const populateField = type === 'services' ? 'providerId' : 'companyId';
-    
-    const content = await Model.find(query)
+  const populateField = type === 'services' ? 'providerId' : 'companyId';
+  const [content, totalItems] = await Promise.all([
+    Model.find(query)
       .populate(populateField, 'name email avatar')
-      .limit(parseInt(limit))
+      .limit(pageLimit)
       .skip(skip)
       .sort('-createdAt')
-      .lean();
+      .lean(),
+    Model.countDocuments(query)
+  ]);
 
-    const totalItems = await Model.countDocuments(query);
-    const totalPages = Math.ceil(totalItems / limit);
-
-    console.log(`✅ Encontrados ${content.length} itens de ${type}`);
-
-    res.json({
-      success: true,
-      content,
-      totalPages,
-      currentPage: parseInt(page),
-      totalItems
-    });
-  } catch (error) {
-    console.error('❌ Erro ao buscar conteúdo:', error);
-    res.status(500).json({
-      success: false,
-      message: `Erro ao buscar ${type}: ${error.message}`
-    });
-  }
+  res.json({
+    success: true,
+    content,
+    totalPages: Math.ceil(totalItems / pageLimit),
+    currentPage: pageNumber,
+    totalItems
+  });
 });
 
-// @desc    Deletar conteúdo (Serviço ou Vaga)
+// @desc    Deletar conteudo (servico ou vaga)
 // @route   DELETE /api/admin/content/:id
 // @access  Private (apenas admin)
 export const deleteContent = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { type } = req.query;
 
-  console.log('🗑️ Deletando conteúdo:', { id, type });
-
   if (!type || (type !== 'services' && type !== 'jobs')) {
-    return res.status(400).json({ success: false, 
-      message: 'Tipo de conteúdo inválido. Use "services" ou "jobs"' 
+    return res.status(400).json({ success: false,
+      message: 'Tipo de conteudo invalido. Use "services" ou "jobs"'
     });
   }
 
-  let Model;
-  if (type === 'services') {
-    Model = ServiceRequest;
-  } else {
-    Model = JobVacancy;
-  }
-
+  const Model = type === 'services' ? ServiceRequest : JobVacancy;
   const item = await Model.findByIdAndDelete(id);
 
   if (!item) {
-    return res.status(404).json({ success: false, 
-      message: 'Conteúdo não encontrado' 
+    return res.status(404).json({ success: false,
+      message: 'Conteudo nao encontrado'
     });
   }
 
-  console.log(`✅ ${type === 'services' ? 'Serviço' : 'Vaga'} deletado com sucesso`);
-
-  res.status(200).json({ 
-    success: true, 
-    message: 'Conteúdo deletado com sucesso' 
+  res.status(200).json({
+    success: true,
+    message: 'Conteudo deletado com sucesso'
   });
 });
 
-// @desc    Obter configurações globais
+// @desc    Obter configuracoes globais
 // @route   GET /api/admin/settings
 // @access  Private (apenas admin)
 export const getSettings = asyncHandler(async (req, res) => {
-  try {
-    let settings = await Settings.findOne();
-    
-    // Se não existir, cria com valores padrão
-    if (!settings) {
-      settings = await Settings.create({ maxUploadSize: 5,
-        allowedCategories: 'Eletricista, Limpeza, Encanador, TI',
-        maintenanceMode: false,
-      });
-      console.log('⚙️ Configurações criadas com valores padrão');
-    }
+  let settings = await Settings.findOne();
 
-    console.log('⚙️ Configurações carregadas:', settings);
-
-    res.status(200).json({ 
-      success: true, 
-      settings: {
-        maxUploadSize: settings.maxUploadSize,
-        allowedCategories: settings.allowedCategories,
-        maintenanceMode: settings.maintenanceMode
-      }
-    });
-  } catch (error) {
-    console.error('❌ Erro ao buscar configurações:', error);
-    res.status(500).json({
-      success: false,
-      message: `Erro ao buscar configurações: ${error.message}`
+  if (!settings) {
+    settings = await Settings.create({
+      maxUploadSize: 5,
+      allowedCategories: 'Eletricista, Limpeza, Encanador, TI',
+      maintenanceMode: false
     });
   }
+
+  res.status(200).json({
+    success: true,
+    settings: {
+      maxUploadSize: settings.maxUploadSize,
+      allowedCategories: settings.allowedCategories,
+      maintenanceMode: settings.maintenanceMode
+    }
+  });
 });
 
-// @desc    Atualizar configurações globais
+// @desc    Atualizar configuracoes globais
 // @route   PUT /api/admin/settings
 // @access  Private (apenas admin)
 export const updateSettings = asyncHandler(async (req, res) => {
   const { maxUploadSize, allowedCategories, maintenanceMode } = req.body;
 
-  console.log('💾 Salvando configurações:', req.body);
+  const settings = await Settings.findOneAndUpdate(
+    {},
+    {
+      maxUploadSize: maxUploadSize !== undefined ? maxUploadSize : 5,
+      allowedCategories: allowedCategories || 'Eletricista, Limpeza, Encanador, TI',
+      maintenanceMode: maintenanceMode !== undefined ? maintenanceMode : false
+    },
+    {
+      new: true,
+      upsert: true,
+      runValidators: true,
+      setDefaultsOnInsert: true
+    }
+  );
 
-  try {
-    const settings = await Settings.findOneAndUpdate(
-      {}, // Busca o único documento
-      { 
-        maxUploadSize: maxUploadSize !== undefined ? maxUploadSize : 5, 
-        allowedCategories: allowedCategories || 'Eletricista, Limpeza, Encanador, TI', 
-        maintenanceMode: maintenanceMode !== undefined ? maintenanceMode : false 
-      },
-      { 
-        new: true, 
-        upsert: true, // Cria se não existir
-        runValidators: true,
-        setDefaultsOnInsert: true
-      }
-    );
+  await refreshMaintenanceCache();
 
-    console.log('✅ Configurações salvas:', settings);
-    await refreshMaintenanceCache();
-    console.log('🔄 Cache de manutenção atualizado após salvar settings');
-
-    res.status(200).json({ 
-      success: true, 
-      message: 'Configurações salvas com sucesso', 
-      settings: {
-        maxUploadSize: settings.maxUploadSize,
-        allowedCategories: settings.allowedCategories,
-        maintenanceMode: settings.maintenanceMode
-      }
-    });
-  } catch (error) {
-    console.error('❌ Erro ao salvar configurações:', error);
-    res.status(500).json({
-      success: false,
-      message: `Erro ao salvar configurações: ${error.message}`
-    });
-  }
+  res.status(200).json({
+    success: true,
+    message: 'Configuracoes salvas com sucesso',
+    settings: {
+      maxUploadSize: settings.maxUploadSize,
+      allowedCategories: settings.allowedCategories,
+      maintenanceMode: settings.maintenanceMode
+    }
+  });
 });

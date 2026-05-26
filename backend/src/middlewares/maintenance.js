@@ -1,100 +1,101 @@
 // backend/src/middlewares/maintenance.js
 import Settings from '../models/Settings.js';
 
-// Cache do modo de manutenção
-let maintenanceCache = { isActive: false,
+let maintenanceCache = {
+  isActive: false,
   lastCheck: 0
 };
 
-const CACHE_DURATION = 5000; // 5 segundos
+const CACHE_DURATION = 5000;
+
+const debugLog = (...args) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(...args);
+  }
+};
 
 export const checkMaintenance = async (req, res, next) => {
   try {
-    // Rotas que NUNCA são bloqueadas (health checks e login)
     const allowedPaths = [
       '/auth/login',
       '/auth/register',
       '/admin'
     ];
 
-    // Remove o prefixo /api para comparar
     const path = req.path.replace('/api', '');
-    
-    // Verifica se a rota atual é permitida
     const isAllowedPath = allowedPaths.some(allowedPath => path.startsWith(allowedPath));
+
     if (isAllowedPath) {
-      console.log(`✅ Rota permitida (bypass manutenção): ${req.path}`);
+      debugLog(`Rota permitida (bypass manutencao): ${req.path}`);
       return next();
     }
 
-    // Bypass para admins - verifica o token, quando ele existir.
     const authHeader = req.headers.authorization;
     const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-    
+
     if (token) {
       try {
         const jwt = await import('jsonwebtoken');
         const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
         const User = (await import('../models/User.js')).default;
         const user = await User.findById(decoded.id).select('role type email');
-        
+
         if (user && (user.role === 'admin' || user.type === 'admin')) {
-          console.log(`✅ Admin detectado, bypass de manutenção: ${user.email}`);
+          debugLog(`Admin detectado, bypass de manutencao: ${user.email}`);
           return next();
         }
       } catch (error) {
-        // Token inválido, continua verificação de manutenção
-        console.log(`⚠️ Token inválido ou erro: ${error.message}`);
+        debugLog(`Token invalido ou erro: ${error.message}`);
       }
     }
 
-    // Verifica cache
     const now = Date.now();
     if (now - maintenanceCache.lastCheck > CACHE_DURATION) {
       try {
         const settings = await Settings.findOne();
-        maintenanceCache = { isActive: settings?.maintenanceMode || false,
+        maintenanceCache = {
+          isActive: settings?.maintenanceMode || false,
           lastCheck: now
         };
-        console.log('🔧 Cache de manutenção atualizado:', maintenanceCache.isActive ? 'ATIVO' : 'INATIVO');
+        debugLog('Cache de manutencao atualizado:', maintenanceCache.isActive ? 'ATIVO' : 'INATIVO');
       } catch (error) {
-        console.error('❌ Erro ao verificar modo manutenção:', error);
-        maintenanceCache = { isActive: false,
+        console.error('Erro ao verificar modo manutencao:', error);
+        maintenanceCache = {
+          isActive: false,
           lastCheck: now
         };
       }
     }
 
-    // Se modo manutenção estiver ativo, bloqueia
     if (maintenanceCache.isActive) {
-      console.log(`🔧 BLOQUEADO - Modo manutenção ativo: ${req.method} ${req.path}`);
-      return res.status(503).json({ success: false,
+      debugLog(`BLOQUEADO - Modo manutencao ativo: ${req.method} ${req.path}`);
+      return res.status(503).json({
+        success: false,
         maintenance: true,
-        message: '🔧 Sistema em manutenção. Tente novamente em alguns minutos.',
+        message: 'Sistema em manutencao. Tente novamente em alguns minutos.',
         timestamp: new Date().toISOString()
       });
     }
 
-    console.log(`✅ Modo manutenção inativo, permitindo: ${req.method} ${req.path}`);
+    debugLog(`Modo manutencao inativo, permitindo: ${req.method} ${req.path}`);
     next();
   } catch (error) {
-    console.error('❌ Erro crítico no middleware de manutenção:', error);
-    // Em caso de erro crítico, permite acesso
+    console.error('Erro critico no middleware de manutencao:', error);
     next();
   }
 };
 
-// Função para forçar atualização do cache (pode ser chamada após atualizar settings)
 export const refreshMaintenanceCache = async () => {
   try {
     const settings = await Settings.findOne();
-    maintenanceCache = { isActive: settings?.maintenanceMode || false,
+    maintenanceCache = {
+      isActive: settings?.maintenanceMode || false,
       lastCheck: Date.now()
     };
-    console.log('🔄 Cache de manutenção forçado:', maintenanceCache);
+    debugLog('Cache de manutencao forcado:', maintenanceCache);
     return maintenanceCache;
   } catch (error) {
-    console.error('❌ Erro ao atualizar cache:', error);
+    console.error('Erro ao atualizar cache:', error);
     return null;
   }
 };

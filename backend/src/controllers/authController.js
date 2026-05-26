@@ -2,6 +2,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import crypto from 'crypto';
+import { sendPasswordResetEmail } from '../utils/email.js';
 
 // Gerar JWT Token
 const generateToken = (id) => {
@@ -145,7 +146,9 @@ export const login = async (req, res) => {
 
     // 🔥 REATIVA A CONTA AUTOMATICAMENTE NO LOGIN
     if (!user.isActive) {
-      console.log(`🔄 Reativando conta: ${user.email}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Reativando conta: ${user.email}`);
+      }
       user.isActive = true;
       user.deactivatedAt = null;
       await user.save();
@@ -246,7 +249,7 @@ export const forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ email });
 
-    if (!user) {
+    if (!user || user.isDeleted) {
       // Por segurança, não revelar se o email existe
       return res.json({ success: true,
         message: 'Se o email existir, você receberá instruções de redefinição de senha.'
@@ -265,23 +268,33 @@ export const forgotPassword = async (req, res) => {
     user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutos
     await user.save();
 
-    // URL de reset (em produção, enviar por email)
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl.replace(/\/$/, '')}/reset-password/${resetToken}`;
 
-    console.log('🔑 Token de reset gerado:', resetUrl);
+    let resetDeliveryFailed = false;
 
-    // TODO: Enviar email com o link
-    // await sendEmail({
-    //   to: user.email,
-    //   subject: 'Redefinição de Senha',
-    //   html: `<p>Clique no link para redefinir sua ? senha : <a href="${resetUrl}">${resetUrl}</a></p>`
-    // });
+    try {
+      await sendPasswordResetEmail({
+        to: user.email,
+        name: user.name,
+        resetUrl
+      });
+    } catch (emailError) {
+      resetDeliveryFailed = true;
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save();
+      console.error(
+        'Erro ao enviar email de reset',
+        process.env.NODE_ENV === 'production' ? '' : emailError.message
+      );
+    }
 
     res.json({
       success: true,
       message: 'Se o email existir, você receberá instruções de redefinição de senha.',
       // Em desenvolvimento, retornar o token
-      ...(process.env.NODE_ENV === 'development' && { resetToken, resetUrl })
+      ...(process.env.NODE_ENV === 'development' && !resetDeliveryFailed && { resetToken, resetUrl })
     });
   } catch (error) {
     console.error('Erro ao solicitar reset:', error);
@@ -315,7 +328,8 @@ export const resetPassword = async (req, res) => {
 
     // Buscar usuário com token válido
     const user = await User.findOne({ resetPasswordToken: resetTokenHash,
-      resetPasswordExpire: { $gt: Date.now() }
+      resetPasswordExpire: { $gt: Date.now() },
+      isDeleted: { $ne: true }
     });
 
     if (!user) {

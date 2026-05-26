@@ -134,7 +134,7 @@ const ModerateReviewsPage = () => {
               Moderar Avaliações
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Sistema de Moderação Híbrido
+              Moderacao automatica e manual
             </p>
           </div>
           <Button
@@ -164,7 +164,7 @@ const ModerateReviewsPage = () => {
             <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
               {stats.autoDetected}
             </p>
-            <p className="text-xs text-yellow-600 dark:text-yellow-400">Auto-detectadas</p>
+            <p className="text-xs text-yellow-600 dark:text-yellow-400">Filtro automatico</p>
           </div>
         </div>
       </div>
@@ -174,10 +174,10 @@ const ModerateReviewsPage = () => {
         <div className="flex gap-3">
           <AlertTriangle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-800 dark:text-blue-200">
-            <p className="font-medium mb-1">Como funciona o sistema híbrido</p>
+            <p className="font-medium mb-1">Como funciona a moderacao</p>
             <ul className="space-y-1 text-xs">
               <li>• <strong>Publicação Automática:</strong> Avaliações são publicadas imediatamente</li>
-              <li>• <strong>Auto-Detecção:</strong> IA detecta linguagem potencialmente ofensiva</li>
+              <li>• <strong>Filtro automatico:</strong> sinaliza linguagem potencialmente ofensiva</li>
               <li>• <strong>Denúncias:</strong> 1 denúncia = marcada para revisão</li>
               <li>• <strong>Moderação Manual:</strong> Você revisa apenas casos problemáticos</li>
             </ul>
@@ -209,7 +209,7 @@ const ModerateReviewsPage = () => {
             filter === 'auto_detected' ? 'bg-yellow-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
           }`}
         >
-          Auto-detectadas ({stats.autoDetected})
+          Filtro automatico ({stats.autoDetected})
         </button>
       </div>
 
@@ -224,7 +224,7 @@ const ModerateReviewsPage = () => {
             <p className="text-gray-600 dark:text-gray-400">
               Não há avaliações {
                 filter === 'flagged' ? 'denunciadas' :
-                filter === 'auto_detected' ? 'auto-detectadas' :
+                filter === 'auto_detected' ? 'sinalizadas pelo filtro automatico' :
                 'problemáticas'
               } no momento
             </p>
@@ -248,7 +248,7 @@ const ModerateReviewsPage = () => {
                   {review.status === 'under_review' && (
                     <span className="px-3 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-full text-sm font-medium flex items-center gap-1">
                       <Eye className="w-4 h-4" />
-                      Auto-detectado
+                      Filtro automatico
                     </span>
                   )}
                   <span className="text-xs text-gray-500">
@@ -326,7 +326,7 @@ const ModerateReviewsPage = () => {
                     {review.autoFlaggedReason && (
                       <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
                         <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                          <strong>🤖 Detectado automaticamente:</strong> {review.autoFlaggedReason}
+                          <strong>Filtro automatico:</strong> {review.autoFlaggedReason}
                         </p>
                       </div>
                     )}

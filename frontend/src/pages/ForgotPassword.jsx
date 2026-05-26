@@ -23,13 +23,14 @@ const ForgotPassword = () => {
     try {
       const response = await api.post('/auth/forgot-password', { email });
       setSuccess(true);
+      setResetUrl('');
       
       // Em desenvolvimento, mostrar o link
       if (response.data.resetUrl) {
         setResetUrl(response.data.resetUrl);
       }
     } catch (err) {
-      setError(err.response?.data.message || 'Erro ao enviar email');
+      setError(err.response?.data.message || 'Erro ao solicitar redefinicao de senha');
     } finally {
       setLoading(false);
     }
@@ -45,17 +46,17 @@ const ForgotPassword = () => {
             </div>
             
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Email Enviado!
+              Solicitacao enviada
             </h2>
             
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Se o email <strong>{email}</strong> estiver cadastrado, você receberá instruções para redefinir sua senha.
+              Se o email <strong>{email}</strong> estiver cadastrado, voce recebera instrucoes para redefinir sua senha.
             </p>
 
             {resetUrl && (
               <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
                 <p className="text-xs font-medium text-yellow-800 dark:text-yellow-200 mb-2">
-                  🔧 Modo Desenvolvimento - Link de Reset:
+                  Modo desenvolvimento - link de reset:
                 </p>
                 <a 
                   href={resetUrl}
@@ -78,7 +79,7 @@ const ForgotPassword = () => {
                 onClick={() => setSuccess(false)}
                 className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600"
               >
-                Enviar novamente
+                Solicitar novamente
               </button>
             </div>
           </div>
@@ -104,10 +105,10 @@ const ForgotPassword = () => {
               <Mail className="w-8 h-8 text-primary-600 dark:text-primary-400" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Esqueci Minha Senha
+              Esqueci minha senha
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Digite seu email para receber instruções de redefinição
+              Digite seu email para receber instrucoes de redefinicao
             </p>
           </div>
 
@@ -135,7 +136,7 @@ const ForgotPassword = () => {
               loading={loading}
               icon={Send}
             >
-              Enviar Instruções
+              Enviar instrucoes
             </Button>
           </form>
         </div>

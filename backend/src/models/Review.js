@@ -70,7 +70,7 @@ const ReviewSchema = new mongoose.Schema({ reviewedUserId: {
     default: 0
   },
   
-  // AUTO-DETECÇÃO
+  // FILTRO AUTOMATICO
   autoFlaggedReason: String,
   
   // MODERAÇÃO
@@ -96,7 +96,22 @@ const ReviewSchema = new mongoose.Schema({ reviewedUserId: {
   notHelpful: {
     type: Number,
     default: 0
-  }
+  },
+  helpfulVotes: [{
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    helpful: {
+      type: Boolean,
+      required: true
+    },
+    votedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, { 
   timestamps: true 
 });
@@ -106,6 +121,7 @@ ReviewSchema.index({ reviewedUserId: 1, status: 1 });
 ReviewSchema.index({ reviewerId: 1 });
 ReviewSchema.index({ status: 1 });
 ReviewSchema.index({ reportsCount: 1 });
+ReviewSchema.index({ _id: 1, 'helpfulVotes.userId': 1 });
 ReviewSchema.index({ reviewerId: 1, reviewedUserId: 1, serviceId: 1 }, { unique: true });
 
 ReviewSchema.pre('save', function(next) {
@@ -138,8 +154,10 @@ ReviewSchema.pre('save', function(next) {
   
   if (foundOffensive) {
     this.status = 'under_review';
-    this.autoFlaggedReason = 'Linguagem potencialmente ofensiva detectada automaticamente';
-    console.log(`🤖 Auto-detecção: Avaliação ${this._id} marcada para revisão`);
+    this.autoFlaggedReason = 'Linguagem potencialmente ofensiva sinalizada pelo filtro automatico';
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Filtro automatico: Avaliacao ${this._id} marcada para revisao`);
+    }
   }
   
   next();
