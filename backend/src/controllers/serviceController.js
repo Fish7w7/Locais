@@ -28,7 +28,7 @@ export const createServiceRequest = async (req, res) => {
 
     // Verificar se o prestador existe
     const provider = await User.findById(providerId);
-    if (!provider || provider.type !== 'provider') {
+    if (!provider || provider.type !== 'provider' || provider.isActive === false || provider.isDeleted === true) {
       return res.status(404).json({ success: false,
         message: 'Prestador não encontrado'
       });

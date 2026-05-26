@@ -67,7 +67,8 @@ export const getJobs = async (req, res) => {
   try {
     const { category, type, city } = req.query;
 
-    const query = { isActive: true };
+    const activeUserIds = await User.find({ isActive: true, isDeleted: { $ne: true } }).distinct('_id');
+    const query = { isActive: true, companyId: { $in: activeUserIds } };
     if (category) query.category = category;
     if (type) query.type = type;
     if (city) query.location = { $regex: city, $options: 'i' };
@@ -124,9 +125,9 @@ export const getMyCompanyJobs = async (req, res) => {
 export const getJobById = async (req, res) => {
   try {
     const job = await JobVacancy.findById(req.params.id)
-      .populate('companyId', 'name email phone avatar companyDescription');
+      .populate('companyId', 'name email phone avatar companyDescription isActive isDeleted');
 
-    if (!job) {
+    if (!job || !job.isActive || !job.companyId || job.companyId.isActive === false || job.companyId.isDeleted === true) {
       return res.status(404).json({ success: false,
         message: 'Vaga não encontrada'
       });
@@ -302,6 +303,13 @@ export const applyToJob = async (req, res) => {
     }
 
     if (!job.isActive) {
+      return res.status(400).json({ success: false,
+        message: 'Esta vaga não está mais ativa'
+      });
+    }
+
+    const company = await User.findById(job.companyId).select('isActive isDeleted');
+    if (!company || company.isActive === false || company.isDeleted === true) {
       return res.status(400).json({ success: false,
         message: 'Esta vaga não está mais ativa'
       });
@@ -550,7 +558,7 @@ export const proposeToProvider = async (req, res) => {
     }
 
     const provider = await User.findById(providerId);
-    if (!provider || provider.type !== 'provider') {
+    if (!provider || provider.type !== 'provider' || provider.isActive === false || provider.isDeleted === true || !provider.isAvailableAsProvider) {
       return res.status(404).json({
         success: false,
         message: 'Prestador não encontrado'

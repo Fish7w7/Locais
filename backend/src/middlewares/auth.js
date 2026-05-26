@@ -24,6 +24,18 @@ export const protect = async (req, res, next) => {
       });
     }
 
+    if (req.user.isDeleted === true) {
+      return res.status(403).json({ success: false,
+        message: 'Conta excluída.'
+      });
+    }
+
+    if (req.user.isActive === false) {
+      return res.status(403).json({ success: false,
+        message: 'Conta desativada. Faça login novamente para reativá-la.'
+      });
+    }
+
     next();
   } catch (error) {
     return res.status(401).json({ success: false,

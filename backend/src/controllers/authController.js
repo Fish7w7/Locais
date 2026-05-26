@@ -128,6 +128,12 @@ export const login = async (req, res) => {
       });
     }
 
+    if (user.isDeleted) {
+      return res.status(401).json({ success: false,
+        message: 'Credenciais inválidas'
+      });
+    }
+
     // Verificar senha
     const isMatch = await user.comparePassword(password);
 

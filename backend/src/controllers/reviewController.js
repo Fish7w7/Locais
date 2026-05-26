@@ -10,7 +10,7 @@ export const createReview = async (req, res) => {
     const { reviewedUserId, type, rating, comment, serviceId } = req.body;
 
     const reviewedUser = await User.findById(reviewedUserId);
-    if (!reviewedUser) {
+    if (!reviewedUser || reviewedUser.isActive === false || reviewedUser.isDeleted === true) {
       return res.status(404).json({ success: false,
         message: 'Usuário não encontrado'
       });

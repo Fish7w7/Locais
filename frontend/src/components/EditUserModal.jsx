@@ -21,6 +21,8 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess }) => {
     isAvailableAsProvider: false
   });
 
+  const userId = user?._id || user?.id;
+
   const categories = [
     'Eletricista',
     'Encanador',
@@ -61,11 +63,16 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!userId) {
+      showError('Usuário inválido para edição');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`/api/admin/users/${user._id}`, formData, {
+      await axios.put(`/api/admin/users/${userId}`, formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -79,6 +86,10 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess }) => {
     }
   };
 
+  if (!isOpen || !user) {
+    return null;
+  }
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Editar Usuário" size="xl">
       <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
@@ -87,7 +98,7 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess }) => {
         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <Shield className="w-4 h-4" />
-            <span>ID: {user._id}</span>
+            <span>ID: {userId || 'Não disponível'}</span>
           </div>
         </div>
 

@@ -1,5 +1,8 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+import JobVacancy from '../models/JobVacancy.js';
 
 // @desc    Atualizar perfil do usuário
 // @route   PUT /api/users/profile
@@ -123,6 +126,8 @@ export const getProviders = async (req, res) => {
     const { category, city, minRating } = req.query;
 
     const query = { type: 'provider',
+      isActive: true,
+      isDeleted: { $ne: true },
       isAvailableAsProvider: true,
       category: { $nin: [null, ''] },
       pricePerHour: { $gt: 0 },
@@ -157,7 +162,7 @@ export const getProviders = async (req, res) => {
 // @access  Public
 export const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id)
+    const user = await User.findOne({ _id: req.params.id, isActive: true, isDeleted: { $ne: true } })
       .select('name avatar type category city state providerRating providerReviewCount clientRating clientReviewCount pricePerHour description isAvailableAsProvider companyDescription createdAt');
 
     if (!user) {
@@ -195,6 +200,12 @@ export const deactivateAccount = async (req, res) => {
 
     const user = await User.findById(req.user.id).select('+password');
 
+    if (user.isDeleted) {
+      return res.status(404).json({ success: false,
+        message: 'Usuário não encontrado'
+      });
+    }
+
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ success: false,
@@ -208,7 +219,7 @@ export const deactivateAccount = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Conta desativada com sucesso. Você pode reativá-la fazendo login novamente.'
+      message: 'Conta desativada com sucesso. Seu perfil e publicações não aparecerão publicamente enquanto a conta estiver desativada.'
     });
   } catch (error) {
     console.error('Erro ao desativar conta:', error);
@@ -230,6 +241,12 @@ export const reactivateAccount = async (req, res) => {
     const user = await User.findOne({ email }).select('+password');
 
     if (!user) {
+      return res.status(404).json({ success: false,
+        message: 'Usuário não encontrado'
+      });
+    }
+
+    if (user.isDeleted) {
       return res.status(404).json({ success: false,
         message: 'Usuário não encontrado'
       });
@@ -295,11 +312,61 @@ export const deleteAccount = async (req, res) => {
       });
     }
 
-    await user.deleteOne();
+    const userId = user._id;
+    const deletedAt = new Date();
+    const hashSecret = process.env.JWT_SECRET || 'servicos-locais';
+    const deletedEmailHash = crypto
+      .createHmac('sha256', hashSecret)
+      .update(String(user.email || '').toLowerCase())
+      .digest('hex');
+    const anonymizedPassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+
+    await Promise.all([
+      JobVacancy.updateMany(
+        { companyId: userId },
+        { $set: { isActive: false } }
+      ),
+      User.updateOne(
+        { _id: userId },
+        {
+          $set: {
+            name: 'Usuário excluído',
+            email: `deleted-${userId}@deleted.local`,
+            phone: 'Conta excluída',
+            password: anonymizedPassword,
+            avatar: null,
+            type: user.type,
+            role: user.role,
+            providerRating: 0,
+            providerReviewCount: 0,
+            clientRating: 0,
+            clientReviewCount: 0,
+            category: null,
+            pricePerHour: null,
+            portfolio: [],
+            isAvailableAsProvider: false,
+            description: null,
+            companyDescription: null,
+            city: null,
+            state: null,
+            resetPasswordToken: null,
+            resetPasswordExpire: null,
+            isActive: false,
+            deactivatedAt: deletedAt,
+            isDeleted: true,
+            deletedAt,
+            deletedEmailHash
+          },
+          $unset: {
+            cnpj: ''
+          }
+        }
+      )
+    ]);
 
     res.json({
       success: true,
-      message: 'Conta deletada permanentemente'
+      message: 'Conta excluída e dados pessoais anonimizados com sucesso'
     });
   } catch (error) {
     console.error('Erro ao deletar conta:', error);

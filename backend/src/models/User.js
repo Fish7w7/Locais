@@ -109,6 +109,19 @@ const UserSchema = new mongoose.Schema({
   deactivatedAt: {
     type: Date,
     default: null
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
+  deletedAt: {
+    type: Date,
+    default: null
+  },
+  deletedEmailHash: {
+    type: String,
+    default: null,
+    select: false
   }
 }, {
   timestamps: true

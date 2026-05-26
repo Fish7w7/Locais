@@ -20,6 +20,9 @@ const ManageUsers = () => {
   const { success, error: showError } = useNotification();
   const { confirmState, confirm, cancel } = useConfirm();
 
+  const getUserId = (user) => user?._id || user?.id;
+  const toSearchText = (value) => String(value || '').toLowerCase();
+
   useEffect(() => {
     loadUsers();
   }, [selectedType]);
@@ -39,8 +42,9 @@ const ManageUsers = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      setUsers(response.data.users || []);
-      setFilteredUsers(response.data.users || []);
+      const loadedUsers = (response.data.users || []).filter(Boolean);
+      setUsers(loadedUsers);
+      setFilteredUsers(loadedUsers);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
       showError('Erro ao carregar usuários');
@@ -54,10 +58,11 @@ const ManageUsers = () => {
       return;
     }
 
+    const normalizedSearch = searchTerm.toLowerCase();
     const filtered = users.filter(user =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phone.includes(searchTerm)
+      toSearchText(user.name).includes(normalizedSearch) ||
+      toSearchText(user.email).includes(normalizedSearch) ||
+      toSearchText(user.phone).includes(normalizedSearch)
     );
     
     setFilteredUsers(filtered);
@@ -204,21 +209,24 @@ const ManageUsers = () => {
         <div className="space-y-3">
           {filteredUsers.map((user) => {
             const TypeIcon = getUserTypeIcon(user.type);
+            const userId = getUserId(user);
+            const userName = user.name || 'Usuário sem nome';
+            const providerRating = Number(user.providerRating || 0);
             
             return (
-              <Card key={user._id}>
+              <Card key={userId || user.email || userName}>
                 <div className="space-y-3">
                   {/* User Header */}
                   <div className="flex items-start gap-3">
                     <img
-                      src={user.avatar || `https://ui-avatars.com/api/name=${encodeURIComponent(user.name)}&background=random`}
-                      alt={user.name}
+                      src={user.avatar || `https://ui-avatars.com/api/name=${encodeURIComponent(userName)}&background=random`}
+                      alt={userName}
                       className="w-12 h-12 rounded-full object-cover flex-shrink-0"
                     />
                     
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                        {user.name}
+                        {userName}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <TypeIcon className="w-4 h-4 text-gray-500 flex-shrink-0" />
@@ -233,11 +241,11 @@ const ManageUsers = () => {
                   <div className="space-y-1.5 pl-1">
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <Mail className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate">{user.email}</span>
+                      <span className="truncate">{user.email || 'Email não informado'}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <Phone className="w-4 h-4 flex-shrink-0" />
-                      <span>{user.phone}</span>
+                      <span>{user.phone || 'Telefone não informado'}</span>
                     </div>
                     {user.city && (
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -266,7 +274,7 @@ const ManageUsers = () => {
                         <div className="flex items-center gap-1">
                           <Star className="w-4 h-4 text-yellow-500 fill-current" />
                           <span className="font-medium text-gray-900 dark:text-white">
-                            {user.providerRating.toFixed(1) || '0.0'}
+                            {providerRating.toFixed(1)}
                           </span>
                           <span className="text-xs text-gray-500">
                             ({user.providerReviewCount || 0})
@@ -293,6 +301,7 @@ const ManageUsers = () => {
                       size="sm"
                       icon={Edit}
                       onClick={() => handleEditUser(user)}
+                      disabled={!userId}
                       fullWidth
                     >
                       Editar
@@ -302,7 +311,8 @@ const ManageUsers = () => {
                         variant="danger"
                         size="sm"
                         icon={Trash2}
-                        onClick={() => handleDeleteUser(user._id, user.name)}
+                        onClick={() => handleDeleteUser(userId, userName)}
+                        disabled={!userId}
                         fullWidth
                       >
                         Excluir
