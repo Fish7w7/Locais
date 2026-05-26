@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Star, MapPin, Mail, Phone, CheckCircle, XCircle, Clock, MessageCircle } from 'lucide-react';
+import { Users, Star, MapPin, Mail, Phone, CheckCircle, XCircle, Clock, DollarSign } from 'lucide-react';
 import Modal from './Modal';
 import Button from './Button';
 import Card from './Card';
@@ -8,15 +8,73 @@ import { jobAPI } from '../api/services';
 import { useNotification } from '../contexts/NotificationContext';
 import { useActivityNotifications } from '../contexts/ActivityNotificationContext';
 
-const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
+const statusPriority = {
+  pending: 0,
+  reviewing: 1,
+  accepted: 2,
+  rejected: 3,
+  cancelled: 4
+};
+
+const statusOptions = [
+  { value: '', label: 'Todos' },
+  { value: 'pending', label: 'Pendentes' },
+  { value: 'reviewing', label: 'Em análise' },
+  { value: 'accepted', label: 'Aceitos' },
+  { value: 'rejected', label: 'Recusados' },
+  { value: 'cancelled', label: 'Cancelados' }
+];
+
+const brokenTextReplacements = [
+  [new RegExp('manuten\\uFFFD\\uFFFDo', 'gi'), 'manutenção'],
+  [new RegExp('servi\\uFFFDo', 'gi'), 'serviço'],
+  [new RegExp('el\\uFFFDrica', 'gi'), 'elétrica'],
+  [new RegExp('t\\uFFFDcnico', 'gi'), 'técnico'],
+  [new RegExp('mec\\uFFFDnico', 'gi'), 'mecânico'],
+  [new RegExp('n\\uFFFDo', 'gi'), 'não'],
+  [new RegExp('descri\\uFFFD\\uFFFDo', 'gi'), 'descrição'],
+  [new RegExp('indispon\\uFFFDvel', 'gi'), 'indisponível']
+];
+
+const mojibakePattern = new RegExp('[\\u00C3\\u00C2]');
+
+const decodeMojibake = (value) => {
+  try {
+    const bytes = Uint8Array.from(value, (char) => char.charCodeAt(0));
+    return new TextDecoder('utf-8').decode(bytes);
+  } catch {
+    return value;
+  }
+};
+
+const normalizeText = (value, fallback = '') => {
+  if (value === null || value === undefined) return fallback;
+  const text = String(value);
+  const decoded = mojibakePattern.test(text) ? decodeMojibake(text) : text;
+  return brokenTextReplacements.reduce((result, [pattern, replacement]) => {
+    return result.replace(pattern, replacement);
+  }, decoded);
+};
+
+const sortApplications = (items) => {
+  return [...items].sort((a, b) => {
+    const priorityDiff = (statusPriority[a.status] ?? 9) - (statusPriority[b.status] ?? 9);
+    if (priorityDiff !== 0) return priorityDiff;
+    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+  });
+};
+
+const ViewCandidatesModal = ({ isOpen, onClose, job, onViewed }) => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [responseText, setResponseText] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const { success, error: showError } = useNotification();
   const { refreshActivityNotifications } = useActivityNotifications();
 
-  useEffect(() => {if (isOpen && job?._id) {
+  useEffect(() => {
+    if (isOpen && job?._id) {
       loadApplications();
     }
   }, [isOpen, job]);
@@ -26,6 +84,8 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
       setLoading(true);
       const res = await jobAPI.getJobApplications(job._id);
       setApplications(res.data.applications || []);
+      await refreshActivityNotifications();
+      if (onViewed) await onViewed();
     } catch (error) {
       console.error('Erro ao carregar candidatos:', error);
       showError('Erro ao carregar candidatos');
@@ -41,13 +101,21 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
         companyResponse: responseText || undefined
       });
       
-      success(`Candidatura ${status === 'accepted' ? 'aceita' : 'rejeitada'} com sucesso!`);
+      const statusMessages = {
+        reviewing: 'Candidatura marcada em análise!',
+        accepted: 'Candidatura aceita com sucesso!',
+        rejected: 'Candidatura rejeitada com sucesso!'
+      };
+      success(statusMessages[status] || 'Candidatura atualizada com sucesso!');
       setSelectedApplication(null);
       setResponseText('');
       await loadApplications();
       refreshActivityNotifications();
     } catch (error) {
-      showError(error.response?.data.message || 'Erro ao atualizar candidatura');
+      const apiMessage = error.response?.data?.errors?.[0]?.message
+        || error.response?.data?.message
+        || 'Erro ao atualizar candidatura';
+      showError(apiMessage);
     }
   };
 
@@ -71,10 +139,21 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
     return texts[status] || status;
   };
 
+  const statusCounts = statusOptions.reduce((counts, option) => {
+    counts[option.value] = option.value
+      ? applications.filter(application => application.status === option.value).length
+      : applications.length;
+    return counts;
+  }, {});
+
+  const visibleApplications = statusFilter
+    ? sortApplications(applications).filter(application => application.status === statusFilter)
+    : sortApplications(applications);
+
   if (!job) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Candidatos - ${job.title || 'Vaga'}`} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={`Candidatos - ${normalizeText(job.title, 'Vaga')}`} size="xl">
       <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
         {/* Header Info */}
         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
@@ -91,6 +170,30 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
           </div>
         </div>
 
+        {applications.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+            {statusOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setStatusFilter(option.value)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[36px] ${
+                  statusFilter === option.value
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {option.label}
+                <span className={`ml-1 text-xs ${
+                  statusFilter === option.value ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'
+                }`}>
+                  {statusCounts[option.value] || 0}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Loading */}
         {loading ? (
           <div className="text-center py-12">
@@ -103,15 +206,27 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
               Nenhum candidato ainda
             </p>
           </div>
+        ) : visibleApplications.length === 0 ? (
+          <Card>
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-center py-6">
+              Nenhum candidato encontrado para este status.
+            </p>
+          </Card>
         ) : (
           <div className="space-y-3">
-            {applications.map((application) => (
+            {visibleApplications.map((application) => {
+              const applicant = application.applicantId || {};
+              const applicantName = normalizeText(applicant.name, 'Prestador indisponível');
+              const applicantAvatar = applicant.avatar || `https://ui-avatars.com/api/name=${encodeURIComponent(applicantName)}&background=random`;
+              const providerRating = Number(applicant.providerRating || 0);
+
+              return (
               <Card key={application._id}>
                 <div className="flex items-start gap-4">
                   {/* Avatar */}
                   <img
-                    src={application.applicantId.avatar || `https://ui-avatars.com/api/name=${application.applicantId.name}&background=random`}
-                    alt={application.applicantId.name}
+                    src={applicantAvatar}
+                    alt={applicantName}
                     className="w-16 h-16 rounded-full object-cover"
                   />
 
@@ -120,12 +235,17 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <h3 className="font-semibold text-gray-900 dark:text-white">
-                          {application.applicantId.name || 'Nome não disponível'}
+                          {applicantName}
                         </h3>
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mt-1">
                           <Clock className="w-4 h-4" />
                           Candidatura em {new Date(application.createdAt).toLocaleDateString('pt-BR')}
                         </div>
+                        {applicant.category && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {normalizeText(applicant.category)}
+                          </p>
+                        )}
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(application.status)}`}>
                         {getStatusText(application.status)}
@@ -136,29 +256,38 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
                     <div className="space-y-1 mb-3">
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                         <Mail className="w-4 h-4" />
-                        {application.applicantId.email || 'Email não disponível'}
+                        {applicant.email || 'Email não disponível'}
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                         <Phone className="w-4 h-4" />
-                        {application.applicantId.phone || 'Telefone não disponível'}
+                        {applicant.phone || 'Telefone não disponível'}
                       </div>
-                      {application.applicantId.city && (
+                      {applicant.city && (
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                           <MapPin className="w-4 h-4" />
-                          {application.applicantId.city}, {application.applicantId.state}
+                          {normalizeText(applicant.city)}, {normalizeText(applicant.state)}
+                        </div>
+                      )}
+                      {applicant.pricePerHour && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                          <DollarSign className="w-4 h-4" />
+                          R$ {Number(applicant.pricePerHour).toLocaleString('pt-BR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}/hora
                         </div>
                       )}
                     </div>
 
                     {/* Rating */}
-                    {application.applicantId.clientRating > 0 && (
+                    {providerRating > 0 && (
                       <div className="flex items-center gap-2 mb-3">
                         <Star className="w-4 h-4 text-yellow-500 fill-current" />
                         <span className="text-sm font-medium">
-                          {application.applicantId.clientRating.toFixed(1)}
+                          {providerRating.toFixed(1)}
                         </span>
                         <span className="text-xs text-gray-500">
-                          ({application.applicantId.clientReviewCount} avaliações)
+                          ({applicant.providerReviewCount || 0} avaliações)
                         </span>
                       </div>
                     )}
@@ -167,10 +296,10 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
                     {application.message && (
                       <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-3">
                         <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Mensagem do candidato:
+                          Mensagem do prestador:
                         </p>
                         <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-                          {application.message}
+                          {normalizeText(application.message)}
                         </p>
                       </div>
                     )}
@@ -181,11 +310,20 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
                         <textarea
                           value={responseText}
                           onChange={(e) => setResponseText(e.target.value)}
-                          placeholder="Escreva uma mensagem para o candidato (opcional)"
+                          placeholder="Escreva uma mensagem para o prestador (opcional)"
                           rows={3}
                           className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500"
                         />
-                        <div className="flex gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            icon={Clock}
+                            onClick={() => handleUpdateStatus(application._id, 'reviewing')}
+                            fullWidth
+                          >
+                            Em análise
+                          </Button>
                           <Button
                             variant="primary"
                             size="sm"
@@ -211,6 +349,7 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
                               setSelectedApplication(null);
                               setResponseText('');
                             }}
+                            fullWidth
                           >
                             Cancelar
                           </Button>
@@ -225,27 +364,40 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
                               Sua resposta:
                             </p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {application.companyResponse}
+                              {normalizeText(application.companyResponse)}
                             </p>
                           </div>
                         )}
 
                         {/* Actions */}
-                        {application.status === 'pending' && (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            fullWidth
-                            onClick={() => setSelectedApplication(application._id)}
-                          >
-                            Responder Candidatura
-                          </Button>
+                        {(application.status === 'pending' || application.status === 'reviewing') && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {application.status === 'pending' && (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                fullWidth
+                                icon={Clock}
+                                onClick={() => handleUpdateStatus(application._id, 'reviewing')}
+                              >
+                                Em análise
+                              </Button>
+                            )}
+                            <Button
+                              variant={application.status === 'pending' ? 'primary' : 'secondary'}
+                              size="sm"
+                              fullWidth
+                              onClick={() => setSelectedApplication(application._id)}
+                            >
+                              Responder candidatura
+                            </Button>
+                          </div>
                         )}
 
                         {/* ✅ BOTÃO CONVERSAR - Aparece quando aceito */}
-                        {application.status === 'accepted' && (
+                        {application.status === 'accepted' && applicant._id && (
                           <StartChatButton
-                            otherUserId={application.applicantId._id}
+                            otherUserId={applicant._id}
                             type="job_application"
                             relatedId={application._id}
                             variant="primary"
@@ -258,7 +410,8 @@ const ViewCandidatesModal = ({ isOpen, onClose, job }) => {
                   </div>
                 </div>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
 

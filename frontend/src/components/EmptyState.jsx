@@ -73,12 +73,17 @@ export const EmptyStateNoJobs = ({ onAction }) => (
   />
 );
 
-export const EmptyStateNoApplications = ({ onAction }) => (
+export const EmptyStateNoApplications = ({
+  onAction,
+  title = 'Nenhuma candidatura',
+  description = 'Você ainda não se candidatou a nenhuma vaga. Explore as vagas disponíveis e candidate-se!',
+  actionLabel = 'Ver Vagas'
+}) => (
   <EmptyState
     icon={FileText}
-    title="Nenhuma candidatura"
-    description="Você ainda não se candidatou a nenhuma vaga. Explore as vagas disponíveis e candidate-se!"
-    actionLabel="Ver Vagas"
+    title={title}
+    description={description}
+    actionLabel={actionLabel}
     onAction={onAction}
   />
 );
@@ -93,11 +98,17 @@ export const EmptyStateNoServices = ({ onAction }) => (
   />
 );
 
-export const EmptyStateNoReceivedServices = () => (
+export const EmptyStateNoReceivedServices = ({
+  onAction,
+  actionLabel = 'Revisar perfil',
+  description = 'Você ainda não recebeu solicitações de serviço. Mantenha seu perfil atualizado para aparecer nas buscas.'
+}) => (
   <EmptyState
     icon={Inbox}
     title="Nenhuma solicitação recebida"
-    description="Você ainda não recebeu solicitações de serviço. Mantenha seu perfil atualizado para aparecer nas buscas."
+    description={description}
+    actionLabel={actionLabel}
+    onAction={onAction}
     variant="default"
   />
 );

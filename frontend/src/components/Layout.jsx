@@ -1,6 +1,6 @@
-﻿// frontend/src/components/Layout.jsx
+// frontend/src/components/Layout.jsx
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Briefcase, Search, User, Moon, Sun, Shield, MessageCircle } from 'lucide-react';
+import { Home, Briefcase, Search, User, Users, Moon, Sun, Shield, MessageCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useChatNotifications } from '../contexts/ChatNotificationContext';
@@ -15,23 +15,20 @@ const Layout = () => {
   const { counts: activityCounts } = useActivityNotifications();
 
   const isAdmin = user?.type === 'admin' || user?.role === 'admin';
+  const userType = user?.type;
 
-  const navItems = [
-    { path: '/', icon: Home, label: 'Início' },
-    { path: '/services', icon: Search, label: 'Serviços' },
-    { path: '/jobs', icon: Briefcase, label: 'Vagas' },
-    { path: '/chat', icon: MessageCircle, label: 'Chat' },
-    { path: '/profile', icon: User, label: 'Perfil' },
-  ];
+  const navItems = getNavItems(userType, isAdmin);
 
   // Adiciona aba Admin se for admin
   if (isAdmin) {
-    navItems.push({ path: '/admin', icon: Shield, label: 'Admin' });
+    navItems.push({ key: 'admin', path: '/admin', icon: Shield, label: 'Admin' });
   }
 
-  const getNavBadgeCount = (path) => {if (path === '/chat') return totalUnread;
-    if (path === '/services') return activityCounts.services;
-    if (path === '/jobs') return activityCounts.jobs;
+  const getNavBadgeCount = (badge) => {
+    if (badge === 'chat') return totalUnread;
+    if (badge === 'services') return activityCounts.services;
+    if (badge === 'jobs') return activityCounts.jobs;
+    if (badge === 'candidates') return activityCounts.jobApplications;
     return 0;
   };
 
@@ -59,7 +56,7 @@ const Layout = () => {
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               aria-label="Alternar tema"
             >
               {darkMode ? (
@@ -83,13 +80,14 @@ const Layout = () => {
       <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-10">
         <div className="container-mobile mx-auto">
           <div className="flex justify-around items-center py-2">
-            {navItems.map(({ path, icon: Icon, label }) => {
-              const isActive = location.pathname === path;
-              const badgeCount = getNavBadgeCount(path);
+            {navItems.map(({ key, path, state, activeView, icon: Icon, label, badge }) => {
+              const isActive = location.pathname === path
+                && (!activeView || location.state?.view === activeView || (key === 'publications' && !location.state?.view));
+              const badgeCount = getNavBadgeCount(badge);
               return (
                 <button
-                  key={path}
-                  onClick={() => navigate(path)}
+                  key={key}
+                  onClick={() => navigate(path, state ? { state } : undefined)}
                   className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
                     isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400 hover:text-primary-500'
                   }`}
@@ -111,6 +109,45 @@ const Layout = () => {
       </nav>
     </div>
   );
+};
+
+const getNavItems = (userType, isAdmin) => {
+  if (isAdmin) {
+    return [
+      { key: 'home', path: '/', icon: Home, label: 'Início' },
+      { key: 'services', path: '/services', icon: Search, label: 'Serviços', badge: 'services' },
+      { key: 'jobs', path: '/jobs', icon: Briefcase, label: 'Vagas', badge: 'jobs' },
+      { key: 'chat', path: '/chat', icon: MessageCircle, label: 'Chat', badge: 'chat' },
+      { key: 'profile', path: '/profile', icon: User, label: 'Perfil' }
+    ];
+  }
+
+  if (userType === 'company') {
+    return [
+      { key: 'home', path: '/', icon: Home, label: 'Início' },
+      { key: 'publications', path: '/jobs', state: { tab: 'my-jobs', view: 'publications' }, activeView: 'publications', icon: Briefcase, label: 'Publicações' },
+      { key: 'candidates', path: '/jobs', state: { tab: 'my-jobs', view: 'candidates' }, activeView: 'candidates', icon: Users, label: 'Candidatos', badge: 'candidates' },
+      { key: 'chat', path: '/chat', icon: MessageCircle, label: 'Chat', badge: 'chat' },
+      { key: 'profile', path: '/profile', icon: User, label: 'Perfil' }
+    ];
+  }
+
+  if (userType === 'provider') {
+    return [
+      { key: 'home', path: '/', icon: Home, label: 'Início' },
+      { key: 'services', path: '/services', state: { tab: 'received' }, icon: Search, label: 'Serviços', badge: 'services' },
+      { key: 'jobs', path: '/jobs', icon: Briefcase, label: 'Vagas', badge: 'jobs' },
+      { key: 'chat', path: '/chat', icon: MessageCircle, label: 'Chat', badge: 'chat' },
+      { key: 'profile', path: '/profile', icon: User, label: 'Perfil' }
+    ];
+  }
+
+  return [
+    { key: 'home', path: '/', icon: Home, label: 'Início' },
+    { key: 'services', path: '/services', icon: Search, label: 'Serviços', badge: 'services' },
+    { key: 'chat', path: '/chat', icon: MessageCircle, label: 'Chat', badge: 'chat' },
+    { key: 'profile', path: '/profile', icon: User, label: 'Perfil' }
+  ];
 };
 
 export default Layout;

@@ -1,4 +1,4 @@
-﻿import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   Briefcase,
@@ -16,8 +16,17 @@ import { useChatNotifications } from '../contexts/ChatNotificationContext';
 const Home = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { counts } = useActivityNotifications();
-  const { totalUnread } = useChatNotifications();
+  const {
+    counts,
+    isLoading: isActivityLoading,
+    hasLoaded: hasActivityLoaded
+  } = useActivityNotifications();
+  const {
+    totalUnread,
+    isLoading: isChatLoading,
+    hasLoaded: hasChatLoaded
+  } = useChatNotifications();
+  const countersAreLoading = isActivityLoading || isChatLoading || !hasActivityLoaded || !hasChatLoaded;
 
   const isProvider = user.type === 'provider';
   const isCompany = user.type === 'company';
@@ -44,16 +53,18 @@ const Home = () => {
       label: 'Minhas solicitações',
       description: 'Acompanhe serviços enviados',
       icon: FileText,
-      count: counts.services,
+      count: counts.myServiceRequests,
+      countLoading: countersAreLoading,
       onClick: () => navigate('/services', { state: { tab: 'my-requests' } })
     },
     {
       show: isProvider,
-      label: 'Serviços recebidos',
-      description: 'Veja solicitações de clientes',
+      label: 'Buscar serviços',
+      description: 'Veja solicitações enviadas para você',
       icon: Briefcase,
       variant: 'primary',
       count: counts.receivedServices,
+      countLoading: countersAreLoading,
       onClick: () => navigate('/services', { state: { tab: 'received' } })
     },
     {
@@ -62,29 +73,38 @@ const Home = () => {
       description: 'Responda oportunidades de empresas',
       icon: FileText,
       count: counts.jobProposals,
+      countLoading: countersAreLoading,
       onClick: () => navigate('/jobs', { state: { tab: 'my-proposals' } })
     },
     {
+      show: isProvider,
+      label: 'Minhas candidaturas',
+      description: 'Acompanhe vagas em que você se candidatou',
+      icon: Users,
+      onClick: () => navigate('/jobs', { state: { tab: 'my-applications' } })
+    },
+    {
       show: isCompany,
-      label: 'Criar vaga',
-      description: 'Publique uma oportunidade',
+      label: 'Publicar vaga/serviço',
+      description: 'Crie uma publicação para encontrar profissionais',
       icon: Briefcase,
       variant: 'primary',
       onClick: () => navigate('/jobs', { state: { openCreateModal: true } })
     },
     {
       show: isCompany,
-      label: 'Propostas enviadas',
-      description: 'Acompanhe respostas dos prestadores',
+      label: 'Minhas publicações',
+      description: 'Gerencie vagas e serviços publicados',
       icon: FileText,
-      onClick: () => navigate('/jobs', { state: { tab: 'sent-proposals' } })
+      onClick: () => navigate('/jobs', { state: { tab: 'my-jobs' } })
     },
     {
       show: isCompany,
-      label: 'Minhas vagas',
+      label: 'Candidatos',
       description: 'Gerencie candidaturas recebidas',
       icon: Users,
       count: counts.jobApplications,
+      countLoading: countersAreLoading,
       onClick: () => navigate('/jobs', { state: { tab: 'my-jobs' } })
     },
     {
@@ -107,71 +127,54 @@ const Home = () => {
   const secondaryActions = [
     {
       label: 'Mensagens',
-      description: totalUnread > 0 ? `${totalUnread} conversa(s) com mensagem nova` : 'Abra suas conversas',
+      description: totalUnread > 0
+        ? formatCountLabel(totalUnread, 'conversa com mensagem nova', 'conversas com mensagens novas')
+        : 'Abra suas conversas',
       icon: MessageCircle,
       count: totalUnread,
+      countLoading: isChatLoading || !hasChatLoaded,
       onClick: () => navigate('/chat')
     },
     {
-      label: 'Perfil',
-      description: 'Revise seus dados e preferências',
+      label: isCompany ? 'Perfil da empresa' : 'Perfil',
+      description: isCompany ? 'Revise dados e apresentação da empresa' : 'Revise seus dados e preferências',
       icon: UserCheck,
       onClick: () => navigate('/profile')
     }
   ];
 
-  const nextSteps = getNextSteps(user);
+  const hero = getHeroConfig(user, counts, countersAreLoading);
+  const nextSteps = getNextSteps(user, counts);
   const metrics = getMetrics(user, counts, totalUnread);
-  const activityItems = [
-    counts.receivedServices > 0 && {
-      label: 'Solicitações de serviço pendentes',
-      value: counts.receivedServices,
-      onClick: () => navigate('/services', { state: { tab: 'received' } })
-    },
-    counts.jobProposals > 0 && {
-      label: 'Propostas de vaga pendentes',
-      value: counts.jobProposals,
-      onClick: () => navigate('/jobs', { state: { tab: 'my-proposals' } })
-    },
-    counts.jobApplications > 0 && {
-      label: 'Candidaturas aguardando resposta',
-      value: counts.jobApplications,
-      onClick: () => navigate('/jobs', { state: { tab: 'my-jobs' } })
-    },
-    totalUnread > 0 && {
-      label: 'Mensagens não lidas',
-      value: totalUnread,
-      onClick: () => navigate('/chat')
-    }
-  ].filter(Boolean);
+  const attentionItems = getAttentionItems(user, counts, totalUnread, navigate);
 
   return (
     <div className="space-y-5">
       <section className="rounded-lg bg-white p-5 shadow dark:bg-gray-800">
         <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
+          <div className="min-w-0 space-y-2">
             <p className="text-sm font-medium text-primary-600 dark:text-primary-400">
-              {roleLabels[user.type] || user.type}
+              {roleLabels[user.type] || user.type} · {hero.status}
             </p>
-            <h2 className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               Olá, {user.name}
             </h2>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              Continue de onde parou e resolva as pendências mais importantes primeiro.
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {hero.description}
             </p>
           </div>
           <button
-            onClick={() => navigate('/profile')}
+            onClick={() => hero.onClick(navigate)}
             className="shrink-0 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
           >
-            Perfil
+            {hero.actionLabel}
           </button>
         </div>
       </section>
 
       <section className="grid grid-cols-2 gap-3">
         {metrics.map((metric) => (
-          <MetricCard key={metric.label} {...metric} />
+          <MetricCard key={metric.label} {...metric} isLoading={countersAreLoading} />
         ))}
       </section>
 
@@ -193,16 +196,26 @@ const Home = () => {
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Pendências
         </h3>
-        {activityItems.length > 0 ? (
+        {countersAreLoading ? (
           <div className="mt-3 space-y-2">
-            {activityItems.map((item) => (
+            <SkeletonAttentionRow />
+            <SkeletonAttentionRow />
+          </div>
+        ) : attentionItems.length > 0 ? (
+          <div className="mt-3 space-y-2">
+            {attentionItems.map((item) => (
               <button
                 key={item.label}
                 onClick={item.onClick}
-                className="flex w-full items-center justify-between rounded-lg bg-gray-50 px-3 py-3 text-left transition-colors hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600"
+                className="flex w-full items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-3 text-left transition-colors hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600"
               >
-                <span className="text-sm font-medium text-gray-800 dark:text-gray-100">
-                  {item.label}
+                <span>
+                  <span className="block text-sm font-medium text-gray-800 dark:text-gray-100">
+                    {item.label}
+                  </span>
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">
+                    {item.description}
+                  </span>
                 </span>
                 <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
                   {item.value}
@@ -212,7 +225,7 @@ const Home = () => {
           </div>
         ) : (
           <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-            Nenhuma pendência no momento.
+            {getNoAttentionText(user)}
           </p>
         )}
       </section>
@@ -243,14 +256,18 @@ const Home = () => {
   );
 };
 
-const MetricCard = ({ label, value, icon: Icon }) => (
+const MetricCard = ({ label, value, icon: Icon, isLoading }) => (
   <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
     <div className="flex items-center gap-3">
       <div className="rounded-lg bg-primary-100 p-2 dark:bg-primary-900">
         <Icon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
       </div>
       <div>
-        <p className="text-2xl font-bold text-gray-900 dark:text-white">{value || 0}</p>
+        {isLoading ? (
+          <span className="block h-8 w-10 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+        ) : (
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{value || 0}</p>
+        )}
         <p className="text-xs text-gray-600 dark:text-gray-400">{label}</p>
       </div>
     </div>
@@ -260,14 +277,14 @@ const MetricCard = ({ label, value, icon: Icon }) => (
 const getMetrics = (user, counts, totalUnread) => {
   if (user.type === 'provider') {
     return [
-      { label: 'Serviços recebidos', value: counts.receivedServices, icon: Search },
+      { label: 'Serviços', value: counts.receivedServices, icon: Search },
       { label: 'Propostas', value: counts.jobProposals, icon: Briefcase }
     ];
   }
 
   if (user.type === 'company') {
     return [
-      { label: 'Candidaturas', value: counts.jobApplications, icon: Users },
+      { label: 'Candidatos', value: counts.jobApplications, icon: Users },
       { label: 'Mensagens', value: totalUnread, icon: MessageCircle }
     ];
   }
@@ -280,12 +297,12 @@ const getMetrics = (user, counts, totalUnread) => {
   }
 
   return [
-    { label: 'Mensagens', value: totalUnread, icon: MessageCircle },
-    { label: 'Pendências', value: counts.services + counts.jobs, icon: FileText }
+    { label: 'Respostas', value: counts.myServiceRequests, icon: FileText },
+    { label: 'Mensagens', value: totalUnread, icon: MessageCircle }
   ];
 };
 
-const ActionButton = ({ label, description, icon: Icon, count, variant, onClick }) => {
+const ActionButton = ({ label, description, icon: Icon, count, countLoading, variant, onClick }) => {
   const isPrimary = variant === 'primary';
 
   return (
@@ -304,7 +321,9 @@ const ActionButton = ({ label, description, icon: Icon, count, variant, onClick 
           {description}
         </span>
       </div>
-      {count > 0 && (
+      {countLoading ? (
+        <span className="h-5 w-7 shrink-0 animate-pulse rounded-full bg-gray-300 dark:bg-gray-600" />
+      ) : count > 0 && (
         <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
           {count > 99 ? '99+' : count}
         </span>
@@ -313,7 +332,177 @@ const ActionButton = ({ label, description, icon: Icon, count, variant, onClick 
   );
 };
 
-const getNextSteps = (user) => {
+const SkeletonAttentionRow = () => (
+  <div className="rounded-lg bg-gray-50 px-3 py-3 dark:bg-gray-700">
+    <span className="block h-4 w-36 animate-pulse rounded bg-gray-200 dark:bg-gray-600" />
+    <span className="mt-2 block h-3 w-52 animate-pulse rounded bg-gray-200 dark:bg-gray-600" />
+  </div>
+);
+
+const formatCountLabel = (count, singular, plural) => `${count} ${count === 1 ? singular : plural}`;
+
+const getNoAttentionText = (user) => {
+  if (user.type === 'provider') {
+    return 'Nenhum serviço ou proposta aguardando resposta.';
+  }
+
+  if (user.type === 'company') {
+    return 'Nenhum candidato aguardando análise.';
+  }
+
+  if (user.type === 'admin' || user.role === 'admin') {
+    return 'Nenhuma pendência administrativa no momento.';
+  }
+
+  return 'Nenhuma resposta nova nas suas solicitações.';
+};
+
+const getHeroConfig = (user, counts, isLoading) => {
+  if (isLoading) {
+    return {
+      status: 'Atualizando',
+      description: 'Conferindo suas movimentações mais recentes.',
+      actionLabel: 'Perfil',
+      onClick: (navigate) => navigate('/profile')
+    };
+  }
+
+  if (user.type === 'provider') {
+    const pending = counts.receivedServices + counts.jobProposals;
+    const missingProviderInfo = !user.category || !user.pricePerHour || !user.description;
+
+    if (missingProviderInfo) {
+      return {
+        status: 'Perfil incompleto',
+        description: 'Complete categoria, preço e descrição para aparecer melhor nas buscas.',
+        actionLabel: 'Completar',
+        onClick: (navigate) => navigate('/profile')
+      };
+    }
+
+    return {
+      status: pending > 0 ? formatCountLabel(pending, 'item para responder', 'itens para responder') : 'Tudo em dia',
+      description: pending > 0
+        ? 'Responda clientes e empresas para manter suas oportunidades andando.'
+        : 'Seu painel está limpo. Novas solicitações aparecerão aqui.',
+      actionLabel: pending > 0 ? 'Responder' : 'Perfil',
+      onClick: (navigate) => {
+        if (counts.receivedServices > 0) {
+          navigate('/services', { state: { tab: 'received' } });
+          return;
+        }
+
+        if (counts.jobProposals > 0) {
+          navigate('/jobs', { state: { tab: 'my-proposals' } });
+          return;
+        }
+
+        navigate('/profile');
+      }
+    };
+  }
+
+  if (user.type === 'company') {
+    return {
+      status: counts.jobApplications > 0
+        ? formatCountLabel(counts.jobApplications, 'candidato aguardando', 'candidatos aguardando')
+        : 'Pronto para contratar',
+      description: counts.jobApplications > 0
+        ? 'Analise candidatos recebidos e acompanhe suas publicações.'
+        : 'Publique uma vaga ou envie proposta para um prestador disponível.',
+      actionLabel: counts.jobApplications > 0 ? 'Ver candidatos' : 'Publicar',
+      onClick: (navigate) => navigate('/jobs', {
+        state: counts.jobApplications > 0 ? { tab: 'my-jobs' } : { openCreateModal: true }
+      })
+    };
+  }
+
+  if (user.type === 'admin' || user.role === 'admin') {
+    return {
+      status: 'Visão geral',
+      description: 'Acompanhe cadastros, serviços, vagas e moderação pelo painel administrativo.',
+      actionLabel: 'Admin',
+      onClick: (navigate) => navigate('/admin')
+    };
+  }
+
+  const activeItems = counts.myServiceRequests;
+  return {
+    status: activeItems > 0
+      ? formatCountLabel(activeItems, 'resposta nova', 'respostas novas')
+      : 'Comece por uma busca',
+    description: activeItems > 0
+      ? 'Veja solicitações que foram aceitas ou recusadas pelos prestadores.'
+      : 'Busque prestadores por categoria para resolver o que você precisa.',
+    actionLabel: activeItems > 0 ? 'Ver andamento' : 'Buscar',
+    onClick: (navigate) => {
+      if (counts.myServiceRequests > 0) {
+        navigate('/services', { state: { tab: 'my-requests' } });
+        return;
+      }
+
+      navigate('/services');
+    }
+  };
+};
+
+const getAttentionItems = (user, counts, totalUnread, navigate) => {
+  const items = [];
+
+  if (user.type === 'client') {
+    const activeItems = counts.myServiceRequests;
+    if (activeItems > 0) {
+      items.push({
+        label: 'Ver andamento',
+        description: formatCountLabel(activeItems, 'solicitação foi respondida.', 'solicitações foram respondidas.'),
+        value: activeItems,
+        onClick: () => navigate('/services', { state: { tab: 'my-requests' } })
+      });
+    }
+  }
+
+  if (user.type === 'provider') {
+    if (counts.receivedServices > 0) {
+      items.push({
+        label: 'Responder clientes',
+        description: 'Solicitações aguardam aceite ou recusa.',
+        value: counts.receivedServices,
+        onClick: () => navigate('/services', { state: { tab: 'received' } })
+      });
+    }
+
+    if (counts.jobProposals > 0) {
+      items.push({
+        label: 'Responder empresas',
+        description: 'Propostas de vaga ainda estão pendentes.',
+        value: counts.jobProposals,
+        onClick: () => navigate('/jobs', { state: { tab: 'my-proposals' } })
+      });
+    }
+  }
+
+  if (user.type === 'company' && counts.jobApplications > 0) {
+    items.push({
+      label: 'Ver candidatos',
+      description: 'Profissionais aguardam resposta nas suas vagas.',
+      value: counts.jobApplications,
+      onClick: () => navigate('/jobs', { state: { tab: 'my-jobs' } })
+    });
+  }
+
+  if (totalUnread > 0) {
+    items.push({
+      label: 'Responder mensagens',
+      description: 'Conversas com mensagens não lidas.',
+      value: totalUnread,
+      onClick: () => navigate('/chat')
+    });
+  }
+
+  return items;
+};
+
+const getNextSteps = (user, counts) => {
   if (user.type === 'provider') {
     const missingProviderInfo = !user.category || !user.pricePerHour || !user.description;
     return missingProviderInfo
@@ -336,6 +525,12 @@ const getNextSteps = (user) => {
   }
 
   if (user.type === 'client') {
+    const hasActiveFlow = counts.myServiceRequests > 0;
+
+    if (hasActiveFlow) {
+      return [];
+    }
+
     return [
       {
         label: 'Buscar seu primeiro prestador',

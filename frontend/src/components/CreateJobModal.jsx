@@ -91,7 +91,10 @@ const CreateJobModal = ({ isOpen, onClose, onSuccess }) => {
         vacancies: '1'
       });
     } catch (error) {
-      showError(error.response?.data.message || 'Erro ao criar vaga');
+      const apiMessage = error.response?.data?.errors?.[0]?.message
+        || error.response?.data?.message
+        || 'Erro ao criar vaga';
+      showError(apiMessage);
     } finally {
       setLoading(false);
     }

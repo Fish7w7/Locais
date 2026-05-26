@@ -22,6 +22,8 @@ export const getNotificationSummary = async (req, res) => {
     let pendingServices = 0;
     let pendingProposals = 0;
     let pendingApplications = 0;
+    let clientServices = 0;
+    let clientApplications = 0;
 
     if (userType === 'provider') {
       [pendingServices, pendingProposals] = await Promise.all([
@@ -37,9 +39,29 @@ export const getNotificationSummary = async (req, res) => {
 
       const jobIds = companyJobs.map((job) => job._id);
       pendingApplications = jobIds.length
-        ? await Application.countDocuments({ jobId: { $in: jobIds }, status: 'pending' })
+        ? await Application.countDocuments({
+            jobId: { $in: jobIds },
+            status: 'pending',
+            companyUnread: true
+          })
         : 0;
     }
+
+    clientServices = await ServiceRequest.countDocuments({
+      requesterId: userId,
+      status: { $in: ['accepted', 'rejected'] },
+      requesterStatusUnread: true
+    });
+
+    const services = pendingServices + clientServices;
+    const jobs = userType === 'client'
+      ? 0
+      : pendingProposals + pendingApplications;
+    const activityTotal = pendingServices
+      + pendingProposals
+      + pendingApplications
+      + clientServices
+      + clientApplications;
 
     res.json({
       success: true,
@@ -48,9 +70,11 @@ export const getNotificationSummary = async (req, res) => {
         pendingServices,
         pendingProposals,
         pendingApplications,
-        services: pendingServices,
-        jobs: pendingProposals + pendingApplications,
-        total: chatUnread + pendingServices + pendingProposals + pendingApplications
+        clientServices,
+        clientApplications,
+        services,
+        jobs,
+        total: chatUnread + activityTotal
       }
     });
   } catch (error) {

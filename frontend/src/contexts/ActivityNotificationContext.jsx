@@ -1,4 +1,4 @@
-﻿import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { notificationAPI } from '../api/services';
 import { useAuth } from './AuthContext';
 
@@ -16,19 +16,32 @@ const emptyCounts = { services: 0,
   jobs: 0,
   receivedServices: 0,
   jobProposals: 0,
-  jobApplications: 0
+  jobApplications: 0,
+  myServiceRequests: 0,
+  myJobApplications: 0
 };
 
 export const ActivityNotificationProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   const [counts, setCounts] = useState(emptyCounts);
   const [lastCheckedAt, setLastCheckedAt] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const hasLoadedRef = useRef(false);
 
   const refreshActivityNotifications = useCallback(async () => {
     if (!isAuthenticated || !user) {
       setCounts(emptyCounts);
       setLastCheckedAt(null);
+      setIsLoading(false);
+      setHasLoaded(false);
+      hasLoadedRef.current = false;
       return emptyCounts;
+    }
+
+    const isInitialLoad = !hasLoadedRef.current;
+    if (isInitialLoad) {
+      setIsLoading(true);
     }
 
     try {
@@ -38,15 +51,25 @@ export const ActivityNotificationProvider = ({ children }) => {
         jobs: Number(summary.jobs || 0),
         receivedServices: Number(summary.pendingServices || 0),
         jobProposals: Number(summary.pendingProposals || 0),
-        jobApplications: Number(summary.pendingApplications || 0)
+        jobApplications: Number(summary.pendingApplications || 0),
+        myServiceRequests: Number(summary.clientServices || 0),
+        myJobApplications: Number(summary.clientApplications || 0)
       };
 
       setCounts(nextCounts);
       setLastCheckedAt(new Date());
+      hasLoadedRef.current = true;
+      setHasLoaded(true);
       return nextCounts;
     } catch (error) {
       console.error('Erro ao atualizar notificações de atividade:', error);
+      hasLoadedRef.current = true;
+      setHasLoaded(true);
       return emptyCounts;
+    } finally {
+      if (isInitialLoad) {
+        setIsLoading(false);
+      }
     }
   }, [isAuthenticated, user]);
 
@@ -54,6 +77,9 @@ export const ActivityNotificationProvider = ({ children }) => {
     if (!isAuthenticated || !user) {
       setCounts(emptyCounts);
       setLastCheckedAt(null);
+      setIsLoading(false);
+      setHasLoaded(false);
+      hasLoadedRef.current = false;
       return;
     }
 
@@ -78,6 +104,8 @@ export const ActivityNotificationProvider = ({ children }) => {
     <ActivityNotificationContext.Provider
       value={{
         counts,
+        isLoading,
+        hasLoaded,
         lastCheckedAt,
         refreshActivityNotifications
       }}

@@ -165,7 +165,7 @@ export const validateJobCreation = [
     .withMessage('Tipo de vaga inválido'),
   
   body('salary')
-    .optional()
+    .optional({ values: 'falsy' })
     .isFloat({ min: 0 })
     .withMessage('Salário deve ser um valor positivo'),
   

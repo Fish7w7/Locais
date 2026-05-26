@@ -33,7 +33,10 @@ const ApplyToJobModal = ({ isOpen, onClose, job, onSuccess }) => {
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error(error);
-      showError(error.response?.data.message || 'Erro ao enviar candidatura');
+      const apiMessage = error.response?.data?.errors?.[0]?.message
+        || error.response?.data?.message
+        || 'Erro ao enviar candidatura';
+      showError(apiMessage);
     } finally {
       setLoading(false);
     }

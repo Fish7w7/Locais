@@ -37,11 +37,22 @@ const ApplicationSchema = new mongoose.Schema({ jobId: {
   reviewedAt: {
     type: Date,
     default: null
+  },
+
+  companyViewedAt: {
+    type: Date,
+    default: null
+  },
+
+  companyUnread: {
+    type: Boolean,
+    default: true
   }
 }, { 
   timestamps: true 
 });
 
 ApplicationSchema.index({ jobId: 1, applicantId: 1 }, { unique: true });
+ApplicationSchema.index({ jobId: 1, status: 1, companyUnread: 1 });
 
 export default mongoose.model('Application', ApplicationSchema);

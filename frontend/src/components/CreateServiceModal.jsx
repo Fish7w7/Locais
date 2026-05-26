@@ -6,15 +6,31 @@ import Button from './Button';
 import { serviceAPI } from '../api/services';
 import { useNotification } from '../contexts/NotificationContext';
 
+const initialFormData = {
+  title: '',
+  description: '',
+  location: '',
+  requestedDate: '',
+  estimatedHours: ''
+};
+
+const formatCurrency = (value) => {
+  return Number(value || 0).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
+
 const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const { success, error: showError } = useNotification();
-  const [formData, setFormData] = useState({ title: '',
-    description: '',
-    location: '',
-    requestedDate: '',
-    estimatedHours: ''
-  });
+  const [formData, setFormData] = useState(initialFormData);
+
+  const providerName = provider?.name || 'Prestador';
+  const providerCategory = provider?.category || 'Serviço';
+  const providerPricePerHour = Number(provider?.pricePerHour || 0);
+  const estimatedHours = Number(formData.estimatedHours || 0);
+  const estimatedPrice = estimatedHours * providerPricePerHour;
 
   const handleChange = (e) => {
     setFormData({
@@ -23,66 +39,77 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
     });
   };
 
+  const resetAndClose = () => {
+    setFormData(initialFormData);
+    onClose();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const payload = {
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      location: formData.location.trim(),
+      requestedDate: formData.requestedDate,
+      estimatedHours
+    };
+
+    if (!payload.title || !payload.description || !payload.location || !payload.requestedDate) {
+      showError('Preencha título, descrição, local e data antes de enviar.');
+      return;
+    }
+
+    if (!Number.isFinite(estimatedHours) || estimatedHours < 0.5) {
+      showError('Informe pelo menos 0,5 hora estimada.');
+      return;
+    }
+
     setLoading(true);
 
     try {
       await serviceAPI.createRequest({
-        ...formData,
+        ...payload,
         providerId: provider._id,
-        category: provider.category,
-        estimatedHours: parseFloat(formData.estimatedHours)
+        category: providerCategory
       });
 
       success('Solicitação enviada com sucesso!');
-      onClose();
-      if (onSuccess) onSuccess();
-      
-      // Resetar form
-      setFormData({
-        title: '',
-        description: '',
-        location: '',
-        requestedDate: '',
-        estimatedHours: ''
-      });
+      resetAndClose();
+      if (onSuccess) await onSuccess();
     } catch (error) {
-      showError(error.response?.data.message || 'Erro ao solicitar serviço');
+      const apiMessage = error.response?.data?.errors?.[0]?.message
+        || error.response?.data?.message
+        || 'Erro ao solicitar serviço';
+      showError(apiMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const estimatedPrice = formData.estimatedHours 
-    ? (parseFloat(formData.estimatedHours) * provider.pricePerHour).toFixed(2)
-    : '0.00';
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Solicitar Serviço" size="lg">
+    <Modal isOpen={isOpen} onClose={resetAndClose} title="Solicitar Serviço" size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Informações do Prestador */}
         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4">
           <div className="flex items-center gap-3">
             <img
-              src={provider.avatar || `https://ui-avatars.com/api/name=${provider.name}&background=random`}
-              alt={provider.name}
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex-shrink-0"
+              src={provider?.avatar || `https://ui-avatars.com/api/name=${encodeURIComponent(providerName)}&background=random`}
+              alt={providerName}
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex-shrink-0 object-cover"
             />
             <div className="min-w-0">
               <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                {provider.name}
+                {providerName}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {provider.category} • R$ {provider.pricePerHour}/hora
+                {providerCategory} • R$ {formatCurrency(providerPricePerHour)}/hora
               </p>
             </div>
           </div>
         </div>
 
-        {/* Título */}
         <Input
-          label="Título do Serviço"
+          label="Título do serviço"
           name="title"
           value={formData.title}
           onChange={handleChange}
@@ -91,7 +118,6 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
           required
         />
 
-        {/* Descrição */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Descrição
@@ -103,14 +129,13 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
             onChange={handleChange}
             rows={4}
             required
-            placeholder="Descreva detalhadamente o serviço que você precisa..."
+            placeholder="Explique o que precisa ser feito, com detalhes importantes para o prestador."
             className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 text-base"
           />
         </div>
 
-        {/* Local */}
         <Input
-          label="Local do Serviço"
+          label="Local do serviço"
           name="location"
           value={formData.location}
           onChange={handleChange}
@@ -119,11 +144,10 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
           required
         />
 
-        {/* Data e Horas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Data Desejada
+              Data desejada
               <span className="text-red-500 ml-1">*</span>
             </label>
             <div className="relative">
@@ -141,7 +165,7 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
           </div>
 
           <Input
-            label="Horas Estimadas"
+            label="Horas estimadas"
             type="number"
             name="estimatedHours"
             value={formData.estimatedHours}
@@ -154,22 +178,18 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
           />
         </div>
 
-        {/* Preço Estimado */}
-        {formData.estimatedHours && (
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Valor estimado:
-            </p>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-              R$ {estimatedPrice}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              {formData.estimatedHours}h × R$ {provider.pricePerHour}/h
-            </p>
-          </div>
-        )}
+        <div className="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Estimativa do pedido
+          </p>
+          <p className="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">
+            R$ {formatCurrency(estimatedPrice)}
+          </p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            {estimatedHours || 0}h × R$ {formatCurrency(providerPricePerHour)}/h. O valor final pode ser combinado no chat.
+          </p>
+        </div>
 
-        {/* Botões */}
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
           <Button
             type="submit"
@@ -178,12 +198,12 @@ const CreateServiceModal = ({ isOpen, onClose, provider, onSuccess }) => {
             loading={loading}
             className="min-h-[44px]"
           >
-            Enviar Solicitação
+            Enviar solicitação
           </Button>
           <Button
             type="button"
             variant="secondary"
-            onClick={onClose}
+            onClick={resetAndClose}
             disabled={loading}
             fullWidth
             className="sm:w-auto min-h-[44px]"

@@ -103,7 +103,10 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
       onClose();
       if (onSuccess) onSuccess();
     } catch (error) {
-      showError(error.response?.data.message || 'Erro ao atualizar vaga');
+      const apiMessage = error.response?.data?.errors?.[0]?.message
+        || error.response?.data?.message
+        || 'Erro ao atualizar vaga';
+      showError(apiMessage);
     } finally {
       setLoading(false);
     }
@@ -122,7 +125,10 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
       onClose();
       if (onSuccess) onSuccess();
     } catch (error) {
-      showError(error.response?.data.message || 'Erro ao excluir vaga');
+      const apiMessage = error.response?.data?.errors?.[0]?.message
+        || error.response?.data?.message
+        || 'Erro ao excluir vaga';
+      showError(apiMessage);
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);
@@ -374,7 +380,7 @@ const EditJobModal = ({ isOpen, onClose, job, onSuccess }) => {
           {showDeleteConfirm ? (
             <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 space-y-3">
               <p className="text-sm text-red-800 dark:text-red-200">
-                Tem certeza que deseja excluir esta vagaEsta ação não pode ser desfeita.
+                Tem certeza que deseja excluir esta vaga? Esta ação não pode ser desfeita.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Button

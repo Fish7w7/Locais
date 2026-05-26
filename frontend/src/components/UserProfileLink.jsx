@@ -21,25 +21,31 @@ const UserProfileLink = ({
   className = ''
 }) => {
   const navigate = useNavigate();
+  const displayName = userName || 'Usuário';
 
   const handleClick = (e) => {
     e.stopPropagation(); // Evita conflito com outros cliques
+    if (!userId) return;
     navigate(`/user/${userId}`);
   };
 
   return (
     <button
+      type="button"
       onClick={handleClick}
-      className={`flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg p-2 -m-2 transition-colors text-left w-full min-h-[44px] touch-manipulation ${className}`}
+      disabled={!userId}
+      className={`flex items-center gap-3 rounded-lg p-2 -m-2 transition-colors text-left w-full min-h-[44px] touch-manipulation ${
+        userId ? 'hover:bg-gray-50 dark:hover:bg-gray-700' : 'cursor-default'
+      } ${className}`}
     >
       <img
-        src={userAvatar || `https://ui-avatars.com/api/name=${encodeURIComponent(userName)}&background=random`}
-        alt={userName}
+        src={userAvatar || `https://ui-avatars.com/api/name=${encodeURIComponent(displayName)}&background=random`}
+        alt={displayName}
         className="w-10 h-10 rounded-full object-cover flex-shrink-0"
       />
       <div className="flex-1 min-w-0">
         <p className="font-medium text-gray-900 dark:text-white truncate">
-          {userName}
+          {displayName}
         </p>
         {subtitle && (
           <p className="text-sm text-gray-600 dark:text-gray-400 truncate">

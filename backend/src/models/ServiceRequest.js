@@ -88,6 +88,16 @@ const ServiceRequestSchema = new mongoose.Schema({ requesterId: {
   notes: {
     type: String,
     default: null
+  },
+
+  requesterStatusViewedAt: {
+    type: Date,
+    default: null
+  },
+
+  requesterStatusUnread: {
+    type: Boolean,
+    default: false
   }
 }, { 
   timestamps: true 
@@ -95,5 +105,6 @@ const ServiceRequestSchema = new mongoose.Schema({ requesterId: {
 
 ServiceRequestSchema.index({ providerId: 1, status: 1 });
 ServiceRequestSchema.index({ requesterId: 1, status: 1 });
+ServiceRequestSchema.index({ requesterId: 1, status: 1, requesterStatusUnread: 1 });
 
 export default mongoose.model('ServiceRequest', ServiceRequestSchema);

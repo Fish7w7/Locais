@@ -1,5 +1,5 @@
 // frontend/src/pages/Services.jsx - COM LINKS PARA PERFIL
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Briefcase, Search, MapPin, Star, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -30,6 +30,86 @@ import {
 } from '../components/EmptyState';
 import { StatusBadge } from '../components/Badge';
 
+const statusPriority = {
+  pending: 0,
+  accepted: 1,
+  in_progress: 2,
+  completed: 3,
+  rejected: 4,
+  cancelled: 5
+};
+
+const getTimestamp = (item) => new Date(item.updatedAt || item.createdAt || 0).getTime();
+
+const sortServiceItems = (items, pendingFirst = false) => {
+  return [...items].sort((a, b) => {
+    if (pendingFirst) {
+      const priorityDiff = (statusPriority[a.status] ?? 9) - (statusPriority[b.status] ?? 9);
+      if (priorityDiff !== 0) return priorityDiff;
+    }
+    return getTimestamp(b) - getTimestamp(a);
+  });
+};
+
+const getStatusCopy = (status, context) => {
+  const requesterCopy = {
+    pending: {
+      title: 'Aguardando resposta',
+      description: 'O prestador ainda não respondeu sua solicitação.'
+    },
+    accepted: {
+      title: 'Aceito pelo prestador',
+      description: 'Você já pode conversar com o prestador para combinar os detalhes.'
+    },
+    rejected: {
+      title: 'Recusado pelo prestador',
+      description: 'Esse prestador não poderá atender a solicitação.'
+    },
+    completed: {
+      title: 'Serviço concluído',
+      description: 'A solicitação foi marcada como concluída.'
+    },
+    cancelled: {
+      title: 'Solicitação cancelada',
+      description: 'Você cancelou essa solicitação.'
+    },
+    in_progress: {
+      title: 'Serviço em andamento',
+      description: 'Combine os próximos passos pelo chat.'
+    }
+  };
+
+  const providerCopy = {
+    pending: {
+      title: 'Nova solicitação',
+      description: 'Responda para o cliente saber se você pode atender.'
+    },
+    accepted: {
+      title: 'Serviço aceito',
+      description: 'Converse com o solicitante e conclua quando finalizar.'
+    },
+    rejected: {
+      title: 'Solicitação recusada',
+      description: 'Você recusou essa solicitação.'
+    },
+    completed: {
+      title: 'Serviço concluído',
+      description: 'Esse atendimento já foi finalizado.'
+    },
+    cancelled: {
+      title: 'Solicitação cancelada',
+      description: 'O solicitante cancelou esse pedido.'
+    },
+    in_progress: {
+      title: 'Serviço em andamento',
+      description: 'Mantenha o solicitante atualizado pelo chat.'
+    }
+  };
+
+  const copy = context === 'received' ? providerCopy : requesterCopy;
+  return copy[status] || requesterCopy.pending;
+};
+
 const Services = () => {
   const { user } = useAuth();
   const location = useLocation();
@@ -38,6 +118,11 @@ const Services = () => {
   const { showLoading, hideLoading } = useLoading();
   const { counts: activityCounts, refreshActivityNotifications } = useActivityNotifications();
   const { confirmState, confirm, cancel } = useConfirm();
+  const isProvider = user.type === 'provider';
+  const isCompany = user.type === 'company';
+  const isAdmin = user.type === 'admin' || user.role === 'admin';
+  const canRequestServices = true;
+  const canReceiveServices = isProvider || isAdmin;
 
   const tabsScrollRef = useDragScroll();
   const filtersScrollRef = useDragScroll();
@@ -52,7 +137,7 @@ const Services = () => {
   const [selectedCategory, setSelectedCategory, clearCategory] = useLocalStorage('service-category', '');
   
   const [activeTab, setActiveTab] = useState(() => {
-    return location.state?.tab || 'providers';
+    return location.state?.tab || (user.type === 'provider' ? 'received' : 'providers');
   });
   
   const [showServiceModal, setShowServiceModal] = useState(false);
@@ -83,10 +168,21 @@ const Services = () => {
     { value: 'cancelled', label: 'Cancelados' }
   ];
 
-  const formatDate = (date) => new Date(date).toLocaleDateString('pt-BR');
+  const formatDate = (date) => {
+    const parsedDate = new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) return 'Data não informada';
+    return parsedDate.toLocaleDateString('pt-BR');
+  };
   const formatCurrency = (value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}`;
+
+  const pageDescription = (() => {
+    if (isProvider) return 'Contrate prestadores e responda solicitações recebidas.';
+    if (isCompany) return 'Encontre prestadores e acompanhe solicitações enviadas.';
+    if (isAdmin) return 'Gerencie buscas, solicitações e serviços recebidos.';
+    return 'Encontre e contrate prestadores de serviço.';
+  })();
 
   useEffect(() => {
     if (location.state?.tab) {
@@ -95,21 +191,43 @@ const Services = () => {
   }, [location.state]);
 
   useEffect(() => {
+    if (!canRequestServices && (activeTab === 'providers' || activeTab === 'my-requests')) {
+      setActiveTab('received');
+    }
+    if (!canReceiveServices && activeTab === 'received') {
+      setActiveTab('providers');
+    }
+  }, [activeTab, canRequestServices, canReceiveServices]);
+
+  useEffect(() => {
     loadData();
   }, [activeTab, selectedCategory]);
+
+  useEffect(() => {
+    setStatusFilter('');
+  }, [activeTab]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
+
+      if (!canRequestServices && (activeTab === 'providers' || activeTab === 'my-requests')) {
+        return;
+      }
+      if (!canReceiveServices && activeTab === 'received') {
+        return;
+      }
       
-      if (activeTab === 'providers') {
+      if (activeTab === 'providers' && canRequestServices) {
         const res = await userAPI.getProviders({ category: selectedCategory });
         setProviders(res.data.providers);
-      } else if (activeTab === 'my-requests') {
+      } else if (activeTab === 'my-requests' && canRequestServices) {
         const res = await serviceAPI.getMyRequests();
         setMyRequests(res.data.requests);
-      } else if (activeTab === 'received' && (user.type === 'provider' || user.type === 'admin')) {
+        await serviceAPI.markMyRequestsViewed();
+        await refreshActivityNotifications();
+      } else if (activeTab === 'received' && canReceiveServices) {
         const res = await serviceAPI.getReceivedServices();
         setReceivedServices(res.data.services);
       }
@@ -216,18 +334,50 @@ const Services = () => {
     });
   };
 
-  const filteredProviders = providers.filter(provider =>
-    provider.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-    provider.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+  const normalizedSearchTerm = debouncedSearchTerm.toLowerCase();
+  const availableProviders = providers.filter(provider => String(provider._id) !== String(user.id));
+  const filteredProviders = availableProviders.filter(provider =>
+    (provider.name || '').toLowerCase().includes(normalizedSearchTerm) ||
+    (provider.category || '').toLowerCase().includes(normalizedSearchTerm)
   );
 
   const visibleMyRequests = statusFilter
-    ? myRequests.filter(request => request.status === statusFilter)
-    : myRequests;
+    ? sortServiceItems(myRequests).filter(request => request.status === statusFilter)
+    : sortServiceItems(myRequests);
 
   const visibleReceivedServices = statusFilter
-    ? receivedServices.filter(service => service.status === statusFilter)
-    : receivedServices;
+    ? sortServiceItems(receivedServices, true).filter(service => service.status === statusFilter)
+    : sortServiceItems(receivedServices, true);
+
+  const statusCounts = useMemo(() => {
+    const source = activeTab === 'received' ? receivedServices : myRequests;
+    return serviceStatusOptions.reduce((counts, option) => {
+      counts[option.value] = option.value
+        ? source.filter(item => item.status === option.value).length
+        : source.length;
+      return counts;
+    }, {});
+  }, [activeTab, myRequests, receivedServices]);
+
+  const renderServiceStatusNote = (status, context) => {
+    const statusCopy = getStatusCopy(status, context);
+    const isPendingReceived = context === 'received' && status === 'pending';
+
+    return (
+      <div className={`mb-3 rounded-lg px-3 py-2 ${
+        isPendingReceived
+          ? 'bg-primary-50 dark:bg-primary-900/20'
+          : 'bg-gray-50 dark:bg-gray-700/70'
+      }`}>
+        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+          {statusCopy.title}
+        </p>
+        <p className="text-xs text-gray-600 dark:text-gray-400">
+          {statusCopy.description}
+        </p>
+      </div>
+    );
+  };
 
   const renderTabBadge = (count) => {
     if (!count) return null;
@@ -263,7 +413,7 @@ const Services = () => {
         );
       }
 
-      if (providers.length === 0) {
+      if (availableProviders.length === 0) {
         return (
           <EmptyStateNoProviders 
             onAction={() => {
@@ -300,14 +450,14 @@ const Services = () => {
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 text-yellow-500 fill-current" />
                   <span className="text-sm font-medium">
-                    {provider.providerRating.toFixed(1) || '0.0'}
+                    {Number(provider.providerRating || 0).toFixed(1)}
                   </span>
                   <span className="text-xs text-gray-500">
                     ({provider.providerReviewCount || 0})
                   </span>
                 </div>
                 <div className="text-sm font-semibold text-primary-600 dark:text-primary-400">
-                  R$ {provider.pricePerHour}/hora
+                  {formatCurrency(provider.pricePerHour)}/hora
                 </div>
               </div>
 
@@ -368,18 +518,20 @@ const Services = () => {
 
           {visibleMyRequests.map((request) => (
             <Card key={request._id}>
+              {renderServiceStatusNote(request.status, 'requester')}
+
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900 dark:text-white">
-                    {request.title}
+                    {request.title || 'Serviço solicitado'}
                   </h3>
                   
                   {/* NOME DO PRESTADOR CLICÁVEL */}
                   <UserProfileLink
-                    userId={request.providerId._id}
-                    userName={request.providerId.name}
-                    userAvatar={request.providerId.avatar}
-                    subtitle={request.category}
+                    userId={request.providerId?._id}
+                    userName={request.providerId?.name || 'Prestador'}
+                    userAvatar={request.providerId?.avatar}
+                    subtitle={request.category || request.providerId?.category || 'Serviço'}
                     showArrow={false}
                     className="mt-1"
                   />
@@ -388,13 +540,13 @@ const Services = () => {
               </div>
               
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                {request.description}
+                {request.description || 'Sem descrição informada.'}
               </p>
               
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                   <MapPin className="w-4 h-4" />
-                  <span>{request.location}</span>
+                  <span>{request.location || 'Local não informado'}</span>
                 </div>
                 <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
@@ -423,10 +575,10 @@ const Services = () => {
                 </div>
               )}
 
-              {(request.status === 'accepted' || request.status === 'in_progress') && (
+              {(request.status === 'accepted' || request.status === 'in_progress') && request.providerId?._id && (
                 <div className="mt-3">
                   <StartChatButton
-                    otherUserId={request.providerId._id}
+                    otherUserId={request.providerId?._id}
                     type="service"
                     relatedId={request._id}
                     fullWidth
@@ -442,7 +594,12 @@ const Services = () => {
     // Serviços Recebidos - COM LINK PARA PERFIL DO SOLICITANTE
     if (activeTab === 'received') {
       if (receivedServices.length === 0) {
-        return <EmptyStateNoReceivedServices />;
+        return (
+          <EmptyStateNoReceivedServices
+            onAction={() => navigate('/profile')}
+            actionLabel="Atualizar perfil"
+          />
+        );
       }
 
       return (
@@ -457,18 +614,20 @@ const Services = () => {
 
           {visibleReceivedServices.map((service) => (
             <Card key={service._id}>
+              {renderServiceStatusNote(service.status, 'received')}
+
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900 dark:text-white">
-                    {service.title}
+                    {service.title || 'Solicitação recebida'}
                   </h3>
                   
                   {/* NOME DO CLIENTE CLICÁVEL */}
                   <UserProfileLink
-                    userId={service.requesterId._id}
-                    userName={service.requesterId.name}
-                    userAvatar={service.requesterId.avatar}
-                    subtitle="Cliente"
+                    userId={service.requesterId?._id}
+                    userName={service.requesterId?.name || 'Solicitante'}
+                    userAvatar={service.requesterId?.avatar}
+                    subtitle={service.requesterType === 'company' ? 'Empresa' : 'Cliente'}
                     showArrow={false}
                     className="mt-1"
                   />
@@ -477,12 +636,12 @@ const Services = () => {
               </div>
               
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                {service.description}
+                {service.description || 'Sem descrição informada.'}
               </p>
               
               <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 mb-3">
                 <MapPin className="w-4 h-4" />
-                {service.location}
+                {service.location || 'Local não informado'}
               </div>
               
               <div className="flex items-center justify-between text-sm mb-3">
@@ -521,7 +680,7 @@ const Services = () => {
               )}
 
               {service.status === 'accepted' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+                <div className={`grid grid-cols-1 gap-2 mt-3 ${service.requesterId?._id ? 'sm:grid-cols-2' : ''}`}>
                   <Button 
                     variant="primary" 
                     fullWidth 
@@ -532,12 +691,14 @@ const Services = () => {
                     Marcar como Concluído
                   </Button>
                   {/* BOTÃO CONVERSAR */}
-                  <StartChatButton
-                    otherUserId={service.requesterId._id}
-                    type="service"
-                    relatedId={service._id}
-                    fullWidth
-                  />
+                  {service.requesterId?._id && (
+                    <StartChatButton
+                      otherUserId={service.requesterId?._id}
+                      type="service"
+                      relatedId={service._id}
+                      fullWidth
+                    />
+                  )}
                 </div>
               )}
             </Card>
@@ -556,32 +717,37 @@ const Services = () => {
             Serviços
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {user.type === 'provider' ? 'Gerencie seus serviços e solicitações' : 'Encontre e contrate prestadores de serviço'}
+            {pageDescription}
           </p>
         </div>
 
         {/* Tabs */}
         <div 
           ref={tabsScrollRef}
-          className="flex gap-2 overflow-x-auto hide-scrollbar pb-2"
+          className="flex gap-2 overflow-x-auto hide-scrollbar pb-2 pr-4"
         >
-          <button
-            onClick={() => setActiveTab('providers')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
-              activeTab === 'providers' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-            }`}
-          >
-            Buscar Prestadores
-          </button>
-          <button
-            onClick={() => setActiveTab('my-requests')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
-              activeTab === 'my-requests' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-            }`}
-          >
-            Minhas Solicitações
-          </button>
-          {(user.type === 'provider' || user.type === 'admin') && (
+          {canRequestServices && (
+            <button
+              onClick={() => setActiveTab('providers')}
+              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
+                activeTab === 'providers' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Buscar Prestadores
+            </button>
+          )}
+          {canRequestServices && (
+            <button
+              onClick={() => setActiveTab('my-requests')}
+              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
+                activeTab === 'my-requests' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Minhas Solicitações
+              {renderTabBadge(activityCounts.clientServices)}
+            </button>
+          )}
+          {canReceiveServices && (
             <button
               onClick={() => setActiveTab('received')}
               className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
@@ -595,7 +761,7 @@ const Services = () => {
         </div>
 
         {(activeTab === 'my-requests' || activeTab === 'received') && (
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2 pr-4">
             {serviceStatusOptions.map((option) => (
               <button
                 key={option.value}
@@ -605,6 +771,11 @@ const Services = () => {
                 }`}
               >
                 {option.label}
+                <span className={`ml-1 text-xs ${
+                  statusFilter === option.value ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'
+                }`}>
+                  {statusCounts[option.value] || 0}
+                </span>
               </button>
             ))}
           </div>
@@ -622,7 +793,7 @@ const Services = () => {
 
             <div 
               ref={filtersScrollRef}
-              className="flex gap-2 overflow-x-auto hide-scrollbar pb-2"
+              className="flex gap-2 overflow-x-auto hide-scrollbar pb-2 pr-4"
             >
               <button
                 onClick={() => setSelectedCategory('')}

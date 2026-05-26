@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { chatAPI, notificationAPI } from '../api/services';
 import { useAuth } from './AuthContext';
 
@@ -20,18 +20,31 @@ export const ChatNotificationProvider = ({ children }) => {
   const [conversations, setConversations] = useState([]);
   const [totalUnread, setTotalUnread] = useState(0);
   const [lastCheckedAt, setLastCheckedAt] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const hasLoadedRef = useRef(false);
 
   const syncFromConversations = useCallback((conversations) => {
     setConversations(conversations);
     setTotalUnread(countUnread(conversations));
     setLastCheckedAt(new Date());
+    hasLoadedRef.current = true;
+    setHasLoaded(true);
   }, []);
 
   const refreshUnreadCount = useCallback(async () => {
     if (!isAuthenticated) {
       setTotalUnread(0);
       setLastCheckedAt(null);
+      setIsLoading(false);
+      setHasLoaded(false);
+      hasLoadedRef.current = false;
       return 0;
+    }
+
+    const isInitialLoad = !hasLoadedRef.current;
+    if (isInitialLoad) {
+      setIsLoading(true);
     }
 
     try {
@@ -39,10 +52,18 @@ export const ChatNotificationProvider = ({ children }) => {
       const unreadCount = Number(response.data.notifications.chatUnread || 0);
       setTotalUnread(unreadCount);
       setLastCheckedAt(new Date());
+      hasLoadedRef.current = true;
+      setHasLoaded(true);
       return unreadCount;
     } catch (error) {
       console.error('Erro ao atualizar notificações do chat:', error);
+      hasLoadedRef.current = true;
+      setHasLoaded(true);
       return 0;
+    } finally {
+      if (isInitialLoad) {
+        setIsLoading(false);
+      }
     }
   }, [isAuthenticated]);
 
@@ -51,6 +72,9 @@ export const ChatNotificationProvider = ({ children }) => {
       setConversations([]);
       setTotalUnread(0);
       setLastCheckedAt(null);
+      setIsLoading(false);
+      setHasLoaded(false);
+      hasLoadedRef.current = false;
       return [];
     }
 
@@ -70,6 +94,9 @@ export const ChatNotificationProvider = ({ children }) => {
       setConversations([]);
       setTotalUnread(0);
       setLastCheckedAt(null);
+      setIsLoading(false);
+      setHasLoaded(false);
+      hasLoadedRef.current = false;
       return;
     }
 
@@ -96,6 +123,8 @@ export const ChatNotificationProvider = ({ children }) => {
         conversations,
         totalUnread,
         hasUnread: totalUnread > 0,
+        isLoading,
+        hasLoaded,
         lastCheckedAt,
         refreshUnreadCount,
         loadConversations,
