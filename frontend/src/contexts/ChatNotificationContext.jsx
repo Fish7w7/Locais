@@ -37,8 +37,8 @@ export const ChatNotificationProvider = ({ children }) => {
       setTotalUnread(0);
       setLastCheckedAt(null);
       setIsLoading(false);
-      setHasLoaded(false);
-      hasLoadedRef.current = false;
+      setHasLoaded(true);
+      hasLoadedRef.current = true;
       return 0;
     }
 
@@ -73,8 +73,8 @@ export const ChatNotificationProvider = ({ children }) => {
       setTotalUnread(0);
       setLastCheckedAt(null);
       setIsLoading(false);
-      setHasLoaded(false);
-      hasLoadedRef.current = false;
+      setHasLoaded(true);
+      hasLoadedRef.current = true;
       return [];
     }
 
@@ -95,8 +95,8 @@ export const ChatNotificationProvider = ({ children }) => {
       setTotalUnread(0);
       setLastCheckedAt(null);
       setIsLoading(false);
-      setHasLoaded(false);
-      hasLoadedRef.current = false;
+      setHasLoaded(true);
+      hasLoadedRef.current = true;
       return;
     }
 

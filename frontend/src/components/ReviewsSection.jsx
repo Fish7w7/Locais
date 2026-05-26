@@ -6,6 +6,8 @@ import Button from './Button';
 import axios from 'axios';
 import CreateReviewModal from './CreateReviewModal';
 import { useNotification } from '../contexts/NotificationContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useAuthPrompt } from '../contexts/AuthPromptContext';
 
 const ReviewsSection = ({ userId, userType }) => {
   const [reviews, setReviews] = useState([]);
@@ -14,6 +16,8 @@ const ReviewsSection = ({ userId, userType }) => {
   const [selectedType, setSelectedType] = useState('provider');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { error: showError } = useNotification();
+  const { isAuthenticated } = useAuth();
+  const { requireAuth } = useAuthPrompt();
 
   if (!userId) {
     console.warn('⚠️ ReviewsSection: userId não fornecido');
@@ -60,6 +64,10 @@ const ReviewsSection = ({ userId, userType }) => {
   };
 
   const handleHelpful = async (reviewId, helpful) => {
+    if (!requireAuth({ suggestedType: 'client', returnTo: `/user/${userId}` })) {
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       await axios.post(`/api/reviews/${reviewId}/helpful`, 
@@ -97,9 +105,14 @@ const ReviewsSection = ({ userId, userType }) => {
         <Button
           size="sm"
           icon={Plus}
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => {
+            if (!requireAuth({ suggestedType: 'client', returnTo: `/user/${userId}` })) {
+              return;
+            }
+            setShowCreateModal(true);
+          }}
         >
-          Avaliar
+          {isAuthenticated ? 'Avaliar' : 'Entrar para avaliar'}
         </Button>
       </div>
 

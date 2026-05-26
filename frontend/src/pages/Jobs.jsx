@@ -7,6 +7,7 @@ import { jobAPI } from '../api/services';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLoading } from '../contexts/LoadingContext';
 import { useActivityNotifications } from '../contexts/ActivityNotificationContext';
+import { useAuthPrompt } from '../contexts/AuthPromptContext';
 import { useDebounce } from '../hooks/useDebounce';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { useConfirm } from '../hooks/useConfirm';
@@ -16,6 +17,7 @@ import Input from '../components/Input';
 import CreateJobModal from '../components/CreateJobModal';
 import ViewCandidatesModal from '../components/ViewCandidatesModal';
 import EditJobModal from '../components/EditJobModal';
+import JobDetailsModal from '../components/JobDetailsModal';
 import ApplyToJobModal from '../components/ApplyToJobModal';
 import ConfirmModal from '../components/ConfirmModal';
 import StartChatButton from '../components/StartChatButton';
@@ -62,9 +64,10 @@ const sortCompanyJobs = (jobs, activeView) => {
 const getJobCompanyId = (job) => job.companyId?._id || job.companyId;
 
 const Jobs = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { requireAuth } = useAuthPrompt();
   const { success, error: showError } = useNotification();
   const { showLoading, hideLoading } = useLoading();
   const { counts: activityCounts, refreshActivityNotifications } = useActivityNotifications();
@@ -87,7 +90,7 @@ const Jobs = () => {
   
   const [activeTab, setActiveTab] = useState(() => {
     if (location.state?.tab) return location.state.tab;
-    if (user.type === 'company') return 'my-jobs';
+    if (user?.type === 'company') return 'my-jobs';
     return 'available';
   });
   
@@ -97,13 +100,15 @@ const Jobs = () => {
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showCandidatesModal, setShowCandidatesModal] = useState(false);
   const [showEditJobModal, setShowEditJobModal] = useState(false);
+  const [showJobDetailsModal, setShowJobDetailsModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
-  const isProvider = user.type === 'provider';
-  const isCompany = user.type === 'company';
-  const isClient = user.type === 'client';
-  const isAdmin = user.type === 'admin' || user.role === 'admin';
+  const isVisitor = !isAuthenticated || !user;
+  const isProvider = user?.type === 'provider';
+  const isCompany = user?.type === 'company';
+  const isClient = user?.type === 'client';
+  const isAdmin = user?.type === 'admin' || user?.role === 'admin';
   const activeView = location.state?.view;
 
   const jobTypes = { temporary: 'Temporária',
@@ -175,9 +180,41 @@ const Jobs = () => {
       setActiveTab(location.state.tab);
     }
     if (location.state?.openCreateModal) {
-      setShowCreateJobModal(true);
+      if (requireAuth({
+        suggestedType: 'company',
+        returnTo: '/jobs',
+        returnState: { openCreateModal: true }
+      }) && (isCompany || isAdmin)) {
+        setShowCreateJobModal(true);
+      }
     }
-  }, [location.state]);
+  }, [isAdmin, isCompany, location.state, requireAuth]);
+
+  useEffect(() => {
+    const pendingAction = location.state?.pendingAction;
+    const pendingJobId = location.state?.jobId;
+
+    if (!isAuthenticated || activeTab !== 'available' || pendingAction !== 'apply-job' || !pendingJobId || jobs.length === 0) {
+      return;
+    }
+
+    if (!isProvider && !isAdmin) {
+      return;
+    }
+
+    const job = jobs.find((item) => String(item._id) === String(pendingJobId));
+    if (!job) return;
+
+    setSelectedJob(job);
+    setShowApplyModal(true);
+    navigate('/jobs', { replace: true, state: { tab: 'available' } });
+  }, [activeTab, isAdmin, isAuthenticated, isProvider, jobs, location.state, navigate]);
+
+  useEffect(() => {
+    if (isVisitor && activeTab !== 'available') {
+      setActiveTab('available');
+    }
+  }, [activeTab, isVisitor]);
 
   useEffect(() => {
     loadData();
@@ -192,10 +229,15 @@ const Jobs = () => {
     try {
       setLoading(true);
       setError(null);
+
+      if (isVisitor && activeTab !== 'available') {
+        setActiveTab('available');
+        return;
+      }
       
       if (activeTab === 'available') {
         const jobsRequest = jobAPI.getJobs({ type: selectedType });
-        const applicationsRequest = isProvider || isAdmin
+        const applicationsRequest = (isProvider || isAdmin) && !isVisitor
           ? jobAPI.getMyApplications()
           : Promise.resolve({ data: { applications: [] } });
 
@@ -229,8 +271,25 @@ const Jobs = () => {
   };
 
   const handleApply = (job) => {
+    if (!requireAuth({
+      suggestedType: 'provider',
+      returnTo: '/jobs',
+      returnState: {
+        tab: 'available',
+        pendingAction: 'apply-job',
+        jobId: job._id
+      }
+    })) {
+      return;
+    }
+
     setSelectedJob(job);
     setShowApplyModal(true);
+  };
+
+  const handleViewDetails = (job) => {
+    setSelectedJob(job);
+    setShowJobDetailsModal(true);
   };
 
   const handleAcceptProposal = async (proposalId) => {
@@ -282,6 +341,14 @@ const Jobs = () => {
   };
 
   const handleViewCandidates = (job) => {
+    if (!requireAuth({
+      suggestedType: 'company',
+      returnTo: '/jobs',
+      returnState: { tab: 'my-jobs' }
+    })) {
+      return;
+    }
+
     setSelectedJob(job);
     setShowCandidatesModal(true);
   };
@@ -292,12 +359,20 @@ const Jobs = () => {
   };
 
   const handleEditJob = (job) => {
+    if (!requireAuth({
+      suggestedType: 'company',
+      returnTo: '/jobs',
+      returnState: { tab: 'my-jobs' }
+    })) {
+      return;
+    }
+
     setSelectedJob(job);
     setShowEditJobModal(true);
   };
 
   const isOwnJob = (job) => {
-    return String(getJobCompanyId(job)) === String(user.id);
+    return String(getJobCompanyId(job)) === String(user?.id || '');
   };
 
   const filteredJobs = jobs.filter(job => {
@@ -461,7 +536,7 @@ const Jobs = () => {
                 </div>
               </div>
 
-              {(isProvider || isAdmin) && (
+              {(isVisitor || isProvider || isAdmin) && (
                 (isOwnJob(job) || isAdmin) ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Button
@@ -501,6 +576,16 @@ const Jobs = () => {
                   </Button>
                 )
               )}
+
+              <Button
+                variant="ghost"
+                fullWidth
+                size="sm"
+                onClick={() => handleViewDetails(job)}
+                className="mt-2"
+              >
+                Ver detalhes
+              </Button>
             </Card>
           ))}
         </div>
@@ -919,6 +1004,7 @@ const Jobs = () => {
               {isCompany ? 'Publicações' : isClient ? 'Propostas' : 'Vagas'}
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
+              {isVisitor && 'Explore vagas disponíveis e crie uma conta quando quiser se candidatar.'}
               {isCompany && 'Gerencie suas publicações e candidatos'}
               {isProvider && 'Encontre vagas e acompanhe suas candidaturas'}
               {isClient && 'Acompanhe propostas e retornos recebidos'}
@@ -926,11 +1012,20 @@ const Jobs = () => {
             </p>
           </div>
           
-          {(user.type === 'company' || user.type === 'admin') && (
+          {(isVisitor || user?.type === 'company' || user?.type === 'admin') && (
             <Button 
               icon={Plus} 
               size="sm"
-              onClick={() => setShowCreateJobModal(true)}
+              onClick={() => {
+                if (!requireAuth({
+                  suggestedType: 'company',
+                  returnTo: '/jobs',
+                  returnState: { openCreateModal: true }
+                })) {
+                  return;
+                }
+                setShowCreateJobModal(true);
+              }}
             >
               Nova Vaga
             </Button>
@@ -942,7 +1037,7 @@ const Jobs = () => {
           ref={tabsScrollRef}
           className="flex gap-2 overflow-x-auto hide-scrollbar pb-2 pr-4"
         >
-          {(isProvider || isAdmin) && (
+          {(isVisitor || isProvider || isAdmin) && (
             <button
               onClick={() => setActiveTab('available')}
               className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${
@@ -1118,6 +1213,33 @@ const Jobs = () => {
           }}
           job={selectedJob}
           onSuccess={loadData}
+        />
+
+        <JobDetailsModal
+          isOpen={showJobDetailsModal}
+          onClose={() => {
+            setShowJobDetailsModal(false);
+            setSelectedJob(null);
+          }}
+          job={selectedJob}
+          companyName={selectedJob ? getCompanyName(selectedJob) : ''}
+          companyAvatar={selectedJob ? getCompanyAvatar(selectedJob) : ''}
+          normalizeText={normalizeJobText}
+          formatCurrency={formatCurrency}
+          canManage={!!selectedJob && (isOwnJob(selectedJob) || isAdmin)}
+          hasApplied={!!selectedJob && appliedJobIds.has(String(selectedJob._id))}
+          onApply={() => {
+            setShowJobDetailsModal(false);
+            handleApply(selectedJob);
+          }}
+          onEdit={() => {
+            setShowJobDetailsModal(false);
+            handleEditJob(selectedJob);
+          }}
+          onViewCandidates={() => {
+            setShowJobDetailsModal(false);
+            handleViewCandidates(selectedJob);
+          }}
         />
 
         <ConfirmModal

@@ -27,15 +27,16 @@ export const checkMaintenance = async (req, res, next) => {
       return next();
     }
 
-    // Bypass para admins - verifica o token
-    const token = req.headers.authorization.split(' ')[1];
+    // Bypass para admins - verifica o token, quando ele existir.
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
     
     if (token) {
       try {
         const jwt = await import('jsonwebtoken');
         const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
         const User = (await import('../models/User.js')).default;
-        const user = await User.findById(decoded.id).select('role type');
+        const user = await User.findById(decoded.id).select('role type email');
         
         if (user && (user.role === 'admin' || user.type === 'admin')) {
           console.log(`✅ Admin detectado, bypass de manutenção: ${user.email}`);
@@ -52,7 +53,7 @@ export const checkMaintenance = async (req, res, next) => {
     if (now - maintenanceCache.lastCheck > CACHE_DURATION) {
       try {
         const settings = await Settings.findOne();
-        maintenanceCache = { isActive: settings.maintenanceMode || false,
+        maintenanceCache = { isActive: settings?.maintenanceMode || false,
           lastCheck: now
         };
         console.log('🔧 Cache de manutenção atualizado:', maintenanceCache.isActive ? 'ATIVO' : 'INATIVO');
@@ -87,7 +88,7 @@ export const checkMaintenance = async (req, res, next) => {
 export const refreshMaintenanceCache = async () => {
   try {
     const settings = await Settings.findOne();
-    maintenanceCache = { isActive: settings.maintenanceMode || false,
+    maintenanceCache = { isActive: settings?.maintenanceMode || false,
       lastCheck: Date.now()
     };
     console.log('🔄 Cache de manutenção forçado:', maintenanceCache);

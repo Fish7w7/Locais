@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { chatAPI } from '../api/services';
+import { useAuth } from '../contexts/AuthContext';
+import { useAuthPrompt } from '../contexts/AuthPromptContext';
 import { useNotification } from '../contexts/NotificationContext';
 import Button from './Button';
 
@@ -22,15 +24,33 @@ const StartChatButton = ({
   relatedId,
   variant = 'secondary',
   size = 'sm',
-  fullWidth = false
+  fullWidth = false,
+  suggestedType = 'client'
 }) => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { requireAuth } = useAuthPrompt();
   const [loading, setLoading] = useState(false);
   const { error: showError } = useNotification();
 
   const handleStartChat = async () => {
     if (!otherUserId || !type || !relatedId) {
       showError('Não foi possível abrir o chat desta conversa.');
+      return;
+    }
+
+    if (!isAuthenticated) {
+      requireAuth({
+        suggestedType,
+        returnTo: '/chat',
+        returnState: {
+          pendingChat: {
+            otherUserId,
+            type,
+            relatedId
+          }
+        }
+      });
       return;
     }
 

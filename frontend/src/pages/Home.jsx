@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Briefcase,
   FileText,
+  Lock,
   MessageCircle,
   Search,
   Shield,
@@ -12,10 +13,12 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useActivityNotifications } from '../contexts/ActivityNotificationContext';
 import { useChatNotifications } from '../contexts/ChatNotificationContext';
+import { useAuthPrompt } from '../contexts/AuthPromptContext';
 
 const Home = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { requireAuth } = useAuthPrompt();
   const {
     counts,
     isLoading: isActivityLoading,
@@ -26,22 +29,61 @@ const Home = () => {
     isLoading: isChatLoading,
     hasLoaded: hasChatLoaded
   } = useChatNotifications();
-  const countersAreLoading = isActivityLoading || isChatLoading || !hasActivityLoaded || !hasChatLoaded;
 
-  const isProvider = user.type === 'provider';
-  const isCompany = user.type === 'company';
-  const isAdmin = user.type === 'admin' || user.role === 'admin';
+  const isVisitor = !isAuthenticated || !user;
+  const countersAreLoading = !isVisitor && (isActivityLoading || isChatLoading || !hasActivityLoaded || !hasChatLoaded);
+  const isProvider = user?.type === 'provider';
+  const isCompany = user?.type === 'company';
+  const isAdmin = user?.type === 'admin' || user?.role === 'admin';
 
   const roleLabels = {
     client: 'Cliente',
     provider: 'Prestador',
     company: 'Empresa',
-    admin: 'Administrador'
+    admin: 'Administrador',
+    visitor: 'Visitante'
   };
 
   const primaryActions = [
     {
-      show: user.type === 'client',
+      show: isVisitor,
+      label: 'Buscar prestadores',
+      description: 'Veja profissionais por categoria antes de criar conta',
+      icon: Search,
+      variant: 'primary',
+      access: 'open',
+      onClick: () => navigate('/services')
+    },
+    {
+      show: isVisitor,
+      label: 'Ver vagas',
+      description: 'Explore oportunidades publicadas por empresas',
+      icon: Briefcase,
+      access: 'open',
+      onClick: () => navigate('/jobs')
+    },
+    {
+      show: isVisitor,
+      label: 'Solicitar serviço',
+      description: 'Entre como Cliente para contratar prestadores',
+      icon: FileText,
+      access: 'locked',
+      onClick: () => requireAuth({ suggestedType: 'client', returnTo: '/services' })
+    },
+    {
+      show: isVisitor,
+      label: 'Publicar vaga',
+      description: 'Entre como Empresa para receber candidatos',
+      icon: Users,
+      access: 'locked',
+      onClick: () => requireAuth({
+        suggestedType: 'company',
+        returnTo: '/jobs',
+        returnState: { openCreateModal: true }
+      })
+    },
+    {
+      show: user?.type === 'client',
       label: 'Buscar prestadores',
       description: 'Encontre profissionais por categoria',
       icon: Search,
@@ -49,7 +91,7 @@ const Home = () => {
       onClick: () => navigate('/services')
     },
     {
-      show: user.type === 'client',
+      show: user?.type === 'client',
       label: 'Minhas solicitações',
       description: 'Acompanhe serviços enviados',
       icon: FileText,
@@ -129,22 +171,31 @@ const Home = () => {
       label: 'Mensagens',
       description: totalUnread > 0
         ? formatCountLabel(totalUnread, 'conversa com mensagem nova', 'conversas com mensagens novas')
-        : 'Abra suas conversas',
+        : isVisitor ? 'Entre para conversar com outros usuários' : 'Abra suas conversas',
       icon: MessageCircle,
-      count: totalUnread,
-      countLoading: isChatLoading || !hasChatLoaded,
-      onClick: () => navigate('/chat')
+      access: isVisitor ? 'locked' : undefined,
+      count: isVisitor ? 0 : totalUnread,
+      countLoading: !isVisitor && (isChatLoading || !hasChatLoaded),
+      onClick: () => {
+        if (isVisitor) {
+          requireAuth({ suggestedType: 'client', returnTo: '/chat' });
+          return;
+        }
+        navigate('/chat');
+      }
     },
     {
-      label: isCompany ? 'Perfil da empresa' : 'Perfil',
-      description: isCompany ? 'Revise dados e apresentação da empresa' : 'Revise seus dados e preferências',
+      label: isVisitor ? 'Entrar ou cadastrar' : isCompany ? 'Perfil da empresa' : 'Perfil',
+      description: isVisitor
+        ? 'Crie uma conta para acompanhar solicitações e mensagens'
+        : isCompany ? 'Revise dados e apresentação da empresa' : 'Revise seus dados e preferências',
       icon: UserCheck,
       onClick: () => navigate('/profile')
     }
   ];
 
   const hero = getHeroConfig(user, counts, countersAreLoading);
-  const nextSteps = getNextSteps(user, counts);
+  const nextSteps = getNextSteps(user, counts, requireAuth);
   const metrics = getMetrics(user, counts, totalUnread);
   const attentionItems = getAttentionItems(user, counts, totalUnread, navigate);
 
@@ -154,17 +205,17 @@ const Home = () => {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 space-y-2">
             <p className="text-sm font-medium text-primary-600 dark:text-primary-400">
-              {roleLabels[user.type] || user.type} · {hero.status}
+              {roleLabels[user?.type || 'visitor']} · {hero.status}
             </p>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Olá, {user.name}
+              {isVisitor ? 'Conheça o Serviços Locais' : `Olá, ${user.name}`}
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {hero.description}
             </p>
           </div>
           <button
-            onClick={() => hero.onClick(navigate)}
+            onClick={() => hero.onClick(navigate, requireAuth)}
             className="shrink-0 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
           >
             {hero.actionLabel}
@@ -172,11 +223,13 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-3">
-        {metrics.map((metric) => (
-          <MetricCard key={metric.label} {...metric} isLoading={countersAreLoading} />
-        ))}
-      </section>
+      {metrics.length > 0 && (
+        <section className="grid grid-cols-2 gap-3">
+          {metrics.map((metric) => (
+            <MetricCard key={metric.label} {...metric} isLoading={countersAreLoading} />
+          ))}
+        </section>
+      )}
 
       <section className="space-y-3">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -194,9 +247,15 @@ const Home = () => {
 
       <section className="rounded-lg bg-white p-5 shadow dark:bg-gray-800">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Pendências
+          {isVisitor ? 'Como funciona' : 'Pendências'}
         </h3>
-        {countersAreLoading ? (
+        {isVisitor ? (
+          <div className="mt-3 space-y-2 text-sm text-gray-600 dark:text-gray-400">
+            <p>1. Encontre prestadores ou vagas usando filtros e busca.</p>
+            <p>2. Crie uma conta quando quiser solicitar, candidatar-se ou conversar.</p>
+            <p>3. Acompanhe tudo pelo painel depois do login.</p>
+          </div>
+        ) : countersAreLoading ? (
           <div className="mt-3 space-y-2">
             <SkeletonAttentionRow />
             <SkeletonAttentionRow />
@@ -239,7 +298,7 @@ const Home = () => {
             {nextSteps.map((step) => (
               <button
                 key={step.label}
-                onClick={step.onClick ? () => step.onClick(navigate) : undefined}
+                onClick={step.onClick ? () => step.onClick(navigate, requireAuth) : undefined}
                 className="flex w-full items-center justify-between rounded-lg border border-gray-200 px-3 py-3 text-left transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
               >
                 <div>
@@ -275,6 +334,8 @@ const MetricCard = ({ label, value, icon: Icon, isLoading }) => (
 );
 
 const getMetrics = (user, counts, totalUnread) => {
+  if (!user) return [];
+
   if (user.type === 'provider') {
     return [
       { label: 'Serviços', value: counts.receivedServices, icon: Search },
@@ -302,8 +363,9 @@ const getMetrics = (user, counts, totalUnread) => {
   ];
 };
 
-const ActionButton = ({ label, description, icon: Icon, count, countLoading, variant, onClick }) => {
+const ActionButton = ({ label, description, icon: Icon, count, countLoading, variant, access, onClick }) => {
   const isPrimary = variant === 'primary';
+  const showAccessBadge = access === 'open' || access === 'locked';
 
   return (
     <button
@@ -316,7 +378,23 @@ const ActionButton = ({ label, description, icon: Icon, count, countLoading, var
     >
       <Icon className="h-5 w-5 shrink-0" />
       <div className="min-w-0 flex-1">
-        <span className="block font-medium">{label}</span>
+        <span className="flex flex-wrap items-center gap-2 font-medium">
+          {label}
+          {showAccessBadge && (
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+              access === 'locked'
+                ? isPrimary
+                  ? 'bg-white/15 text-white'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                : isPrimary
+                  ? 'bg-white/15 text-white'
+                  : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+            }`}>
+              {access === 'locked' && <Lock className="h-3 w-3" />}
+              {access === 'locked' ? 'Login necessário' : 'Aberto'}
+            </span>
+          )}
+        </span>
         <span className={`text-xs ${isPrimary ? 'text-primary-100' : 'text-gray-500 dark:text-gray-400'}`}>
           {description}
         </span>
@@ -342,22 +420,22 @@ const SkeletonAttentionRow = () => (
 const formatCountLabel = (count, singular, plural) => `${count} ${count === 1 ? singular : plural}`;
 
 const getNoAttentionText = (user) => {
-  if (user.type === 'provider') {
-    return 'Nenhum serviço ou proposta aguardando resposta.';
-  }
-
-  if (user.type === 'company') {
-    return 'Nenhum candidato aguardando análise.';
-  }
-
-  if (user.type === 'admin' || user.role === 'admin') {
-    return 'Nenhuma pendência administrativa no momento.';
-  }
-
+  if (user?.type === 'provider') return 'Nenhum serviço ou proposta aguardando resposta.';
+  if (user?.type === 'company') return 'Nenhum candidato aguardando análise.';
+  if (user?.type === 'admin' || user?.role === 'admin') return 'Nenhuma pendência administrativa no momento.';
   return 'Nenhuma resposta nova nas suas solicitações.';
 };
 
 const getHeroConfig = (user, counts, isLoading) => {
+  if (!user) {
+    return {
+      status: 'Explore antes de criar conta',
+      description: 'Veja prestadores, vagas e categorias. Você só precisa entrar quando quiser solicitar, candidatar-se ou conversar.',
+      actionLabel: 'Explorar',
+      onClick: (navigate) => navigate('/services')
+    };
+  }
+
   if (isLoading) {
     return {
       status: 'Atualizando',
@@ -387,17 +465,9 @@ const getHeroConfig = (user, counts, isLoading) => {
         : 'Seu painel está limpo. Novas solicitações aparecerão aqui.',
       actionLabel: pending > 0 ? 'Responder' : 'Perfil',
       onClick: (navigate) => {
-        if (counts.receivedServices > 0) {
-          navigate('/services', { state: { tab: 'received' } });
-          return;
-        }
-
-        if (counts.jobProposals > 0) {
-          navigate('/jobs', { state: { tab: 'my-proposals' } });
-          return;
-        }
-
-        navigate('/profile');
+        if (counts.receivedServices > 0) return navigate('/services', { state: { tab: 'received' } });
+        if (counts.jobProposals > 0) return navigate('/jobs', { state: { tab: 'my-proposals' } });
+        return navigate('/profile');
       }
     };
   }
@@ -436,29 +506,23 @@ const getHeroConfig = (user, counts, isLoading) => {
       : 'Busque prestadores por categoria para resolver o que você precisa.',
     actionLabel: activeItems > 0 ? 'Ver andamento' : 'Buscar',
     onClick: (navigate) => {
-      if (counts.myServiceRequests > 0) {
-        navigate('/services', { state: { tab: 'my-requests' } });
-        return;
-      }
-
-      navigate('/services');
+      if (counts.myServiceRequests > 0) return navigate('/services', { state: { tab: 'my-requests' } });
+      return navigate('/services');
     }
   };
 };
 
 const getAttentionItems = (user, counts, totalUnread, navigate) => {
   const items = [];
+  if (!user) return items;
 
-  if (user.type === 'client') {
-    const activeItems = counts.myServiceRequests;
-    if (activeItems > 0) {
-      items.push({
-        label: 'Ver andamento',
-        description: formatCountLabel(activeItems, 'solicitação foi respondida.', 'solicitações foram respondidas.'),
-        value: activeItems,
-        onClick: () => navigate('/services', { state: { tab: 'my-requests' } })
-      });
-    }
+  if (user.type === 'client' && counts.myServiceRequests > 0) {
+    items.push({
+      label: 'Ver andamento',
+      description: formatCountLabel(counts.myServiceRequests, 'solicitação foi respondida.', 'solicitações foram respondidas.'),
+      value: counts.myServiceRequests,
+      onClick: () => navigate('/services', { state: { tab: 'my-requests' } })
+    });
   }
 
   if (user.type === 'provider') {
@@ -502,7 +566,31 @@ const getAttentionItems = (user, counts, totalUnread, navigate) => {
   return items;
 };
 
-const getNextSteps = (user, counts) => {
+const getNextSteps = (user, counts, requireAuth) => {
+  if (!user) {
+    return [
+      {
+        label: 'Criar conta de Cliente',
+        description: 'Ideal para solicitar serviços e acompanhar retornos.',
+        onClick: () => requireAuth({ suggestedType: 'client', returnTo: '/services' })
+      },
+      {
+        label: 'Criar conta de Prestador',
+        description: 'Ideal para se candidatar a vagas e receber propostas.',
+        onClick: () => requireAuth({ suggestedType: 'provider', returnTo: '/jobs' })
+      },
+      {
+        label: 'Criar conta de Empresa',
+        description: 'Ideal para publicar vagas e receber candidatos.',
+        onClick: () => requireAuth({
+          suggestedType: 'company',
+          returnTo: '/jobs',
+          returnState: { openCreateModal: true }
+        })
+      }
+    ];
+  }
+
   if (user.type === 'provider') {
     const missingProviderInfo = !user.category || !user.pricePerHour || !user.description;
     return missingProviderInfo
@@ -515,29 +603,19 @@ const getNextSteps = (user, counts) => {
   }
 
   if (user.type === 'company') {
-    return [
-      {
-        label: 'Encontrar prestadores',
-        description: 'Envie propostas vinculadas às suas vagas abertas.',
-        onClick: (navigate) => navigate('/services')
-      }
-    ];
+    return [{
+      label: 'Encontrar prestadores',
+      description: 'Envie propostas vinculadas às suas vagas abertas.',
+      onClick: (navigate) => navigate('/services')
+    }];
   }
 
-  if (user.type === 'client') {
-    const hasActiveFlow = counts.myServiceRequests > 0;
-
-    if (hasActiveFlow) {
-      return [];
-    }
-
-    return [
-      {
-        label: 'Buscar seu primeiro prestador',
-        description: 'Escolha uma categoria e envie uma solicitação de serviço.',
-        onClick: (navigate) => navigate('/services')
-      }
-    ];
+  if (user.type === 'client' && counts.myServiceRequests === 0) {
+    return [{
+      label: 'Buscar seu primeiro prestador',
+      description: 'Escolha uma categoria e envie uma solicitação de serviço.',
+      onClick: (navigate) => navigate('/services')
+    }];
   }
 
   return [];

@@ -1,24 +1,36 @@
 // frontend/src/pages/Login.jsx
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, User, Phone, Building, DollarSign } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import TermsModal from '../components/TermsModal';
+import PrivacyPolicyModal from '../components/PrivacyPolicyModal';
 import { validateRegisterForm } from '../utils/validation';
 import { useNotification } from '../contexts/NotificationContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, register } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(location.state?.authMode !== 'register');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { success, error: notifyError } = useNotification();
   const [formErrors, setFormErrors] = useState({});
   const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const returnTo = location.state?.returnTo || '/';
+  const returnState = location.state?.returnState || undefined;
+  const suggestedType = location.state?.suggestedType || 'client';
+  const hasSuggestedType = Boolean(location.state?.suggestedType);
+  const suggestedTypeLabels = {
+    client: 'Cliente',
+    provider: 'Prestador',
+    company: 'Empresa'
+  };
 
   const [loginData, setLoginData] = useState({ email: '',
     password: ''
@@ -29,13 +41,13 @@ const Login = () => {
     phone: '',
     password: '',
     confirmPassword: '',
-    type: 'client',
+    type: suggestedType,
     cnpj: '',
     companyDescription: '',
     category: '',
     pricePerHour: '',
     description: '',
-    isAvailableAsProvider: true
+    isAvailableAsProvider: suggestedType === 'provider'
   });
 
   const providerCategories = [
@@ -114,7 +126,7 @@ const Login = () => {
 
     try {
       await login(loginData.email, loginData.password);
-      navigate('/');
+      navigate(returnTo, returnState ? { state: returnState } : undefined);
     } catch (err) {
       setError(err.response?.data.message || 'Erro ao fazer login');
     } finally {
@@ -158,7 +170,7 @@ const Login = () => {
 
       await register(userData);
       success('Conta criada com sucesso!');
-      navigate('/');
+      navigate(returnTo, returnState ? { state: returnState } : undefined);
     } catch (err) {
       const msg = err.response?.data.message || 'Erro ao criar conta';
       setError(msg);
@@ -217,6 +229,12 @@ const Login = () => {
           {error && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            </div>
+          )}
+
+          {!isLogin && hasSuggestedType && (
+            <div className="mb-4 rounded-lg border border-primary-200 bg-primary-50 p-3 text-sm text-primary-800 dark:border-primary-800 dark:bg-primary-900/20 dark:text-primary-100">
+              Conta sugerida para continuar: <strong>{suggestedTypeLabels[suggestedType] || 'Cliente'}</strong>.
             </div>
           )}
 
@@ -467,10 +485,18 @@ const Login = () => {
           >
             Termos de Uso
           </button>
+          {' '}e{' '}
+          <button
+            onClick={() => setShowPrivacy(true)}
+            className="text-primary-600 dark:text-primary-400 hover:underline font-medium"
+          >
+            Política de Privacidade
+          </button>
         </p>
       </div>
 
       <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
+      <PrivacyPolicyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
     </div>
   );
 };

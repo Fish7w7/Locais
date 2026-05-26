@@ -134,7 +134,7 @@ export const getProviders = async (req, res) => {
     if (minRating) query.providerRating = { $gte: parseFloat(minRating) };
 
     const providers = await User.find(query)
-      .select('-password')
+      .select('name avatar type category city state providerRating providerReviewCount pricePerHour description isAvailableAsProvider createdAt')
       .sort('-providerRating');
 
     res.json({
@@ -157,7 +157,8 @@ export const getProviders = async (req, res) => {
 // @access  Public
 export const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
+    const user = await User.findById(req.params.id)
+      .select('name avatar type category city state providerRating providerReviewCount clientRating clientReviewCount pricePerHour description isAvailableAsProvider companyDescription createdAt');
 
     if (!user) {
       return res.status(404).json({ success: false,

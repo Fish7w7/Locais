@@ -34,8 +34,8 @@ export const ActivityNotificationProvider = ({ children }) => {
       setCounts(emptyCounts);
       setLastCheckedAt(null);
       setIsLoading(false);
-      setHasLoaded(false);
-      hasLoadedRef.current = false;
+      setHasLoaded(true);
+      hasLoadedRef.current = true;
       return emptyCounts;
     }
 
@@ -78,8 +78,8 @@ export const ActivityNotificationProvider = ({ children }) => {
       setCounts(emptyCounts);
       setLastCheckedAt(null);
       setIsLoading(false);
-      setHasLoaded(false);
-      hasLoadedRef.current = false;
+      setHasLoaded(true);
+      hasLoadedRef.current = true;
       return;
     }
 

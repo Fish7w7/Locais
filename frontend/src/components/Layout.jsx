@@ -5,14 +5,27 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useChatNotifications } from '../contexts/ChatNotificationContext';
 import { useActivityNotifications } from '../contexts/ActivityNotificationContext';
+import { useAuthPrompt } from '../contexts/AuthPromptContext';
 
 const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { darkMode, toggleTheme } = useTheme();
   const { totalUnread } = useChatNotifications();
   const { counts: activityCounts } = useActivityNotifications();
+  const { requireAuth } = useAuthPrompt();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary-600" />
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   const isAdmin = user?.type === 'admin' || user?.role === 'admin';
   const userType = user?.type;
@@ -80,14 +93,19 @@ const Layout = () => {
       <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-10">
         <div className="container-mobile mx-auto">
           <div className="flex justify-around items-center py-2">
-            {navItems.map(({ key, path, state, activeView, icon: Icon, label, badge }) => {
+            {navItems.map(({ key, path, state, activeView, icon: Icon, label, badge, requiresAuth, suggestedType }) => {
               const isActive = location.pathname === path
                 && (!activeView || location.state?.view === activeView || (key === 'publications' && !location.state?.view));
               const badgeCount = getNavBadgeCount(badge);
               return (
                 <button
                   key={key}
-                  onClick={() => navigate(path, state ? { state } : undefined)}
+                  onClick={() => {
+                    if (requiresAuth && !requireAuth({ suggestedType, returnTo: path, returnState: state })) {
+                      return;
+                    }
+                    navigate(path, state ? { state } : undefined);
+                  }}
                   className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
                     isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400 hover:text-primary-500'
                   }`}
@@ -119,6 +137,16 @@ const getNavItems = (userType, isAdmin) => {
       { key: 'jobs', path: '/jobs', icon: Briefcase, label: 'Vagas', badge: 'jobs' },
       { key: 'chat', path: '/chat', icon: MessageCircle, label: 'Chat', badge: 'chat' },
       { key: 'profile', path: '/profile', icon: User, label: 'Perfil' }
+    ];
+  }
+
+  if (!userType) {
+    return [
+      { key: 'home', path: '/', icon: Home, label: 'Início' },
+      { key: 'services', path: '/services', icon: Search, label: 'Serviços' },
+      { key: 'jobs', path: '/jobs', icon: Briefcase, label: 'Vagas' },
+      { key: 'chat', path: '/chat', icon: MessageCircle, label: 'Chat', requiresAuth: true, suggestedType: 'client' },
+      { key: 'login', path: '/profile', icon: User, label: 'Entrar' }
     ];
   }
 

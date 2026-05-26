@@ -7,6 +7,7 @@ import { userAPI, serviceAPI } from '../api/services';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLoading } from '../contexts/LoadingContext';
 import { useActivityNotifications } from '../contexts/ActivityNotificationContext';
+import { useAuthPrompt } from '../contexts/AuthPromptContext';
 import { useDebounce } from '../hooks/useDebounce';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { useLocalStorage } from '../hooks/useLocalStorage';
@@ -111,16 +112,18 @@ const getStatusCopy = (status, context) => {
 };
 
 const Services = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { requireAuth } = useAuthPrompt();
   const { success, error: showError } = useNotification();
   const { showLoading, hideLoading } = useLoading();
   const { counts: activityCounts, refreshActivityNotifications } = useActivityNotifications();
   const { confirmState, confirm, cancel } = useConfirm();
-  const isProvider = user.type === 'provider';
-  const isCompany = user.type === 'company';
-  const isAdmin = user.type === 'admin' || user.role === 'admin';
+  const isVisitor = !isAuthenticated || !user;
+  const isProvider = user?.type === 'provider';
+  const isCompany = user?.type === 'company';
+  const isAdmin = user?.type === 'admin' || user?.role === 'admin';
   const canRequestServices = true;
   const canReceiveServices = isProvider || isAdmin;
 
@@ -137,7 +140,7 @@ const Services = () => {
   const [selectedCategory, setSelectedCategory, clearCategory] = useLocalStorage('service-category', '');
   
   const [activeTab, setActiveTab] = useState(() => {
-    return location.state?.tab || (user.type === 'provider' ? 'received' : 'providers');
+    return location.state?.tab || (user?.type === 'provider' ? 'received' : 'providers');
   });
   
   const [showServiceModal, setShowServiceModal] = useState(false);
@@ -178,6 +181,7 @@ const Services = () => {
   })}`;
 
   const pageDescription = (() => {
+    if (isVisitor) return 'Explore prestadores e crie uma conta quando quiser solicitar um serviço.';
     if (isProvider) return 'Contrate prestadores e responda solicitações recebidas.';
     if (isCompany) return 'Encontre prestadores e acompanhe solicitações enviadas.';
     if (isAdmin) return 'Gerencie buscas, solicitações e serviços recebidos.';
@@ -191,17 +195,45 @@ const Services = () => {
   }, [location.state]);
 
   useEffect(() => {
+    if (isVisitor && activeTab !== 'providers') {
+      setActiveTab('providers');
+      return;
+    }
     if (!canRequestServices && (activeTab === 'providers' || activeTab === 'my-requests')) {
       setActiveTab('received');
     }
     if (!canReceiveServices && activeTab === 'received') {
       setActiveTab('providers');
     }
-  }, [activeTab, canRequestServices, canReceiveServices]);
+  }, [activeTab, canRequestServices, canReceiveServices, isVisitor]);
 
   useEffect(() => {
     loadData();
   }, [activeTab, selectedCategory]);
+
+  useEffect(() => {
+    const pendingAction = location.state?.pendingAction;
+    const pendingProviderId = location.state?.providerId;
+
+    if (!isAuthenticated || activeTab !== 'providers' || !pendingAction || !pendingProviderId || providers.length === 0) {
+      return;
+    }
+
+    const provider = providers.find((item) => String(item._id) === String(pendingProviderId));
+    if (!provider) return;
+
+    setSelectedProvider(provider);
+
+    if (pendingAction === 'request-service') {
+      setShowServiceModal(true);
+    }
+
+    if (pendingAction === 'send-proposal' && (isCompany || isAdmin)) {
+      setShowProposalModal(true);
+    }
+
+    navigate('/services', { replace: true, state: { tab: 'providers' } });
+  }, [activeTab, isAdmin, isAuthenticated, isCompany, location.state, navigate, providers]);
 
   useEffect(() => {
     setStatusFilter('');
@@ -222,12 +254,12 @@ const Services = () => {
       if (activeTab === 'providers' && canRequestServices) {
         const res = await userAPI.getProviders({ category: selectedCategory });
         setProviders(res.data.providers);
-      } else if (activeTab === 'my-requests' && canRequestServices) {
+      } else if (activeTab === 'my-requests' && canRequestServices && !isVisitor) {
         const res = await serviceAPI.getMyRequests();
         setMyRequests(res.data.requests);
         await serviceAPI.markMyRequestsViewed();
         await refreshActivityNotifications();
-      } else if (activeTab === 'received' && canReceiveServices) {
+      } else if (activeTab === 'received' && canReceiveServices && !isVisitor) {
         const res = await serviceAPI.getReceivedServices();
         setReceivedServices(res.data.services);
       }
@@ -241,11 +273,35 @@ const Services = () => {
   };
 
   const handleRequestService = (provider) => {
+    if (!requireAuth({
+      suggestedType: 'client',
+      returnTo: '/services',
+      returnState: {
+        tab: 'providers',
+        pendingAction: 'request-service',
+        providerId: provider._id
+      }
+    })) {
+      return;
+    }
+
     setSelectedProvider(provider);
     setShowServiceModal(true);
   };
 
   const handleSendProposal = (provider) => {
+    if (!requireAuth({
+      suggestedType: 'company',
+      returnTo: '/services',
+      returnState: {
+        tab: 'providers',
+        pendingAction: 'send-proposal',
+        providerId: provider._id
+      }
+    })) {
+      return;
+    }
+
     setSelectedProvider(provider);
     setShowProposalModal(true);
   };
@@ -335,7 +391,7 @@ const Services = () => {
   };
 
   const normalizedSearchTerm = debouncedSearchTerm.toLowerCase();
-  const availableProviders = providers.filter(provider => String(provider._id) !== String(user.id));
+  const availableProviders = providers.filter(provider => String(provider._id) !== String(user?.id || ''));
   const filteredProviders = availableProviders.filter(provider =>
     (provider.name || '').toLowerCase().includes(normalizedSearchTerm) ||
     (provider.category || '').toLowerCase().includes(normalizedSearchTerm)
@@ -469,16 +525,16 @@ const Services = () => {
               )}
 
               {/* Botão Solicitar */}
-              <div className={`mt-3 grid gap-2 ${(user.type === 'company' || user.type === 'admin') ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
-              <Button 
-                variant={(user.type === 'company' || user.type === 'admin') ? 'secondary' : 'primary'} 
-                fullWidth 
+              <div className={`mt-3 grid gap-2 ${((user?.type === 'company' || user?.type === 'admin')) ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
+              <Button
+                variant={(user?.type === 'company' || user?.type === 'admin') ? 'secondary' : 'primary'}
+                fullWidth
                 size="sm"
                 onClick={() => handleRequestService(provider)}
               >
                 Solicitar Serviço
               </Button>
-              {(user.type === 'company' || user.type === 'admin') && (
+              {(user?.type === 'company' || user?.type === 'admin') && (
                 <Button
                   variant="primary"
                   fullWidth
@@ -736,7 +792,7 @@ const Services = () => {
               Buscar Prestadores
             </button>
           )}
-          {canRequestServices && (
+          {canRequestServices && !isVisitor && (
             <button
               onClick={() => setActiveTab('my-requests')}
               className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors min-h-[44px] ${

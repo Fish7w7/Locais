@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import api from './api/axios';
+import { AuthPromptProvider } from './contexts/AuthPromptContext';
 
 // Layouts
 import Layout from './components/Layout';
@@ -11,6 +12,7 @@ import Home from './pages/Home';
 import Services from './pages/Services';
 import Jobs from './pages/Jobs';
 import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import PublicProfile from './pages/PublicProfile';
 import AdminDashboard from './pages/AdminDashboard';
 import ManageUsers from './pages/ManageUsers';
@@ -149,17 +151,18 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         
-        {/* Rotas Protegidas */}
+        {/* Rotas principais: visitantes podem explorar, ações importantes pedem login */}
         <Route path="/" element={
-          <ProtectedRoute>
+          <AuthPromptProvider>
             <Layout />
-          </ProtectedRoute>
+          </AuthPromptProvider>
         }>
           <Route index element={<Home />} />
           <Route path="services" element={<Services />} />
           <Route path="jobs" element={<Jobs />} />
           <Route path="chat" element={<Chat />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="settings" element={<Settings />} />
           <Route path="user/:userId" element={<PublicProfile />} />
           
           {/* Rota Admin Dashboard */}
