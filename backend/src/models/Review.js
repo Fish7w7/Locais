@@ -30,7 +30,7 @@ const ReviewSchema = new mongoose.Schema({ reviewedUserId: {
   serviceId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ServiceRequest',
-    default: null
+    required: true
   },
   
   // STATUS DO SISTEMA HÍBRIDO

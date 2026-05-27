@@ -358,8 +358,16 @@ async function checkConversationPermission(currentUserId, otherUserId, type, rel
         return { allowed: false, reason: 'Usuário não faz parte deste serviço' };
       }
 
-      if (service.status === 'pending' || service.status === 'rejected') {
-        return { allowed: false, reason: 'Serviço precisa ser aceito primeiro' };
+      const chatEnabledStatuses = [
+        'negotiating',
+        'accepted',
+        'in_progress',
+        'pending_client_confirmation',
+        'disputed'
+      ];
+
+      if (!chatEnabledStatuses.includes(service.status)) {
+        return { allowed: false, reason: 'Chat disponivel apenas durante negociacao, execucao, confirmacao ou disputa' };
       }
 
       return { allowed: true };

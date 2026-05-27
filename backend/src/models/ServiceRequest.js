@@ -44,7 +44,17 @@ const ServiceRequestSchema = new mongoose.Schema({ requesterId: {
   
   status: {
     type: String,
-    enum: ['pending', 'accepted', 'in_progress', 'completed', 'cancelled', 'rejected'],
+    enum: [
+      'pending',
+      'negotiating',
+      'accepted',
+      'in_progress',
+      'pending_client_confirmation',
+      'completed',
+      'cancelled',
+      'rejected',
+      'disputed'
+    ],
     default: 'pending'
   },
   
@@ -57,6 +67,94 @@ const ServiceRequestSchema = new mongoose.Schema({ requesterId: {
     type: Number,
     default: null
   },
+
+  estimatedAmount: {
+    type: Number,
+    default: null
+  },
+
+  finalAmount: {
+    type: Number,
+    default: null
+  },
+
+  paymentStatus: {
+    type: String,
+    enum: ['not_applicable', 'pending', 'held', 'released', 'refunded', 'cancelled'],
+    default: 'not_applicable'
+  },
+
+  paymentHoldUntil: {
+    type: Date,
+    default: null
+  },
+
+  paymentReleasedAt: {
+    type: Date,
+    default: null
+  },
+
+  negotiation: {
+    suggestedDate: {
+      type: Date,
+      default: null
+    },
+    estimatedHours: {
+      type: Number,
+      default: null
+    },
+    estimatedAmount: {
+      type: Number,
+      default: null
+    },
+    message: {
+      type: String,
+      default: null
+    },
+    suggestedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
+    suggestedAt: {
+      type: Date,
+      default: null
+    },
+    respondedAt: {
+      type: Date,
+      default: null
+    },
+    response: {
+      type: String,
+      enum: ['pending', 'accepted', 'cancelled', null],
+      default: null
+    }
+  },
+
+  disputes: [{
+    reason: {
+      type: String,
+      required: true
+    },
+    description: {
+      type: String,
+      required: true
+    },
+    openedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    openedAt: {
+      type: Date,
+      default: Date.now
+    },
+    status: {
+      type: String,
+      enum: ['open', 'under_review', 'resolved', 'closed'],
+      default: 'open'
+    }
+  }],
   
   providerRating: {
     type: Number,
@@ -81,6 +179,36 @@ const ServiceRequestSchema = new mongoose.Schema({ requesterId: {
   },
   
   completedAt: {
+    type: Date,
+    default: null
+  },
+
+  acceptedAt: {
+    type: Date,
+    default: null
+  },
+
+  startedAt: {
+    type: Date,
+    default: null
+  },
+
+  providerMarkedDoneAt: {
+    type: Date,
+    default: null
+  },
+
+  cancelledAt: {
+    type: Date,
+    default: null
+  },
+
+  rejectedAt: {
+    type: Date,
+    default: null
+  },
+
+  disputedAt: {
     type: Date,
     default: null
   },

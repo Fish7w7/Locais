@@ -1,12 +1,10 @@
 // frontend/src/components/ReviewsSection.jsx
 import { useState, useEffect } from 'react';
-import { Star, ThumbsUp, ThumbsDown, MessageCircle, Plus, Flag } from 'lucide-react';
+import { Star, ThumbsUp, ThumbsDown, MessageCircle, Flag } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
 import axios from 'axios';
-import CreateReviewModal from './CreateReviewModal';
 import { useNotification } from '../contexts/NotificationContext';
-import { useAuth } from '../contexts/AuthContext';
 import { useAuthPrompt } from '../contexts/AuthPromptContext';
 
 const ReviewsSection = ({ userId, userType }) => {
@@ -14,9 +12,7 @@ const ReviewsSection = ({ userId, userType }) => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState('provider');
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const { error: showError } = useNotification();
-  const { isAuthenticated } = useAuth();
   const { requireAuth } = useAuthPrompt();
 
   if (!userId) {
@@ -106,18 +102,9 @@ const ReviewsSection = ({ userId, userType }) => {
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Avaliações
         </h3>
-        <Button
-          size="sm"
-          icon={Plus}
-          onClick={() => {
-            if (!requireAuth({ suggestedType: 'client', returnTo: `/user/${userId}` })) {
-              return;
-            }
-            setShowCreateModal(true);
-          }}
-        >
-          {isAuthenticated ? 'Avaliar' : 'Entrar para avaliar'}
-        </Button>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Avaliacoes ficam disponiveis apos servicos concluidos.
+        </p>
       </div>
 
       {/* Tabs - APENAS SE FOR PRESTADOR */}
@@ -258,16 +245,6 @@ const ReviewsSection = ({ userId, userType }) => {
       )}
 
       {/* Modal de Criar Avaliação */}
-      <CreateReviewModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        userId={userId}
-        userType={selectedType}
-        onSuccess={() => {
-          setShowCreateModal(false);
-          loadReviews(); 
-        }}
-      />
     </div>
   );
 };

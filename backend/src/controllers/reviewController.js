@@ -1,6 +1,8 @@
 // backend/src/controllers/reviewController.js
 import Review from '../models/Review.js';
 import User from '../models/User.js';
+import ServiceRequest from '../models/ServiceRequest.js';
+import mongoose from 'mongoose';
 
 // @desc    Criar avaliação
 // @route   POST /api/reviews
@@ -8,6 +10,50 @@ import User from '../models/User.js';
 export const createReview = async (req, res) => {
   try {
     const { reviewedUserId, type, rating, comment, serviceId } = req.body;
+
+    if (!serviceId) {
+      return res.status(400).json({ success: false,
+        message: 'serviceId e obrigatorio para avaliar um servico'
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(serviceId) || !mongoose.Types.ObjectId.isValid(reviewedUserId)) {
+      return res.status(400).json({ success: false,
+        message: 'Dados de avaliacao invalidos'
+      });
+    }
+
+    const serviceRequest = await ServiceRequest.findById(serviceId);
+    if (!serviceRequest || serviceRequest.status !== 'completed') {
+      return res.status(400).json({ success: false,
+        message: 'Avaliacao permitida apenas para servicos concluidos'
+      });
+    }
+
+    const isRequester = serviceRequest.requesterId.toString() === req.user.id;
+    const isProvider = serviceRequest.providerId.toString() === req.user.id;
+
+    if (!isRequester && !isProvider) {
+      return res.status(403).json({ success: false,
+        message: 'Voce nao participou deste servico'
+      });
+    }
+
+    const expectedReviewedUserId = isRequester
+      ? serviceRequest.providerId.toString()
+      : serviceRequest.requesterId.toString();
+
+    if (String(reviewedUserId) !== expectedReviewedUserId) {
+      return res.status(400).json({ success: false,
+        message: 'Usuario avaliado nao faz parte deste servico'
+      });
+    }
+
+    if ((isRequester && type !== 'provider') || (isProvider && type !== 'client')) {
+      return res.status(400).json({ success: false,
+        message: 'Tipo de avaliacao invalido para este servico'
+      });
+    }
 
     const reviewedUser = await User.findById(reviewedUserId);
     if (!reviewedUser || reviewedUser.isActive === false || reviewedUser.isDeleted === true) {
@@ -24,7 +70,7 @@ export const createReview = async (req, res) => {
 
     const existingReview = await Review.findOne({ reviewerId: req.user.id,
       reviewedUserId,
-      serviceId: serviceId || null
+      serviceId
     });
 
     if (existingReview) {
@@ -40,20 +86,24 @@ export const createReview = async (req, res) => {
       type,
       rating,
       comment,
-      serviceId: serviceId || null
+      serviceId
     });
 
     if (review.status === 'approved') {
       if (type === 'provider') {
+        serviceRequest.providerRating = rating;
+        serviceRequest.providerReview = comment;
         const totalRating = (reviewedUser.providerRating * reviewedUser.providerReviewCount) + rating;
         reviewedUser.providerReviewCount += 1;
         reviewedUser.providerRating = totalRating / reviewedUser.providerReviewCount;
       } else {
+        serviceRequest.clientRating = rating;
+        serviceRequest.clientReview = comment;
         const totalRating = (reviewedUser.clientRating * reviewedUser.clientReviewCount) + rating;
         reviewedUser.clientReviewCount += 1;
         reviewedUser.clientRating = totalRating / reviewedUser.clientReviewCount;
       }
-      await reviewedUser.save();
+      await Promise.all([reviewedUser.save(), serviceRequest.save()]);
     }
 
     const populatedReview = await Review.findById(review._id)
@@ -272,18 +322,30 @@ export const moderateReview = async (req, res) => {
       // Adicionar ao rating se estava em revisão
       if (oldStatus !== 'approved') {
         const reviewedUser = await User.findById(review.reviewedUserId);
+        const serviceRequest = await ServiceRequest.findById(review.serviceId);
         
         if (review.type === 'provider') {
+          if (serviceRequest) {
+            serviceRequest.providerRating = review.rating;
+            serviceRequest.providerReview = review.comment;
+          }
           const totalRating = (reviewedUser.providerRating * reviewedUser.providerReviewCount) + review.rating;
           reviewedUser.providerReviewCount += 1;
           reviewedUser.providerRating = totalRating / reviewedUser.providerReviewCount;
         } else {
+          if (serviceRequest) {
+            serviceRequest.clientRating = review.rating;
+            serviceRequest.clientReview = review.comment;
+          }
           const totalRating = (reviewedUser.clientRating * reviewedUser.clientReviewCount) + review.rating;
           reviewedUser.clientReviewCount += 1;
           reviewedUser.clientRating = totalRating / reviewedUser.clientReviewCount;
         }
         
-        await reviewedUser.save();
+        await Promise.all([
+          reviewedUser.save(),
+          serviceRequest ? serviceRequest.save() : Promise.resolve()
+        ]);
       }
       
     } else if (action === 'reject') {

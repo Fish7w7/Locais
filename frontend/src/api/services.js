@@ -24,6 +24,10 @@ export const serviceAPI = {
   markMyRequestsViewed: () => api.put('/services/my-requests/viewed'),
   getReceivedServices: (params) => api.get('/services/received', { params }),
   updateStatus: (id, data) => api.put(`/services/${id}/status`, data),
+  suggestChange: (id, data) => api.post(`/services/${id}/suggest-change`, data),
+  respondToNegotiation: (id, data) => api.put(`/services/${id}/negotiation`, data),
+  openDispute: (id, data) => api.post(`/services/${id}/dispute`, data),
+  getDisputes: (id) => api.get(`/services/${id}/disputes`),
   reviewService: (id, data) => api.post(`/services/${id}/review`, data)
 };
 

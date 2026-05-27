@@ -9,7 +9,6 @@ import {
   DollarSign,
   Mail,
   MapPin,
-  MessageCircle,
   Phone,
   Send,
   Star
@@ -21,7 +20,6 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import ReviewsSection from '../components/ReviewsSection';
 import CreateServiceModal from '../components/CreateServiceModal';
-import CreateReviewModal from '../components/CreateReviewModal';
 
 const PublicProfile = () => {
   const { userId } = useParams();
@@ -33,7 +31,6 @@ const PublicProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showServiceModal, setShowServiceModal] = useState(false);
-  const [showReviewModal, setShowReviewModal] = useState(false);
 
   const isOwnProfile = [currentUser?.id, currentUser?._id].filter(Boolean).includes(userId);
 
@@ -186,22 +183,6 @@ const PublicProfile = () => {
                 Solicitar Serviço
               </Button>
             )}
-            <Button
-              variant="secondary"
-              fullWidth
-              icon={MessageCircle}
-              onClick={() => {
-                if (!requireAuth({
-                  suggestedType: 'client',
-                  returnTo: `/user/${userId}`
-                })) {
-                  return;
-                }
-                setShowReviewModal(true);
-              }}
-            >
-              Avaliar Usuário
-            </Button>
           </div>
         </Card>
 
@@ -295,16 +276,6 @@ const PublicProfile = () => {
         />
       )}
 
-      <CreateReviewModal
-        isOpen={showReviewModal}
-        onClose={() => setShowReviewModal(false)}
-        userId={profileUser._id}
-        userType={profileUser.type === 'provider' ? 'provider' : 'client'}
-        onSuccess={() => {
-          setShowReviewModal(false);
-          loadProfile();
-        }}
-      />
     </div>
   );
 };

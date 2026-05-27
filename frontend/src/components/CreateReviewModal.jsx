@@ -6,7 +6,7 @@ import Button from './Button';
 import axios from 'axios';
 import { useNotification } from '../contexts/NotificationContext';
 
-const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => {
+const CreateReviewModal = ({ isOpen, onClose, userId, userType, serviceId, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -27,6 +27,11 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
       return;
     }
 
+    if (!serviceId) {
+      showError('Avaliacoes so podem ser feitas a partir de um servico concluido');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -34,7 +39,8 @@ const CreateReviewModal = ({ isOpen, onClose, userId, userType, onSuccess }) => 
       const response = await axios.post('/api/reviews', { reviewedUserId: userId,
         type: userType,
         rating,
-        comment
+        comment,
+        serviceId
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });

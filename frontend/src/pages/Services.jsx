@@ -1,7 +1,7 @@
 // frontend/src/pages/Services.jsx - COM LINKS PARA PERFIL
 import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Briefcase, Search, MapPin, Star, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { Briefcase, Search, MapPin, Star, Clock, CheckCircle, XCircle, Edit3, PlayCircle, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { userAPI, serviceAPI } from '../api/services';
 import { useNotification } from '../contexts/NotificationContext';
@@ -15,9 +15,11 @@ import { useConfirm } from '../hooks/useConfirm';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import Modal from '../components/Modal';
 import UserProfileLink from '../components/UserProfileLink';
 import CreateServiceModal from '../components/CreateServiceModal';
 import SendJobProposalModal from '../components/SendJobProposalModal';
+import CreateReviewModal from '../components/CreateReviewModal';
 import ConfirmModal from '../components/ConfirmModal';
 import PullToRefresh from '../components/PullToRefresh';
 import { SkeletonList, SkeletonProviderCard, SkeletonServiceCard } from '../components/Skeleton';
@@ -33,11 +35,14 @@ import { StatusBadge } from '../components/Badge';
 
 const statusPriority = {
   pending: 0,
-  accepted: 1,
-  in_progress: 2,
-  completed: 3,
-  rejected: 4,
-  cancelled: 5
+  negotiating: 1,
+  accepted: 2,
+  in_progress: 3,
+  pending_client_confirmation: 4,
+  disputed: 5,
+  completed: 6,
+  rejected: 7,
+  cancelled: 8
 };
 
 const getTimestamp = (item) => new Date(item.updatedAt || item.createdAt || 0).getTime();
@@ -58,9 +63,25 @@ const getStatusCopy = (status, context) => {
       title: 'Aguardando resposta',
       description: 'O prestador ainda não respondeu sua solicitação.'
     },
+    negotiating: {
+      title: 'Alteracao sugerida',
+      description: 'O prestador sugeriu novos detalhes. Voce pode aceitar, cancelar ou continuar pelo chat.'
+    },
     accepted: {
       title: 'Aceito pelo prestador',
       description: 'Você já pode conversar com o prestador para combinar os detalhes.'
+    },
+    in_progress: {
+      title: 'Servico em andamento',
+      description: 'Combine os proximos passos pelo chat.'
+    },
+    pending_client_confirmation: {
+      title: 'Aguardando sua confirmacao',
+      description: 'O prestador marcou o servico como realizado. Confirme a conclusao ou abra disputa.'
+    },
+    disputed: {
+      title: 'Em disputa',
+      description: 'Voce contestou a conclusao. Use o chat para registrar informacoes.'
     },
     rejected: {
       title: 'Recusado pelo prestador',
@@ -73,10 +94,6 @@ const getStatusCopy = (status, context) => {
     cancelled: {
       title: 'Solicitação cancelada',
       description: 'Você cancelou essa solicitação.'
-    },
-    in_progress: {
-      title: 'Serviço em andamento',
-      description: 'Combine os próximos passos pelo chat.'
     }
   };
 
@@ -85,9 +102,25 @@ const getStatusCopy = (status, context) => {
       title: 'Nova solicitação',
       description: 'Responda para o cliente saber se você pode atender.'
     },
+    negotiating: {
+      title: 'Negociando alteracao',
+      description: 'Aguarde o cliente responder sua sugestao ou continue alinhando pelo chat.'
+    },
     accepted: {
       title: 'Serviço aceito',
-      description: 'Converse com o solicitante e conclua quando finalizar.'
+      description: 'Converse com o solicitante e inicie quando o servico comecar.'
+    },
+    in_progress: {
+      title: 'Servico em andamento',
+      description: 'Mantenha o solicitante atualizado pelo chat.'
+    },
+    pending_client_confirmation: {
+      title: 'Aguardando confirmacao do cliente',
+      description: 'Voce marcou como realizado. O cliente precisa confirmar para concluir.'
+    },
+    disputed: {
+      title: 'Em disputa',
+      description: 'O cliente contestou a conclusao. Mantenha as informacoes organizadas no chat.'
     },
     rejected: {
       title: 'Solicitação recusada',
@@ -100,10 +133,6 @@ const getStatusCopy = (status, context) => {
     cancelled: {
       title: 'Solicitação cancelada',
       description: 'O solicitante cancelou esse pedido.'
-    },
-    in_progress: {
-      title: 'Serviço em andamento',
-      description: 'Mantenha o solicitante atualizado pelo chat.'
     }
   };
 
@@ -145,7 +174,11 @@ const Services = () => {
   
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [showProposalModal, setShowProposalModal] = useState(false);
+  const [showSuggestChangeModal, setShowSuggestChangeModal] = useState(false);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
+  const [selectedService, setSelectedService] = useState(null);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -165,8 +198,12 @@ const Services = () => {
   const serviceStatusOptions = [
     { value: '', label: 'Todos' },
     { value: 'pending', label: 'Pendentes' },
+    { value: 'negotiating', label: 'Negociando' },
     { value: 'accepted', label: 'Aceitos' },
-    { value: 'completed', label: 'Concluídos' },
+    { value: 'in_progress', label: 'Em andamento' },
+    { value: 'pending_client_confirmation', label: 'A confirmar' },
+    { value: 'completed', label: 'Concluidos' },
+    { value: 'disputed', label: 'Disputas' },
     { value: 'rejected', label: 'Recusados' },
     { value: 'cancelled', label: 'Cancelados' }
   ];
@@ -350,18 +387,18 @@ const Services = () => {
 
   const handleCompleteService = async (serviceId) => {
     await confirm({
-      title: 'Concluir Serviço',
-      message: 'Marcar este serviço como concluído',
+      title: 'Marcar como realizado',
+      message: 'O cliente ainda precisara confirmar a conclusao. Deseja continuar?',
       variant: 'info',
       onConfirm: async () => {
         try {
-          showLoading('Concluindo serviço...');
-          await serviceAPI.updateStatus(serviceId, { status: 'completed' });
-          success('Serviço marcado como concluído!');
+          showLoading('Marcando servico como realizado...');
+          await serviceAPI.updateStatus(serviceId, { status: 'pending_client_confirmation' });
+          success('Servico enviado para confirmacao do cliente.');
           await loadData();
           refreshActivityNotifications();
         } catch (err) {
-          showError(err.response?.data.message || 'Erro ao concluir serviço');
+          showError(err.response?.data.message || 'Erro ao marcar servico como realizado');
         } finally {
           hideLoading();
         }
@@ -388,6 +425,48 @@ const Services = () => {
         }
       }
     });
+  };
+
+  const handleStartService = async (serviceId) => {
+    try {
+      showLoading('Iniciando servico...');
+      await serviceAPI.updateStatus(serviceId, { status: 'in_progress' });
+      success('Servico iniciado.');
+      await loadData();
+      refreshActivityNotifications();
+    } catch (err) {
+      showError(err.response?.data.message || 'Erro ao iniciar servico');
+    } finally {
+      hideLoading();
+    }
+  };
+
+  const handleAcceptNegotiation = async (serviceId) => {
+    try {
+      showLoading('Aceitando alteracao...');
+      await serviceAPI.respondToNegotiation(serviceId, { action: 'accept' });
+      success('Alteracao aceita. Servico aceito.');
+      await loadData();
+      refreshActivityNotifications();
+    } catch (err) {
+      showError(err.response?.data.message || 'Erro ao aceitar alteracao');
+    } finally {
+      hideLoading();
+    }
+  };
+
+  const handleConfirmCompletion = async (serviceId) => {
+    try {
+      showLoading('Confirmando conclusao...');
+      await serviceAPI.updateStatus(serviceId, { status: 'completed' });
+      success('Servico concluido.');
+      await loadData();
+      refreshActivityNotifications();
+    } catch (err) {
+      showError(err.response?.data.message || 'Erro ao confirmar conclusao');
+    } finally {
+      hideLoading();
+    }
   };
 
   const normalizedSearchTerm = debouncedSearchTerm.toLowerCase();
@@ -443,6 +522,32 @@ const Services = () => {
       </span>
     );
   };
+
+  const renderNegotiationDetails = (service) => {
+    if (service.status !== 'negotiating' || !service.negotiation?.message) return null;
+
+    return (
+      <div className="mt-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm dark:border-yellow-800 dark:bg-yellow-900/20">
+        <p className="font-semibold text-yellow-900 dark:text-yellow-100">Sugestao do prestador</p>
+        <p className="mt-1 text-yellow-800 dark:text-yellow-200">{service.negotiation.message}</p>
+        <div className="mt-2 grid gap-1 text-xs text-yellow-800 dark:text-yellow-200 sm:grid-cols-3">
+          {service.negotiation.suggestedDate && <span>Data: {formatDate(service.negotiation.suggestedDate)}</span>}
+          {service.negotiation.estimatedHours && <span>Horas: {service.negotiation.estimatedHours}</span>}
+          {service.negotiation.estimatedAmount !== null && service.negotiation.estimatedAmount !== undefined && (
+            <span>Valor: {formatCurrency(service.negotiation.estimatedAmount)}</span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const canChatForService = (status) => [
+    'negotiating',
+    'accepted',
+    'in_progress',
+    'pending_client_confirmation',
+    'disputed'
+  ].includes(status);
 
   const renderContent = () => {
     if (loading) {
@@ -596,8 +701,9 @@ const Services = () => {
               </div>
               
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                {request.description || 'Sem descrição informada.'}
+                {request.description || 'Sem descricao informada.'}
               </p>
+              {renderNegotiationDetails(request)}
               
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
@@ -617,7 +723,7 @@ const Services = () => {
                 </div>
               </div>
                {/* BOTÃO CONVERSAR */}
-              {request.status === 'pending' && (
+              {['pending', 'accepted'].includes(request.status) && (
                 <div className="mt-3">
                   <Button
                     variant="secondary"
@@ -631,7 +737,73 @@ const Services = () => {
                 </div>
               )}
 
-              {(request.status === 'accepted' || request.status === 'in_progress') && request.providerId?._id && (
+              {request.status === 'negotiating' && (
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    size="sm"
+                    icon={CheckCircle}
+                    onClick={() => handleAcceptNegotiation(request._id)}
+                  >
+                    Aceitar alteracao
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    fullWidth
+                    size="sm"
+                    icon={XCircle}
+                    onClick={() => handleCancelService(request._id)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              )}
+
+              {request.status === 'pending_client_confirmation' && (
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    size="sm"
+                    icon={CheckCircle}
+                    onClick={() => handleConfirmCompletion(request._id)}
+                  >
+                    Confirmar conclusao
+                  </Button>
+                  <Button
+                    variant="danger"
+                    fullWidth
+                    size="sm"
+                    icon={AlertTriangle}
+                    onClick={() => {
+                      setSelectedService(request);
+                      setShowDisputeModal(true);
+                    }}
+                  >
+                    Abrir disputa
+                  </Button>
+                </div>
+              )}
+
+              {request.status === 'completed' && !request.providerRating && request.providerId?._id && (
+                <div className="mt-3">
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    size="sm"
+                    icon={Star}
+                    onClick={() => {
+                      setSelectedService(request);
+                      setShowReviewModal(true);
+                    }}
+                  >
+                    Avaliar prestador
+                  </Button>
+                </div>
+              )}
+
+              {canChatForService(request.status) && request.providerId?._id && (
                 <div className="mt-3">
                   <StartChatButton
                     otherUserId={request.providerId?._id}
@@ -692,8 +864,9 @@ const Services = () => {
               </div>
               
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                {service.description || 'Sem descrição informada.'}
+                {service.description || 'Sem descricao informada.'}
               </p>
+              {renderNegotiationDetails(service)}
               
               <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 mb-3">
                 <MapPin className="w-4 h-4" />
@@ -713,7 +886,7 @@ const Services = () => {
               </div>
               
               {service.status === 'pending' && (
-                <div className="flex gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <Button 
                     variant="primary" 
                     fullWidth 
@@ -723,9 +896,47 @@ const Services = () => {
                   >
                     Aceitar
                   </Button>
+                  <Button
+                    variant="secondary"
+                    fullWidth
+                    size="sm"
+                    icon={Edit3}
+                    onClick={() => {
+                      setSelectedService(service);
+                      setShowSuggestChangeModal(true);
+                    }}
+                  >
+                    Sugerir
+                  </Button>
                   <Button 
                     variant="danger" 
                     fullWidth 
+                    size="sm"
+                    icon={XCircle}
+                    onClick={() => handleRejectService(service._id)}
+                  >
+                    Recusar
+                  </Button>
+                </div>
+              )}
+
+              {service.status === 'negotiating' && (
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <Button
+                    variant="secondary"
+                    fullWidth
+                    size="sm"
+                    icon={Edit3}
+                    onClick={() => {
+                      setSelectedService(service);
+                      setShowSuggestChangeModal(true);
+                    }}
+                  >
+                    Ajustar sugestao
+                  </Button>
+                  <Button
+                    variant="danger"
+                    fullWidth
                     size="sm"
                     icon={XCircle}
                     onClick={() => handleRejectService(service._id)}
@@ -741,10 +952,10 @@ const Services = () => {
                     variant="primary" 
                     fullWidth 
                     size="sm"
-                    icon={RefreshCw}
-                    onClick={() => handleCompleteService(service._id)}
+                    icon={PlayCircle}
+                    onClick={() => handleStartService(service._id)}
                   >
-                    Marcar como Concluído
+                    Iniciar servico
                   </Button>
                   {/* BOTÃO CONVERSAR */}
                   {service.requesterId?._id && (
@@ -755,6 +966,56 @@ const Services = () => {
                       fullWidth
                     />
                   )}
+                </div>
+              )}
+
+              {service.status === 'in_progress' && (
+                <div className={`grid grid-cols-1 gap-2 mt-3 ${service.requesterId?._id ? 'sm:grid-cols-2' : ''}`}>
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    size="sm"
+                    icon={CheckCircle}
+                    onClick={() => handleCompleteService(service._id)}
+                  >
+                    Marcar como realizado
+                  </Button>
+                  {service.requesterId?._id && (
+                    <StartChatButton
+                      otherUserId={service.requesterId?._id}
+                      type="service"
+                      relatedId={service._id}
+                      fullWidth
+                    />
+                  )}
+                </div>
+              )}
+
+              {['negotiating', 'pending_client_confirmation', 'disputed'].includes(service.status) && service.requesterId?._id && (
+                <div className="mt-3">
+                  <StartChatButton
+                    otherUserId={service.requesterId?._id}
+                    type="service"
+                    relatedId={service._id}
+                    fullWidth
+                  />
+                </div>
+              )}
+
+              {service.status === 'completed' && !service.clientRating && service.requesterId?._id && (
+                <div className="mt-3">
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    size="sm"
+                    icon={Star}
+                    onClick={() => {
+                      setSelectedService(service);
+                      setShowReviewModal(true);
+                    }}
+                  >
+                    Avaliar cliente
+                  </Button>
                 </div>
               )}
             </Card>
@@ -901,6 +1162,66 @@ const Services = () => {
           />
         )}
 
+        <SuggestChangeModal
+          isOpen={showSuggestChangeModal}
+          service={selectedService}
+          onClose={() => {
+            setShowSuggestChangeModal(false);
+            setSelectedService(null);
+          }}
+          onSubmit={async (payload) => {
+            try {
+              await serviceAPI.suggestChange(selectedService._id, payload);
+              success('Sugestao enviada ao cliente.');
+              setShowSuggestChangeModal(false);
+              setSelectedService(null);
+              await loadData();
+              refreshActivityNotifications();
+            } catch (err) {
+              showError(err.response?.data.message || 'Erro ao enviar sugestao');
+            }
+          }}
+        />
+
+        <DisputeModal
+          isOpen={showDisputeModal}
+          service={selectedService}
+          onClose={() => {
+            setShowDisputeModal(false);
+            setSelectedService(null);
+          }}
+          onSubmit={async (payload) => {
+            try {
+              await serviceAPI.openDispute(selectedService._id, payload);
+              success('Disputa aberta.');
+              setShowDisputeModal(false);
+              setSelectedService(null);
+              await loadData();
+              refreshActivityNotifications();
+            } catch (err) {
+              showError(err.response?.data.message || 'Erro ao abrir disputa');
+            }
+          }}
+        />
+
+        {selectedService && (
+          <CreateReviewModal
+            isOpen={showReviewModal}
+            onClose={() => {
+              setShowReviewModal(false);
+              setSelectedService(null);
+            }}
+            userId={activeTab === 'received' ? selectedService.requesterId?._id : selectedService.providerId?._id}
+            userType={activeTab === 'received' ? 'client' : 'provider'}
+            serviceId={selectedService._id}
+            onSuccess={async () => {
+              setShowReviewModal(false);
+              setSelectedService(null);
+              await loadData();
+            }}
+          />
+        )}
+
         <ConfirmModal
           isOpen={confirmState.isOpen}
           onClose={cancel}
@@ -911,6 +1232,166 @@ const Services = () => {
         />
       </div>
     </PullToRefresh>
+  );
+};
+
+const SuggestChangeModal = ({ isOpen, service, onClose, onSubmit }) => {
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    requestedDate: '',
+    estimatedHours: '',
+    estimatedAmount: '',
+    message: ''
+  });
+
+  useEffect(() => {
+    if (isOpen && service) {
+      setFormData({
+        requestedDate: service.requestedDate ? new Date(service.requestedDate).toISOString().slice(0, 16) : '',
+        estimatedHours: service.estimatedHours || '',
+        estimatedAmount: service.estimatedAmount || service.price || '',
+        message: ''
+      });
+    }
+  }, [isOpen, service]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    try {
+      await onSubmit({
+        requestedDate: formData.requestedDate,
+        estimatedHours: formData.estimatedHours,
+        estimatedAmount: formData.estimatedAmount,
+        message: formData.message.trim()
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Sugerir alteracao" size="md">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Nova data e horario"
+          type="datetime-local"
+          value={formData.requestedDate}
+          onChange={(event) => setFormData({ ...formData, requestedDate: event.target.value })}
+          min={new Date().toISOString().slice(0, 16)}
+          required
+        />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Input
+            label="Horas estimadas"
+            type="number"
+            value={formData.estimatedHours}
+            onChange={(event) => setFormData({ ...formData, estimatedHours: event.target.value })}
+            min="0.5"
+            step="0.5"
+            required
+          />
+          <Input
+            label="Valor estimado"
+            type="number"
+            value={formData.estimatedAmount}
+            onChange={(event) => setFormData({ ...formData, estimatedAmount: event.target.value })}
+            min="0"
+            step="0.01"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Mensagem para o cliente
+          </label>
+          <textarea
+            value={formData.message}
+            onChange={(event) => setFormData({ ...formData, message: event.target.value })}
+            rows={4}
+            required
+            minLength={5}
+            maxLength={1000}
+            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+            placeholder="Explique o motivo da alteracao sugerida."
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Button type="submit" variant="primary" fullWidth loading={loading}>
+            Enviar sugestao
+          </Button>
+          <Button type="button" variant="secondary" fullWidth onClick={onClose} disabled={loading}>
+            Cancelar
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+const DisputeModal = ({ isOpen, service, onClose, onSubmit }) => {
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    reason: '',
+    description: ''
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({ reason: '', description: '' });
+    }
+  }, [isOpen]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    try {
+      await onSubmit({
+        reason: formData.reason.trim(),
+        description: formData.description.trim()
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Abrir disputa" size="md">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-200">
+          Informe o que aconteceu. A plataforma preservara os registros necessarios para analise.
+        </div>
+        <Input
+          label="Motivo"
+          value={formData.reason}
+          onChange={(event) => setFormData({ ...formData, reason: event.target.value })}
+          placeholder="Ex: servico incompleto"
+          required
+        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Descricao
+          </label>
+          <textarea
+            value={formData.description}
+            onChange={(event) => setFormData({ ...formData, description: event.target.value })}
+            rows={5}
+            required
+            minLength={10}
+            maxLength={2000}
+            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+            placeholder="Descreva a contestacao com detalhes."
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Button type="submit" variant="danger" fullWidth loading={loading}>
+            Abrir disputa
+          </Button>
+          <Button type="button" variant="secondary" fullWidth onClick={onClose} disabled={loading}>
+            Cancelar
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 };
 
